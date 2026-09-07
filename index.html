@@ -190,7 +190,7 @@
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      margin-bottom: 4px;
+      margin: 0;
     }
 
     .exercise-heading-icon {
@@ -205,14 +205,14 @@
     .exercise-subtitle {
       color: #666;
       font-size: 16px;
-      margin: 0 0 10px 40px;
+      margin: 0 0 6px 40px;
       font-style: italic;
     }
 
     .exercise-section {
-      margin-top: 10px;
-      padding-top: 8px;
-      border-top: 1px solid #e1ded8;
+      margin: 0;
+      padding: 0;
+      border: 0;
     }
 
     .exercise-section:first-child {
@@ -224,12 +224,14 @@
     .exercise-section-title {
       font-size: 17px;
       font-weight: bold;
-      margin-bottom: 4px;
+      margin: 0 0 2px;
+      line-height: 1.25;
     }
 
     .exercise-text {
-      margin: 0;
+      margin: 0 0 4px;
       white-space: pre-wrap;
+      line-height: 1.35;
     }
 
     .response-box {
@@ -318,6 +320,7 @@
 
     .content-text {
       white-space: pre-wrap;
+      margin: 0;
     }
 
     /* Journal */
@@ -407,99 +410,6 @@
       }
     }
   </style>
-
-<style id="compact-exercise-heading">
-.exercise-card h2,
-.exercise-card .exercise-subtitle,
-.exercise-card .section-title {
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-}
-.exercise-card h2 + *,
-.exercise-card .exercise-subtitle + * {
-    margin-top: 0 !important;
-}
-</style>
-
-
-<style id="tight-exercise-header-v7">
-.exercise-card .exercise-heading {
-    margin-bottom: 0 !important;
-}
-.exercise-card #exerciseSubtitle {
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    line-height: 0 !important;
-}
-.exercise-card .exercise-section:first-child {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-    border-top: none !important;
-}
-.exercise-card .exercise-section:first-child .exercise-section-title {
-    margin-top: 0 !important;
-    margin-bottom: 2px !important;
-}
-.exercise-card .exercise-section:first-child .exercise-text {
-    margin-top: 0 !important;
-}
-</style>
-
-
-<style id="tight-practice-v8">
-/* Suppression des espaces verticaux inutiles dans la présentation de l'exercice */
-.exercise-card .exercise-section {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-.exercise-card .exercise-section-title {
-    margin-top: 0 !important;
-    margin-bottom: 2px !important;
-}
-.exercise-card .exercise-text {
-    margin-top: 0 !important;
-    margin-bottom: 4px !important;
-}
-.exercise-card .exercise-section:first-child {
-    margin-bottom: 0 !important;
-}
-.exercise-card .exercise-section:first-child + .exercise-section {
-    margin-top: 0 !important;
-}
-</style>
-
-
-<style id="ultra-tight-day1-v9">
-/* V9 : suppression forcée des blancs entre les blocs du Jour 1 */
-#exerciseContent,
-#interactiveExercise {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-#exerciseContent .exercise-section,
-#interactiveExercise .exercise-section {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-}
-#exerciseContent .exercise-section-title,
-#interactiveExercise .exercise-section-title {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.25 !important;
-}
-#exerciseContent .exercise-text,
-#interactiveExercise .exercise-text {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.35 !important;
-}
-#exerciseContent + #interactiveExercise {
-    margin-top: 0 !important;
-}
-</style>
 
 </head>
 
@@ -655,7 +565,7 @@
 
         <div class="exercise-heading">
           <div class="exercise-heading-icon" id="exerciseIcon">🏛️</div>
-          <h2 style="margin-top:0;margin-bottom:0" id="exerciseTitle">Chargement...</h2>
+          <h2 id="exerciseTitle">Chargement...</h2>
         </div>
 
         <div id="exerciseSubtitle" class="exercise-subtitle"></div>
