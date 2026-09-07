@@ -76,6 +76,22 @@
       color: white;
     }
 
+    .nav-buttons button {
+      transition: all 0.15s ease;
+    }
+
+    .nav-buttons button.nav-active {
+      background: #222;
+      color: white;
+      box-shadow: 0 0 0 3px rgba(34,34,34,0.12);
+      font-weight: bold;
+    }
+
+    .nav-buttons button:not(.nav-active) {
+      background: #e8e5df;
+      color: #222;
+    }
+
     .secondary {
       background: #e8e5df;
       color: #222;
@@ -162,6 +178,123 @@
 
     .content-block h3 {
       margin-bottom: 8px;
+    }
+
+    .exercise-card {
+      padding: 28px;
+      border-top: 5px solid #333;
+    }
+
+    .exercise-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .exercise-heading-icon {
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .exercise-heading h2 {
+      margin: 0;
+    }
+
+    .exercise-subtitle {
+      color: #666;
+      font-size: 16px;
+      margin: 0 0 24px 40px;
+      font-style: italic;
+    }
+
+    .exercise-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #e1ded8;
+    }
+
+    .exercise-section-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .response-box {
+      margin-top: 12px;
+    }
+
+    .response-box label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .response-box textarea {
+      min-height: 110px;
+    }
+
+    .control-table-wrap {
+      overflow-x: auto;
+      margin-top: 14px;
+    }
+
+    .control-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    .control-table th,
+    .control-table td {
+      border: 1px solid #d8d4cd;
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    .control-table th {
+      background: #f0eee9;
+      text-align: left;
+    }
+
+    .control-table textarea {
+      min-height: 58px;
+      margin: 0;
+      resize: vertical;
+    }
+
+    .table-actions {
+      margin-top: 10px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .score-item {
+      background: #f7f5f1;
+      border: 1px solid #ddd9d1;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .score-item label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 7px;
+    }
+
+    .score-item select {
+      margin: 0;
+    }
+
+    @media (max-width: 700px) {
+      .score-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     .content-text {
@@ -321,12 +454,14 @@
       <div class="nav-buttons">
 
         <button
-          class="primary"
+          id="programNavButton"
+          class="primary nav-active"
           onclick="showSection('program')">
           📅 Programme
         </button>
 
         <button
+          id="journalNavButton"
           class="secondary"
           onclick="showSection('journal')">
           📔 Mon journal intime
@@ -403,17 +538,20 @@
 
       <!-- Contenu du jour -->
 
-      <div class="card">
+      <div class="card exercise-card">
 
-        <h2 id="exerciseTitle">
-          Chargement...
-        </h2>
+        <div class="exercise-heading">
+          <div class="exercise-heading-icon" id="exerciseIcon">🏛️</div>
+          <h2 id="exerciseTitle">Chargement...</h2>
+        </div>
 
-        <div
-          id="exerciseContent"
-          class="content-text">
+        <div id="exerciseSubtitle" class="exercise-subtitle"></div>
+
+        <div id="exerciseContent" class="content-text">
           Chargement du programme...
         </div>
+
+        <div id="interactiveExercise"></div>
 
       </div>
 
@@ -569,7 +707,8 @@
         <input
           id="journalTitle"
           type="text"
-          placeholder="Un titre... 😊">
+          placeholder="Un titre... 😊"
+          onfocus="setEmojiField('journalTitle')">
 
 
         <label>
@@ -649,7 +788,8 @@
         <textarea
           id="journalContent"
           rows="14"
-          placeholder="Écris librement ce que tu veux...">
+          placeholder="Écris librement ce que tu veux..."
+          onfocus="setEmojiField('journalContent')">
         </textarea>
 
 
@@ -822,6 +962,8 @@
 
     populateDaySelector();
 
+    showSection("program");
+
     await loadDay(currentDay);
 
     await loadJournalEntries();
@@ -962,9 +1104,17 @@
     document.getElementById("exerciseTitle").textContent =
       data.title;
 
+    document.getElementById("exerciseIcon").textContent =
+      getExerciseIcon(data.title);
+
+    const subtitleParts = String(data.title || "").split(" — ");
+    document.getElementById("exerciseSubtitle").textContent =
+      subtitleParts.length > 1 ? subtitleParts.slice(1).join(" — ") : "";
 
     document.getElementById("exerciseContent").innerHTML =
       formatText(data.content);
+
+    renderInteractiveExercise(data.content);
 
 
     document.getElementById("meditationDuration").textContent =
@@ -1032,8 +1182,39 @@
 
     document.getElementById("reaction").value =
       data.reaction || "";
+
+    document.getElementById("presenceScore").value =
+      data.presence ?? "";
+
+    document.getElementById("impulseScore").value =
+      data.impulse_control ?? "";
+
+    document.getElementById("valuesScore").value =
+      data.values_coherence ?? "";
+
+    document.getElementById("selfRelationScore").value =
+      data.self_relation ?? "";
   }
 
+
+  function buildExerciseResponse() {
+    const base = document.getElementById("exerciseResponse").value.trim();
+    const table = collectControlTable();
+
+    const action = document.getElementById("controlActionResponse")?.value.trim() || "";
+    const observation = document.getElementById("controlObservationResponse")?.value.trim() || "";
+    const decision = document.getElementById("controlDecisionResponse")?.value.trim() || "";
+
+    if (!table && !action && !observation && !decision) return base;
+
+    let result = base;
+    if (table) result += (result ? "\n\n" : "") + "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table;
+    if (action) result += (result ? "\n\n" : "") + "ACTIONS\n" + action;
+    if (observation) result += (result ? "\n\n" : "") + "TRACE ÉCRITE\n" + observation;
+    if (decision) result += (result ? "\n\n" : "") + "DÉCISION SANS VALIDATION\n" + decision;
+
+    return result;
+  }
 
   async function saveEntry() {
 
@@ -1063,7 +1244,7 @@
         document.getElementById("meditationNotes").value,
 
       exercise_response:
-        document.getElementById("exerciseResponse").value,
+        buildExerciseResponse(),
 
       action:
         document.getElementById("action").value,
@@ -1075,7 +1256,19 @@
         document.getElementById("eveningIntegration").value,
 
       reaction:
-        document.getElementById("reaction").value
+        document.getElementById("reaction").value,
+
+      presence:
+        parseScore("presenceScore"),
+
+      impulse_control:
+        parseScore("impulseScore"),
+
+      values_coherence:
+        parseScore("valuesScore"),
+
+      self_relation:
+        parseScore("selfRelationScore")
     };
 
 
@@ -1126,6 +1319,11 @@
     document.getElementById("eveningIntegration").value = "";
 
     document.getElementById("reaction").value = "";
+
+    document.getElementById("presenceScore").value = "";
+    document.getElementById("impulseScore").value = "";
+    document.getElementById("valuesScore").value = "";
+    document.getElementById("selfRelationScore").value = "";
 
     document.getElementById("saveStatus").textContent = "";
   }
@@ -1529,38 +1727,165 @@
      EMOJIS
      ============================================================ */
 
+  let activeEmojiField = "journalTitle";
+
+  function setEmojiField(id) {
+    activeEmojiField = id;
+  }
+
   function insertEmoji(emoji) {
 
-    const textarea =
-      document.getElementById("journalContent");
+    const field =
+      document.getElementById(activeEmojiField) ||
+      document.getElementById("journalTitle");
 
     const start =
-      textarea.selectionStart;
+      typeof field.selectionStart === "number"
+        ? field.selectionStart
+        : field.value.length;
 
     const end =
-      textarea.selectionEnd;
+      typeof field.selectionEnd === "number"
+        ? field.selectionEnd
+        : field.value.length;
 
-    const text =
-      textarea.value;
+    const text = field.value;
 
-
-    textarea.value =
+    field.value =
       text.substring(0, start) +
       emoji +
       text.substring(end);
 
+    field.focus();
 
-    textarea.focus();
-
-    textarea.selectionStart =
-      textarea.selectionEnd =
+    field.selectionStart =
+      field.selectionEnd =
         start + emoji.length;
   }
 
 
-  /* ============================================================
+  function getExerciseIcon(title) {
+    const t = String(title || "").toLowerCase();
+    if (t.includes("souverain") || t.includes("contrôle")) return "🏛️";
+    if (t.includes("désir") || t.includes("attachement")) return "🔥";
+    if (t.includes("jugement")) return "⚖️";
+    if (t.includes("persona")) return "🎭";
+    if (t.includes("ombre")) return "🌑";
+    if (t.includes("anima") || t.includes("animus")) return "🪞";
+    if (t.includes("complex")) return "🧩";
+    if (t.includes("caractère")) return "🛡️";
+    if (t.includes("sens") || t.includes("self")) return "🧭";
+    if (t.includes("relation")) return "❤️";
+    if (t.includes("intégration")) return "☯️";
+    if (t.includes("autonomie")) return "🌱";
+    return "🧭";
+  }
+
+  function parseScore(id) {
+    const value = document.getElementById(id).value;
+    return value === "" ? null : parseInt(value, 10);
+  }
+
+  /*
+     EXERCICES INTERACTIFS
+     */
+
+  function renderInteractiveExercise(text) {
+    const container = document.getElementById("interactiveExercise");
+    const lower = (text || "").toLowerCase();
+
+    container.innerHTML = "";
+
+    // Tableau demandé explicitement par l'exercice du Jour 1 / exercices similaires.
+    if (lower.includes("faites trois colonnes") ||
+        (lower.includes("sous mon contrôle") &&
+         lower.includes("influence partielle") &&
+         lower.includes("hors de mon contrôle"))) {
+
+      container.innerHTML = `
+        <div class="exercise-section">
+          <div class="exercise-section-title">📋 Mes préoccupations</div>
+          <p>Classe tes préoccupations réelles. Tu peux remplir <strong>jusqu'à 15 lignes</strong> : aucune ligne n'est obligatoire.</p>
+
+          <div class="control-table-wrap">
+            <table class="control-table">
+              <thead>
+                <tr>
+                  <th>🟢 Sous mon contrôle</th>
+                  <th>🟡 Influence partielle</th>
+                  <th>🔴 Hors de mon contrôle</th>
+                </tr>
+              </thead>
+              <tbody id="controlTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-actions">
+            <button class="secondary" type="button" onclick="addControlRow()">＋ Ajouter une ligne</button>
+            <button class="secondary" type="button" onclick="removeControlRow()">− Retirer la dernière ligne</button>
+          </div>
+
+          <div class="response-box">
+            <label for="controlActionResponse">🎯 Actions que je choisis de faire</label>
+            <textarea id="controlActionResponse" placeholder="Pour chaque préoccupation sous mon contrôle, quelle petite action puis-je réellement accomplir ?"></textarea>
+          </div>
+
+          <div class="response-box">
+            <label for="controlObservationResponse">✍️ Trace écrite</label>
+            <textarea id="controlObservationResponse" placeholder="Note ce que tu as observé, pas ce que tu aurais voulu observer."></textarea>
+          </div>
+
+          <div class="response-box">
+            <label for="controlDecisionResponse">🎯 Décision sans validation</label>
+            <textarea id="controlDecisionResponse" placeholder="Quelle petite décision ai-je prise sans demander d'avis ni rechercher de validation ?"></textarea>
+          </div>
+        </div>
+      `;
+
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
+  }
+
+  function addControlRow(values = ["", "", ""]) {
+    const body = document.getElementById("controlTableBody");
+    if (!body || body.children.length >= 15) return;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><textarea placeholder="Préoccupation..." data-control-col="0"></textarea></td>
+      <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
+      <td><textarea placeholder="Préoccupation..." data-control-col="2"></textarea></td>
+    `;
+
+    body.appendChild(row);
+
+    const fields = row.querySelectorAll("textarea");
+    fields.forEach((field, index) => field.value = values[index] || "");
+  }
+
+  function removeControlRow() {
+    const body = document.getElementById("controlTableBody");
+    if (body && body.children.length > 0) {
+      body.removeChild(body.lastElementChild);
+    }
+  }
+
+  function collectControlTable() {
+    const body = document.getElementById("controlTableBody");
+    if (!body) return "";
+
+    const rows = [...body.querySelectorAll("tr")];
+    return rows.map((row, index) => {
+      const cells = [...row.querySelectorAll("textarea")].map(t => t.value.trim());
+      return `${index + 1}. Contrôle: ${cells[0] || ""} | Influence: ${cells[1] || ""} | Hors contrôle: ${cells[2] || ""}`;
+    }).filter(line => !line.endsWith("Hors contrôle: ")).join("\n");
+  }
+
+  /*
      FORMATAGE PROGRAMME
-     ============================================================ */
+     */
+
+
 
   function formatText(text) {
 
