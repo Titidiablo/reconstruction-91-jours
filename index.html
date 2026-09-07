@@ -78,12 +78,13 @@
 
     .nav-buttons button {
       transition: all 0.15s ease;
+      font-weight: 500;
     }
 
     .nav-buttons button.nav-active {
       background: #222;
       color: white;
-      box-shadow: 0 0 0 3px rgba(34,34,34,0.12);
+      box-shadow: 0 0 0 3px rgba(34,34,34,0.15);
       font-weight: bold;
     }
 
@@ -189,7 +190,7 @@
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .exercise-heading-icon {
@@ -204,30 +205,41 @@
     .exercise-subtitle {
       color: #666;
       font-size: 16px;
-      margin: 0 0 24px 40px;
+      margin: 0 0 22px 40px;
       font-style: italic;
     }
 
     .exercise-section {
-      margin-top: 24px;
-      padding-top: 20px;
+      margin-top: 22px;
+      padding-top: 18px;
       border-top: 1px solid #e1ded8;
+    }
+
+    .exercise-section:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
     }
 
     .exercise-section-title {
       font-size: 17px;
       font-weight: bold;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+    }
+
+    .exercise-text {
+      margin: 0;
+      white-space: pre-wrap;
     }
 
     .response-box {
-      margin-top: 12px;
+      margin-top: 16px;
     }
 
     .response-box label {
       display: block;
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
     .response-box textarea {
@@ -236,7 +248,7 @@
 
     .control-table-wrap {
       overflow-x: auto;
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     .control-table {
@@ -271,7 +283,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     .score-item {
@@ -645,6 +657,79 @@
           placeholder="Comment ai-je réagi ?">
         </textarea>
 
+
+
+        <h3 class="section-title">📊 Mes scores du jour</h3>
+
+        <div class="score-grid">
+          <div class="score-item">
+            <label for="presenceScore">🧘 Présence</label>
+            <select id="presenceScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+
+          <div class="score-item">
+            <label for="impulseScore">🛑 Maîtrise de l'impulsion</label>
+            <select id="impulseScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+
+          <div class="score-item">
+            <label for="valuesScore">🧭 Cohérence avec mes valeurs</label>
+            <select id="valuesScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+
+          <div class="score-item">
+            <label for="selfRelationScore">❤️ Relation à moi-même</label>
+            <select id="selfRelationScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+        </div>
 
         <button
           class="primary"
@@ -1102,17 +1187,16 @@
 
 
     document.getElementById("exerciseTitle").textContent =
-      data.title;
+      getMainTitle(data.title);
 
     document.getElementById("exerciseIcon").textContent =
       getExerciseIcon(data.title);
 
-    const subtitleParts = String(data.title || "").split(" — ");
     document.getElementById("exerciseSubtitle").textContent =
-      subtitleParts.length > 1 ? subtitleParts.slice(1).join(" — ") : "";
+      getSubtitle(data.title);
 
     document.getElementById("exerciseContent").innerHTML =
-      formatText(data.content);
+      formatExerciseContent(data.content);
 
     renderInteractiveExercise(data.content);
 
@@ -1197,6 +1281,7 @@
   }
 
 
+
   function buildExerciseResponse() {
     const base = document.getElementById("exerciseResponse").value.trim();
     const table = collectControlTable();
@@ -1208,10 +1293,23 @@
     if (!table && !action && !observation && !decision) return base;
 
     let result = base;
-    if (table) result += (result ? "\n\n" : "") + "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table;
-    if (action) result += (result ? "\n\n" : "") + "ACTIONS\n" + action;
-    if (observation) result += (result ? "\n\n" : "") + "TRACE ÉCRITE\n" + observation;
-    if (decision) result += (result ? "\n\n" : "") + "DÉCISION SANS VALIDATION\n" + decision;
+
+    if (table) {
+      result += (result ? "\n\n" : "") +
+        "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table;
+    }
+
+    if (action) {
+      result += (result ? "\n\n" : "") + "ACTIONS\n" + action;
+    }
+
+    if (observation) {
+      result += (result ? "\n\n" : "") + "TRACE ÉCRITE\n" + observation;
+    }
+
+    if (decision) {
+      result += (result ? "\n\n" : "") + "DÉCISION SANS VALIDATION\n" + decision;
+    }
 
     return result;
   }
@@ -1764,8 +1862,18 @@
   }
 
 
+  function getMainTitle(title) {
+    return String(title || "").split(" — ")[0].trim();
+  }
+
+  function getSubtitle(title) {
+    const parts = String(title || "").split(" — ");
+    return parts.length > 1 ? parts.slice(1).join(" — ").trim() : "";
+  }
+
   function getExerciseIcon(title) {
     const t = String(title || "").toLowerCase();
+
     if (t.includes("souverain") || t.includes("contrôle")) return "🏛️";
     if (t.includes("désir") || t.includes("attachement")) return "🔥";
     if (t.includes("jugement")) return "⚖️";
@@ -1778,34 +1886,116 @@
     if (t.includes("relation")) return "❤️";
     if (t.includes("intégration")) return "☯️";
     if (t.includes("autonomie")) return "🌱";
+
     return "🧭";
   }
 
-  function parseScore(id) {
-    const value = document.getElementById(id).value;
-    return value === "" ? null : parseInt(value, 10);
+  function formatExerciseContent(text) {
+    const raw = String(text || "").replace(/\r/g, "").trim();
+
+    if (!raw) return "";
+
+    const lower = raw.toLowerCase();
+
+    // L'exercice du Jour 1 possède son propre tableau interactif.
+    // On n'affiche donc pas la phrase qui demandait de créer les colonnes.
+    if (
+      lower.includes("faites trois colonnes") ||
+      (
+        lower.includes("sous mon contrôle") &&
+        lower.includes("influence partielle") &&
+        lower.includes("hors de mon contrôle")
+      )
+    ) {
+      return `
+        <div class="exercise-section">
+          <div class="exercise-section-title">🧭 PRATIQUE DU JOUR</div>
+          <p class="exercise-text">
+            Classe jusqu'à <strong>15 préoccupations réelles</strong> dans le tableau ci-dessous.
+            Pour chaque préoccupation qui dépend de toi, identifie une action concrète.
+          </p>
+        </div>
+      `;
+    }
+
+    const lines = raw
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    const headings = {
+      "PRATIQUE DU JOUR": "🧭",
+      "ACTE DE TERRAIN": "🎯",
+      "SOIR — INTÉGRATION": "🌙",
+      "SOIR - INTÉGRATION": "🌙",
+      "SCORE": "📊"
+    };
+
+    let output = "";
+    let currentSection = false;
+
+    for (const line of lines) {
+      const normalized = line
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+
+      if (Object.prototype.hasOwnProperty.call(headings, normalized)) {
+        if (currentSection) output += "</div>";
+
+        // Le score est affiché par les contrôles 1–10 du journal.
+        if (normalized === "SCORE") {
+          currentSection = false;
+          continue;
+        }
+
+        output += `
+          <div class="exercise-section">
+            <div class="exercise-section-title">
+              ${headings[normalized]} ${escapeHtml(line)}
+            </div>
+        `;
+        currentSection = true;
+      } else {
+        if (!currentSection) {
+          output += `
+            <div class="exercise-section">
+              <p class="exercise-text">${escapeHtml(line)}</p>
+            </div>
+          `;
+        } else {
+          output += `<p class="exercise-text">${escapeHtml(line)}</p>`;
+        }
+      }
+    }
+
+    if (currentSection) output += "</div>";
+
+    return output;
   }
 
-  /*
-     EXERCICES INTERACTIFS
-     */
 
   function renderInteractiveExercise(text) {
     const container = document.getElementById("interactiveExercise");
-    const lower = (text || "").toLowerCase();
+    const lower = String(text || "").toLowerCase();
 
     container.innerHTML = "";
 
-    // Tableau demandé explicitement par l'exercice du Jour 1 / exercices similaires.
-    if (lower.includes("faites trois colonnes") ||
-        (lower.includes("sous mon contrôle") &&
-         lower.includes("influence partielle") &&
-         lower.includes("hors de mon contrôle"))) {
-
+    if (
+      lower.includes("faites trois colonnes") ||
+      (
+        lower.includes("sous mon contrôle") &&
+        lower.includes("influence partielle") &&
+        lower.includes("hors de mon contrôle")
+      )
+    ) {
       container.innerHTML = `
         <div class="exercise-section">
           <div class="exercise-section-title">📋 Mes préoccupations</div>
-          <p>Classe tes préoccupations réelles. Tu peux remplir <strong>jusqu'à 15 lignes</strong> : aucune ligne n'est obligatoire.</p>
+          <p class="exercise-text">
+            Tu peux renseigner jusqu'à <strong>15 préoccupations</strong>.
+            Tu n'es pas obligé de remplir toutes les lignes.
+          </p>
 
           <div class="control-table-wrap">
             <table class="control-table">
@@ -1826,8 +2016,8 @@
           </div>
 
           <div class="response-box">
-            <label for="controlActionResponse">🎯 Actions que je choisis de faire</label>
-            <textarea id="controlActionResponse" placeholder="Pour chaque préoccupation sous mon contrôle, quelle petite action puis-je réellement accomplir ?"></textarea>
+            <label for="controlActionResponse">🎯 Actions concrètes</label>
+            <textarea id="controlActionResponse" placeholder="Pour les préoccupations sous ton contrôle, quelles actions peux-tu réellement accomplir ?"></textarea>
           </div>
 
           <div class="response-box">
@@ -1837,11 +2027,12 @@
 
           <div class="response-box">
             <label for="controlDecisionResponse">🎯 Décision sans validation</label>
-            <textarea id="controlDecisionResponse" placeholder="Quelle petite décision ai-je prise sans demander d'avis ni rechercher de validation ?"></textarea>
+            <textarea id="controlDecisionResponse" placeholder="Quelle petite décision as-tu prise sans demander d'avis ni rechercher de validation ?"></textarea>
           </div>
         </div>
       `;
 
+      // Seulement 3 lignes de départ : l'utilisateur peut en ajouter jusqu'à 15.
       for (let i = 0; i < 3; i++) addControlRow();
     }
   }
@@ -1851,6 +2042,7 @@
     if (!body || body.children.length >= 15) return;
 
     const row = document.createElement("tr");
+
     row.innerHTML = `
       <td><textarea placeholder="Préoccupation..." data-control-col="0"></textarea></td>
       <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
@@ -1860,7 +2052,9 @@
     body.appendChild(row);
 
     const fields = row.querySelectorAll("textarea");
-    fields.forEach((field, index) => field.value = values[index] || "");
+    fields.forEach((field, index) => {
+      field.value = values[index] || "";
+    });
   }
 
   function removeControlRow() {
@@ -1874,17 +2068,27 @@
     const body = document.getElementById("controlTableBody");
     if (!body) return "";
 
-    const rows = [...body.querySelectorAll("tr")];
-    return rows.map((row, index) => {
-      const cells = [...row.querySelectorAll("textarea")].map(t => t.value.trim());
-      return `${index + 1}. Contrôle: ${cells[0] || ""} | Influence: ${cells[1] || ""} | Hors contrôle: ${cells[2] || ""}`;
-    }).filter(line => !line.endsWith("Hors contrôle: ")).join("\n");
+    return [...body.querySelectorAll("tr")]
+      .map((row, index) => {
+        const cells = [...row.querySelectorAll("textarea")]
+          .map(t => t.value.trim());
+
+        if (!cells.some(Boolean)) return "";
+
+        return `${index + 1}. Contrôle: ${cells[0] || ""} | Influence: ${cells[1] || ""} | Hors contrôle: ${cells[2] || ""}`;
+      })
+      .filter(Boolean)
+      .join("\n");
   }
 
-  /*
-     FORMATAGE PROGRAMME
-     */
+  function parseScore(id) {
+    const value = document.getElementById(id)?.value ?? "";
+    return value === "" ? null : parseInt(value, 10);
+  }
 
+  /* ============================================================
+     FORMATAGE PROGRAMME
+     ============================================================ */
 
 
   function formatText(text) {
