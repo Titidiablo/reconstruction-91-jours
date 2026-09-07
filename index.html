@@ -466,6 +466,13 @@
     .inline-response label { display:block; font-weight:bold; margin-bottom:5px; }
     .inline-response textarea { min-height:95px; margin:0; }
     .inline-response.compact textarea { min-height:80px; }
+    .score-chart-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+    .score-chart-header .section-title { margin:0; }
+    .score-chart-toggle { margin:0; width:34px; height:34px; padding:0; border-radius:50%; border:1px solid #ccc; background:#e8e5df; color:#222; font-size:18px; line-height:1; cursor:pointer; }
+    .score-chart-toggle:hover { transform:translateY(-1px); }
+    .score-chart-body { overflow:hidden; }
+    .score-chart-body.collapsed { display:none; }
+
     @media (max-width:700px) { .score-chart-wrap { height:300px; } }
 
     @media (max-width: 600px) {
@@ -608,7 +615,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V21</div>
+  <div class="app-version-v18">V24</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -734,36 +741,8 @@
 
       </div>
 
-      <!-- Évolution des scores -->
-      <div class="card score-chart-card">
-        <div class="section-title">📈 Évolution de mes scores</div>
-        <div class="score-chart-toolbar">
-          <button type="button" class="secondary active" id="chartRange91" onclick="setChartRange(91)">91 jours</button>
-          <button type="button" class="secondary" id="chartRange30" onclick="setChartRange(30)">30 derniers</button>
-          <button type="button" class="secondary" id="chartRange7" onclick="setChartRange(7)">7 derniers</button>
-        </div>
-        <div class="score-chart-wrap"><canvas id="scoreEvolutionChart"></canvas></div>
-        <p id="scoreChartEmpty" class="empty hidden">Tes scores apparaîtront ici au fur et à mesure que tu complèteras tes journées.</p>
-      </div>
-
-      <!-- Évolution des scores -->
-      <div class="card chart-card">
-        <h2 class="section-title">📈 Évolution de mes scores</h2>
-        <div class="chart-toolbar">
-          <button id="chart7Button" onclick="setChartRange(7)">7 derniers jours</button>
-          <button id="chart30Button" onclick="setChartRange(30)">30 derniers jours</button>
-          <button id="chart90Button" class="active" onclick="setChartRange(90)">90 jours</button>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="scoreEvolutionChart"></canvas>
-        </div>
-        <div id="chartStatus" class="empty">Les scores apparaîtront ici après tes premières sauvegardes.</div>
-      </div>
-
-
       <!-- Navigation jours -->
-
-      <div class="day-navigation">
+      <div class="day-navigation day-navigation-top">
 
         <button
           class="secondary"
@@ -779,6 +758,24 @@
 
       </div>
 
+      <!-- Évolution des scores -->
+      <div class="card chart-card score-chart-card">
+        <div class="score-chart-header" onclick="toggleScoreEvolution()" role="button" tabindex="0" onkeydown="if(event.key==="Enter"||event.key===" "){toggleScoreEvolution();}">
+          <h2 class="section-title">📈 Évolution de mes scores</h2>
+          <button id="scoreEvolutionToggle" class="score-chart-toggle" type="button" aria-expanded="true" aria-controls="scoreEvolutionBody" onclick="event.stopPropagation(); toggleScoreEvolution();">▼</button>
+        </div>
+        <div id="scoreEvolutionBody" class="score-chart-body">
+        <div class="chart-toolbar">
+          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 derniers jours</button>
+          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 derniers jours</button>
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="scoreEvolutionChart"></canvas>
+        </div>
+        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
+        </div>
+      </div>
 
       <!-- Contenu du jour -->
 
@@ -1490,6 +1487,7 @@
       data.exercise_response || "";
 
     restoreWeeklyScores(data.exercise_response || "");
+    restoreControlTable(data.exercise_response || "");
     restoreInlineResponses(data);
 
     document.getElementById("action").value =
@@ -1640,7 +1638,13 @@
 
       status.textContent =
         "✅ Journée sauvegardée dans le cloud.";
-      await loadScoreEvolution();
+      await loadScoreHistory();
+      setTimeout(() => {
+        if (status.textContent === "✅ Journée sauvegardée dans le cloud.") {
+          status.textContent = "";
+          status.className = "";
+        }
+      }, 7000);
     }
   }
 
@@ -1668,46 +1672,6 @@
     document.getElementById("saveStatus").textContent = "";
   }
 
-
-  /* ============================================================
-     ÉVOLUTION DES SCORES
-     ============================================================ */
-  async function loadScoreEvolution() {
-    const { data, error } = await supabaseClient
-      .from("daily_entries")
-      .select("day_number,presence,impulse_control,values_coherence,self_relation")
-      .order("day_number", { ascending: true });
-    if (error) { console.error(error); return; }
-    allDailyEntries = data || [];
-    renderScoreEvolution();
-  }
-
-  function setChartRange(range) {
-    scoreChartRange = range;
-    [91,30,7].forEach(n => document.getElementById("chartRange"+n)?.classList.toggle("active", n === range));
-    renderScoreEvolution();
-  }
-
-  function renderScoreEvolution() {
-    const canvas = document.getElementById("scoreEvolutionChart");
-    const empty = document.getElementById("scoreChartEmpty");
-    if (!canvas || typeof Chart === "undefined") return;
-    const entries = allDailyEntries.filter(e => e.day_number >= Math.max(1, 92 - scoreChartRange));
-    const hasScores = entries.some(e => [e.presence,e.impulse_control,e.values_coherence,e.self_relation].some(v => v !== null && v !== undefined));
-    empty?.classList.toggle("hidden", hasScores);
-    canvas.parentElement.classList.toggle("hidden", !hasScores);
-    if (!hasScores) { if(scoreChart){scoreChart.destroy();scoreChart=null;} return; }
-    const labels = Array.from({length: scoreChartRange}, (_,i) => Math.max(1,92-scoreChartRange)+i);
-    const byDay = new Map(allDailyEntries.map(e => [Number(e.day_number), e]));
-    const values = key => labels.map(d => { const v=byDay.get(d)?.[key]; return v==null ? null : Number(v); });
-    if (scoreChart) scoreChart.destroy();
-    scoreChart = new Chart(canvas, { type:"line", data:{ labels:labels.map(d=>"J"+d), datasets:[
-      {label:"Présence",data:values("presence"),tension:.25,spanGaps:true},
-      {label:"Maîtrise de l'impulsion",data:values("impulse_control"),tension:.25,spanGaps:true},
-      {label:"Cohérence avec mes valeurs",data:values("values_coherence"),tension:.25,spanGaps:true},
-      {label:"Relation à moi-même",data:values("self_relation"),tension:.25,spanGaps:true}
-    ]}, options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},scales:{y:{min:1,max:10,ticks:{stepSize:1},title:{display:true,text:"Score / 10"}},x:{ticks:{maxTicksLimit:13}}},plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}/10`}}}}});
-  }
 
   /* ============================================================
      JOURNAL INTIME
@@ -2191,7 +2155,7 @@
         <div class="exercise-section">
           <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">🧭 PRATIQUE DU JOUR</div>
           <p class="exercise-text">Classe jusqu'à <strong>15 préoccupations réelles</strong> dans le tableau ci-dessous. Pour chaque préoccupation qui dépend de toi, identifie une action concrète.</p>
-          <div class="inline-response"><label for="practiceResponse">✍️ Ma réponse</label><textarea id="practiceResponse" placeholder="Quelles préoccupations identifies-tu ?"></textarea></div>
+          
         </div>
       `;
     }
@@ -2251,7 +2215,7 @@
         <div class="exercise-section">
           <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">🧭 PRATIQUE DU JOUR</div>
           <p class="exercise-text">${escapeHtml(practiceText)}</p>
-          <div class="inline-response"><label for="practiceResponse">✍️ Ma réponse</label><textarea id="practiceResponse" placeholder="Écris ta réponse à cette pratique..."></textarea></div>
+          
         </div>
       `;
     }
@@ -2504,6 +2468,20 @@
      GRAPHIQUE ÉVOLUTION DES SCORES
      ============================================================ */
 
+  function toggleScoreEvolution() {
+    const body = document.getElementById("scoreEvolutionBody");
+    const button = document.getElementById("scoreEvolutionToggle");
+    if (!body || !button) return;
+
+    const collapsed = body.classList.toggle("collapsed");
+    button.textContent = collapsed ? "▶" : "▼";
+    button.setAttribute("aria-expanded", String(!collapsed));
+
+    if (!collapsed && scoreEvolutionChart) {
+      setTimeout(() => scoreEvolutionChart.resize(), 50);
+    }
+  }
+
   async function loadScoreHistory() {
     const {
       data: {
@@ -2545,27 +2523,29 @@
     const status = document.getElementById("chartStatus");
     if (!canvas || typeof Chart === "undefined") return;
 
-    const startDay = Math.max(1, 91 - chartRange + 1);
-    const rows = dailyScoreHistory.filter(row => Number(row.day_number) >= startDay);
-
-    if (!rows.length) {
-      if (scoreEvolutionChart) {
-        scoreEvolutionChart.destroy();
-        scoreEvolutionChart = null;
-      }
-      if (status) {
-        status.textContent = "Aucun score enregistré sur cette période.";
-        status.classList.remove("hidden");
-      }
-      return;
-    }
-
-    if (status) status.classList.add("hidden");
+    const endDay = 91;
+    const startDay = Math.max(1, endDay - chartRange + 1);
+    const rows = dailyScoreHistory.filter(row => {
+      const d = Number(row.day_number);
+      return d >= startDay && d <= endDay;
+    });
 
     const labels = [];
-    const map = new Map(rows.map(row => [Number(row.day_number), row]));
+    const map = new Map(dailyScoreHistory.map(row => [Number(row.day_number), row]));
 
-    for (let day = startDay; day <= 91; day++) labels.push("J" + day);
+    for (let day = startDay; day <= endDay; day++) labels.push("J" + day);
+
+    const hasScores = rows.some(row =>
+      [row.presence, row.impulse_control, row.values_coherence, row.self_relation]
+        .some(v => v !== null && v !== undefined)
+    );
+
+    if (status) {
+      status.textContent = hasScores
+        ? ""
+        : "Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.";
+      status.classList.toggle("hidden", hasScores);
+    }
 
     const value = (day, key) => {
       const row = map.get(day);
