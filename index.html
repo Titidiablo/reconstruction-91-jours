@@ -205,13 +205,13 @@
     .exercise-subtitle {
       color: #666;
       font-size: 16px;
-      margin: 0 0 22px 40px;
+      margin: 0 0 10px 40px;
       font-style: italic;
     }
 
     .exercise-section {
-      margin-top: 22px;
-      padding-top: 18px;
+      margin-top: 10px;
+      padding-top: 8px;
       border-top: 1px solid #e1ded8;
     }
 
@@ -224,7 +224,7 @@
     .exercise-section-title {
       font-size: 17px;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
     }
 
     .exercise-text {
@@ -281,9 +281,10 @@
 
     .score-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
       margin-top: 12px;
+      align-items: stretch;
     }
 
     .score-item {
@@ -291,6 +292,10 @@
       border: 1px solid #ddd9d1;
       border-radius: 10px;
       padding: 12px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .score-item label {
@@ -301,6 +306,8 @@
 
     .score-item select {
       margin: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     @media (max-width: 700px) {
@@ -1910,10 +1917,7 @@
       return `
         <div class="exercise-section">
           <div class="exercise-section-title">🧭 PRATIQUE DU JOUR</div>
-          <p class="exercise-text">
-            Classe jusqu'à <strong>15 préoccupations réelles</strong> dans le tableau ci-dessous.
-            Pour chaque préoccupation qui dépend de toi, identifie une action concrète.
-          </p>
+          <p class="exercise-text">Classe jusqu'à <strong>15 préoccupations réelles</strong> dans le tableau ci-dessous. Pour chaque préoccupation qui dépend de toi, identifie une action concrète.</p>
         </div>
       `;
     }
@@ -1992,10 +1996,7 @@
       container.innerHTML = `
         <div class="exercise-section">
           <div class="exercise-section-title">📋 Mes préoccupations</div>
-          <p class="exercise-text">
-            Tu peux renseigner jusqu'à <strong>15 préoccupations</strong>.
-            Tu n'es pas obligé de remplir toutes les lignes.
-          </p>
+          <p class="exercise-text">Tu peux renseigner jusqu'à <strong>15 préoccupations</strong>. Tu n'es pas obligé de remplir toutes les lignes.</p>
 
           <div class="control-table-wrap">
             <table class="control-table">
