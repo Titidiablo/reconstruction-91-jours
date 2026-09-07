@@ -520,7 +520,7 @@
       }
     }
   
-/* V35 - suppression des lignes du tableau fiabilisée + historique V34 conservé */
+/* V36 - suppression des lignes du tableau fiabilisée + historique V34 conservé */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V35</div>
+  <div class="app-version-v18">V36</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -2455,7 +2455,7 @@
       <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
       <td><textarea placeholder="Préoccupation..." data-control-col="2"></textarea></td>
       <td class="control-delete-cell">
-        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne" onclick="deleteControlRow(this); return false;">🗑️</button>
+        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne" onclick="window.deleteControlRow(this); return false;">🗑️</button>
       </td>
     `;
 
@@ -2467,14 +2467,22 @@
     });
   }
 
-  function deleteControlRow(button) {
-    const row = button?.closest("tr");
-    if (!row) return;
-
-    // Suppression directe du DOM : la ligne disparaît immédiatement.
-    // Le prochain enregistrement sérialisera exactement les lignes restantes.
+  window.deleteControlRow = function(button) {
+    const row = button && button.closest ? button.closest("tr") : null;
+    if (!row) return false;
     row.remove();
-  }
+    return false;
+  };
+
+  // Délégation d'événement : même si le tableau est reconstruit dynamiquement,
+  // un clic sur une corbeille déclenche toujours la suppression de la ligne.
+  document.addEventListener("click", function(event) {
+    const button = event.target.closest(".control-delete-button");
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.deleteControlRow(button);
+  });
 
   function removeControlRow() {
     const body = document.getElementById("controlTableBody");
