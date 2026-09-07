@@ -517,7 +517,7 @@
 }
 
 /* Badge discret */
-.app-version-v17 {
+.app-version-v18 {
   position: fixed;
   right: 12px;
   bottom: 10px;
@@ -533,10 +533,17 @@
 }
 </style>
 
+
+<style id="reconstruction-v18">
+#exerciseContent .exercise-trace-section {
+  margin-top: 2px !important;
+  margin-bottom: 8px !important;
+}
+</style>
 </head>
 
 <body>
-  <div class="app-version-v17">V17</div>
+  <div class="app-version-v18">V18</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -2036,13 +2043,11 @@
 
   function formatExerciseContent(text) {
     const raw = String(text || "").replace(/\r/g, "").trim();
-
     if (!raw) return "";
 
     const lower = raw.toLowerCase();
 
-    // L'exercice du Jour 1 possède son propre tableau interactif.
-    // On n'affiche donc pas la phrase qui demandait de créer les colonnes.
+    // Jour 1 : le tableau est un composant interactif spécifique.
     if (
       lower.includes("faites trois colonnes") ||
       (
@@ -2059,61 +2064,105 @@
       `;
     }
 
-    const lines = raw
-      .split("\n")
-      .map(line => line.trim())
-      .filter(Boolean);
+    /*
+      V18 — Le texte importé depuis le PDF est issu d'une mise en page
+      en colonnes : les titres PRATIQUE DU JOUR / ACTE DE TERRAIN sont
+      suivis du contenu des deux colonnes, puis de "Trace écrite".
 
-    const headings = {
-      "PRATIQUE DU JOUR": "🧭",
-      "ACTE DE TERRAIN": "🎯",
-      "SOIR — INTÉGRATION": "🌙",
-      "SOIR - INTÉGRATION": "🌙",
-      "SCORE": "📊"
-    ,
-      "SOIR — INTEGRATION": "🌙",
-      "SOIR - INTEGRATION": "🌙"
-    };
+      Le stockage SQL ne conserve malheureusement pas les colonnes.
+      On reconstruit donc ici la structure logique attendue :
+        PRATIQUE DU JOUR = texte de l'exercice
+        TRACE ÉCRITE      = observation
+        ACTE DE TERRAIN   = action concrète
+      puis SOIR — INTÉGRATION.
+    */
 
-    let output = "";
-    let currentSection = false;
+    const normalized = raw.replace(/\r/g, "");
+    const eveningMatch = normalized.search(/\n\s*SOIR\s*[—-]\s*INT[ÉE]GRATION\s*\n/i);
+    const beforeEvening = eveningMatch >= 0 ? normalized.slice(0, eveningMatch) : normalized;
+    const eveningPart = eveningMatch >= 0 ? normalized.slice(eveningMatch) : "";
 
-    for (const line of lines) {
-      const normalized = line
-        .replace(/\s+/g, " ")
-        .trim()
-        .toUpperCase();
+    const practiceMatch = beforeEvening.match(/PRATIQUE\s+DU\s+JOUR/i);
+    const actMatch = beforeEvening.match(/ACTE\s+DE\s+TERRAIN/i);
 
-      if (Object.prototype.hasOwnProperty.call(headings, normalized)) {
-        if (currentSection) output += "</div>";
+    let body = beforeEvening;
+    if (actMatch) body = beforeEvening.slice(actMatch.index + actMatch[0].length);
+    else if (practiceMatch) body = beforeEvening.slice(practiceMatch.index + practiceMatch[0].length);
 
-        // Le score est affiché par les contrôles 1–10 du journal.
-        if (normalized === "SCORE") {
-          currentSection = false;
-          continue;
-        }
+    body = body.trim();
 
-        output += `
-          <div class="exercise-section">
-            <div class="exercise-section-title">
-              ${headings[normalized]} ${escapeHtml(line)}
-            </div>
-        `;
-        currentSection = true;
+    // Le séparateur "Trace écrite :" permet de retrouver la fin de la pratique.
+    const traceMatch = body.match(/\bTrace\s+écrite\s*:\s*/i);
+    let practiceText = body;
+    let traceText = "";
+    let actText = "";
+
+    if (traceMatch) {
+      practiceText = body.slice(0, traceMatch.index).trim();
+      const afterTrace = body.slice(traceMatch.index + traceMatch[0].length).trim();
+
+      // Dans l'import issu du PDF, l'acte de terrain suit la phrase de trace écrite.
+      // On utilise le dernier segment de phrase comme acte lorsque plusieurs phrases existent.
+      const sentences = afterTrace.split(/(?<=[.!?])\s+/).filter(Boolean);
+      if (sentences.length > 1) {
+        traceText = sentences[0].trim();
+        actText = sentences.slice(1).join(" ").trim();
       } else {
-        if (!currentSection) {
-          output += `
-            <div class="exercise-section">
-              <p class="exercise-text">${escapeHtml(line)}</p>
-            </div>
-          `;
-        } else {
-          output += `<p class="exercise-text">${escapeHtml(line)}</p>`;
-        }
+        traceText = afterTrace;
       }
     }
 
-    if (currentSection) output += "</div>";
+    let output = "";
+
+    if (practiceText) {
+      output += `
+        <div class="exercise-section">
+          <div class="exercise-section-title">🧭 PRATIQUE DU JOUR</div>
+          <p class="exercise-text">${escapeHtml(practiceText)}</p>
+        </div>
+      `;
+    }
+
+    if (traceText) {
+      output += `
+        <div class="exercise-section exercise-trace-section">
+          <div class="exercise-section-title">✍️ TRACE ÉCRITE</div>
+          <p class="exercise-text">${escapeHtml(traceText)}</p>
+        </div>
+      `;
+    }
+
+    if (actText) {
+      output += `
+        <div class="exercise-section">
+          <div class="exercise-section-title">🎯 ACTE DE TERRAIN</div>
+          <p class="exercise-text">${escapeHtml(actText)}</p>
+        </div>
+      `;
+    }
+
+    // Si la structure n'a pas pu être reconstruite, on conserve le texte plutôt que de le perdre.
+    if (!output) {
+      const lines = normalized.split("\n").map(x => x.trim()).filter(Boolean);
+      output = lines.map(line => `<p class="exercise-text">${escapeHtml(line)}</p>`).join("");
+    }
+
+    // Ajout de la partie du soir : la question est affichée avant les champs de réponse.
+    if (eveningPart) {
+      const eveningBody = eveningPart
+        .replace(/^\s*SOIR\s*[—-]\s*INT[ÉE]GRATION\s*/i, "")
+        .replace(/^\s*SCORE\s*/i, "")
+        .trim();
+
+      if (eveningBody) {
+        output += `
+          <div class="exercise-section">
+            <div class="exercise-section-title">🌙 SOIR — INTÉGRATION</div>
+            <p class="exercise-text">${escapeHtml(eveningBody)}</p>
+          </div>
+        `;
+      }
+    }
 
     return output;
   }
