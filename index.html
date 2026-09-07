@@ -8,7 +8,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
   <style>
     * {
@@ -458,7 +457,7 @@
     }
 
     .score-chart-card { margin-top: 20px; }
-    .score-chart-wrap { position: relative; height: 360px; width: 100%; }
+    .score-chart-wrap { position: relative; height: 360px; width: 100%; display:block; }
     .score-chart-toolbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
     .score-chart-toolbar button { margin:0; }
     .score-chart-toolbar button.active { background:#222; color:#fff; }
@@ -615,7 +614,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V24</div>
+  <div class="app-version-v18">V26</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -765,12 +764,12 @@
           <button id="scoreEvolutionToggle" class="score-chart-toggle" type="button" aria-expanded="true" aria-controls="scoreEvolutionBody" onclick="event.stopPropagation(); toggleScoreEvolution();">▼</button>
         </div>
         <div id="scoreEvolutionBody" class="score-chart-body">
-        <div class="chart-toolbar">
+        <div class="score-chart-toolbar">
           <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 derniers jours</button>
           <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 derniers jours</button>
           <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>
         </div>
-        <div class="chart-wrap">
+        <div class="score-chart-wrap">
           <canvas id="scoreEvolutionChart"></canvas>
         </div>
         <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
@@ -1153,7 +1152,7 @@
   let allJournalEntries = [];
   let allDailyEntries = [];
   let scoreChart = null;
-  let scoreChartRange = 91;
+  let scoreChartRange = 90;
 
 
   /* ============================================================
@@ -1546,7 +1545,11 @@
     if (practice) parts.push("PRATIQUE DU JOUR\n" + practice);
     if (trace) parts.push("TRACE ÉCRITE\n" + trace);
     if (base && !practice && !trace) parts.push(base);
-    if (table) parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table);
+    // Le tableau doit être sauvegardé même lorsqu'il est vide : cela permet
+    // de mémoriser la suppression de toutes les lignes.
+    if (document.getElementById("controlTableBody")) {
+      parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table);
+    }
     if (decision) parts.push("DÉCISION SANS VALIDATION\n" + decision);
     if (weeklyScores) parts.push("BILAN DE SEMAINE — SCORES\n" + weeklyScores);
     return parts.join("\n\n");
@@ -1635,16 +1638,18 @@
     } else {
 
       status.className = "success";
+      status.textContent = "✅ Journée sauvegardée dans le cloud.";
 
-      status.textContent =
-        "✅ Journée sauvegardée dans le cloud.";
+      if (saveStatusTimer) clearTimeout(saveStatusTimer);
+      saveStatusTimer = setTimeout(() => {
+        status.textContent = "";
+        status.className = "";
+      }, 5000);
+
+      // Recharge les données réellement enregistrées : le tableau affiché
+      // doit correspondre à Supabase, y compris après suppression de lignes.
       await loadScoreHistory();
-      setTimeout(() => {
-        if (status.textContent === "✅ Journée sauvegardée dans le cloud.") {
-          status.textContent = "";
-          status.className = "";
-        }
-      }, 7000);
+      await loadExistingEntry();
     }
   }
 
@@ -2524,11 +2529,16 @@
     if (!canvas || typeof Chart === "undefined") return;
 
     const endDay = 91;
+    // Les plages sont les derniers jours du programme : 7, 30 ou 90.
+    // Pour 90 jours, on affiche J2 à J91 (90 jours). J1 reste visible
+    // dans la plage 90 uniquement si l'on choisit explicitement 91 jours.
     const startDay = Math.max(1, endDay - chartRange + 1);
-    const rows = dailyScoreHistory.filter(row => {
-      const d = Number(row.day_number);
-      return d >= startDay && d <= endDay;
-    });
+    const rows = dailyScoreHistory
+      .filter(row => {
+        const d = Number(row.day_number);
+        return Number.isFinite(d) && d >= startDay && d <= endDay;
+      })
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
 
     const labels = [];
     const map = new Map(dailyScoreHistory.map(row => [Number(row.day_number), row]));
@@ -2582,6 +2592,7 @@
 
     if (scoreEvolutionChart) scoreEvolutionChart.destroy();
 
+    canvas.style.display = "block";
     scoreEvolutionChart = new Chart(canvas.getContext("2d"), {
       type: "line",
       data: { labels, datasets },
