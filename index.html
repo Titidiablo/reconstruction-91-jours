@@ -7,6 +7,7 @@
   <title>Reconstruction — 91 jours</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
   <style>
     * {
@@ -235,6 +236,26 @@
       line-height: 1.25;
     }
 
+    .exercise-section-title.clickable-section-title {
+      cursor: pointer;
+      display: inline-block;
+      padding: 3px 7px;
+      margin-left: -7px !important;
+      border-radius: 7px;
+      transition: background .15s ease, transform .15s ease;
+    }
+
+    .exercise-section-title.clickable-section-title:hover {
+      background: #f0eee9;
+      transform: translateX(2px);
+    }
+
+    .exercise-section-title.clickable-section-title::after {
+      content: ' ↘';
+      font-size: 12px;
+      opacity: .45;
+    }
+
     .exercise-text {
       margin: 0 0 4px;
       white-space: pre-wrap;
@@ -325,6 +346,38 @@
       }
     }
 
+    .weekly-score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 4px;
+    }
+
+    .weekly-score-item {
+      background: #f7f5f1;
+      border: 1px solid #ddd9d1;
+      border-radius: 9px;
+      padding: 9px;
+    }
+
+    .weekly-score-item label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .weekly-score-item select {
+      margin: 0;
+      width: 100%;
+    }
+
+    @media (max-width: 700px) {
+      .weekly-score-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
     .content-text {
       white-space: pre-wrap;
       margin: 0;
@@ -402,6 +455,17 @@
       padding-bottom: 10px;
       margin-bottom: 20px;
     }
+
+    .score-chart-card { margin-top: 20px; }
+    .score-chart-wrap { position: relative; height: 360px; width: 100%; }
+    .score-chart-toolbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .score-chart-toolbar button { margin:0; }
+    .score-chart-toolbar button.active { background:#222; color:#fff; }
+    .inline-response { margin: 8px 0 0; }
+    .inline-response label { display:block; font-weight:bold; margin-bottom:5px; }
+    .inline-response textarea { min-height:95px; margin:0; }
+    .inline-response.compact textarea { min-height:80px; }
+    @media (max-width:700px) { .score-chart-wrap { height:300px; } }
 
     @media (max-width: 600px) {
       body {
@@ -543,7 +607,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V18</div>
+  <div class="app-version-v18">V20</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -669,6 +733,18 @@
 
       </div>
 
+      <!-- Évolution des scores -->
+      <div class="card score-chart-card">
+        <div class="section-title">📈 Évolution de mes scores</div>
+        <div class="score-chart-toolbar">
+          <button type="button" class="secondary active" id="chartRange91" onclick="setChartRange(91)">91 jours</button>
+          <button type="button" class="secondary" id="chartRange30" onclick="setChartRange(30)">30 derniers</button>
+          <button type="button" class="secondary" id="chartRange7" onclick="setChartRange(7)">7 derniers</button>
+        </div>
+        <div class="score-chart-wrap"><canvas id="scoreEvolutionChart"></canvas></div>
+        <p id="scoreChartEmpty" class="empty hidden">Tes scores apparaîtront ici au fur et à mesure que tu complèteras tes journées.</p>
+      </div>
+
 
       <!-- Navigation jours -->
 
@@ -749,25 +825,9 @@
         </textarea>
 
 
-        <label>
-          Réponse à l'exercice
-        </label>
-
-        <textarea
-          id="exerciseResponse"
-          placeholder="Écris ici ta réflexion...">
-        </textarea>
-
-
-        <label>
-          Action réalisée
-        </label>
-
-        <textarea
-          id="action"
-          placeholder="Quelle action as-tu réalisée ?">
-        </textarea>
-
+        <input type="hidden" id="exerciseResponse">
+        <input type="hidden" id="action">
+        <input type="hidden" id="eveningIntegration">
 
         <label>
           Ce que j'ai appris
@@ -776,16 +836,6 @@
         <textarea
           id="learning"
           placeholder="Qu'as-tu appris aujourd'hui ?">
-        </textarea>
-
-
-        <label>
-          Intégration du soir
-        </label>
-
-        <textarea
-          id="eveningIntegration"
-          placeholder="Qu'est-ce que tu retiens de cette journée ?">
         </textarea>
 
 
@@ -1089,6 +1139,9 @@
   let currentJournalEntryId = null;
 
   let allJournalEntries = [];
+  let allDailyEntries = [];
+  let scoreChart = null;
+  let scoreChartRange = 91;
 
 
   /* ============================================================
@@ -1193,6 +1246,7 @@
     await loadDay(currentDay);
 
     await loadJournalEntries();
+    await loadScoreEvolution();
   }
 
 
@@ -1379,6 +1433,17 @@
      JOURNAL DU PROGRAMME
      ============================================================ */
 
+  function restoreWeeklyScores(text) {
+    const raw = String(text || "");
+    const ids = ['weeklySilence','weeklyRumination','weeklyImpulsivity','weeklyValidation','weeklyJudgment','weeklyEnergy'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+      const m = raw.match(new RegExp(id + "\\s*:\\s*(\\d+)\\s*/\\s*10", "i"));
+      if (el && m) el.value = m[1];
+    });
+  }
+
   async function loadExistingEntry(dayNumber) {
 
     const {
@@ -1405,6 +1470,9 @@
 
     document.getElementById("exerciseResponse").value =
       data.exercise_response || "";
+
+    restoreWeeklyScores(data.exercise_response || "");
+    restoreInlineResponses(data);
 
     document.getElementById("action").value =
       data.action || "";
@@ -1433,36 +1501,39 @@
 
 
 
+  function restoreInlineResponses(data) {
+    const raw = String(data?.exercise_response || "");
+    const getBlock = (name, nextNames) => {
+      const re = new RegExp("(?:^|\\n)" + name + "\\n([\\s\\S]*?)(?=\\n(?:" + nextNames.join("|") + ")\\n|$)", "i");
+      const m = raw.match(re);
+      return m ? m[1].trim() : "";
+    };
+    const p = document.getElementById("practiceResponse");
+    const t = document.getElementById("traceResponse");
+    const a = document.getElementById("actionResponseInline");
+    const e = document.getElementById("eveningResponseInline");
+    if (p) p.value = getBlock("PRATIQUE DU JOUR", ["TRACE ÉCRITE","TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE","DÉCISION SANS VALIDATION","BILAN DE SEMAINE — SCORES"]);
+    if (t) t.value = getBlock("TRACE ÉCRITE", ["TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE","DÉCISION SANS VALIDATION","BILAN DE SEMAINE — SCORES"]);
+    if (a) a.value = data?.action || "";
+    if (e) e.value = data?.evening_integration || "";
+  }
+
   function buildExerciseResponse() {
-    const base = document.getElementById("exerciseResponse").value.trim();
+    const practice = document.getElementById("practiceResponse")?.value.trim() || "";
+    const trace = document.getElementById("traceResponse")?.value.trim() || "";
+    const base = document.getElementById("exerciseResponse")?.value.trim() || "";
     const table = collectControlTable();
-
-    const action = document.getElementById("controlActionResponse")?.value.trim() || "";
-    const observation = document.getElementById("controlObservationResponse")?.value.trim() || "";
     const decision = document.getElementById("controlDecisionResponse")?.value.trim() || "";
+    const weeklyScores = collectWeeklyScores();
 
-    if (!table && !action && !observation && !decision) return base;
-
-    let result = base;
-
-    if (table) {
-      result += (result ? "\n\n" : "") +
-        "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table;
-    }
-
-    if (action) {
-      result += (result ? "\n\n" : "") + "ACTIONS\n" + action;
-    }
-
-    if (observation) {
-      result += (result ? "\n\n" : "") + "TRACE ÉCRITE\n" + observation;
-    }
-
-    if (decision) {
-      result += (result ? "\n\n" : "") + "DÉCISION SANS VALIDATION\n" + decision;
-    }
-
-    return result;
+    let parts = [];
+    if (practice) parts.push("PRATIQUE DU JOUR\n" + practice);
+    if (trace) parts.push("TRACE ÉCRITE\n" + trace);
+    if (base && !practice && !trace) parts.push(base);
+    if (table) parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table);
+    if (decision) parts.push("DÉCISION SANS VALIDATION\n" + decision);
+    if (weeklyScores) parts.push("BILAN DE SEMAINE — SCORES\n" + weeklyScores);
+    return parts.join("\n\n");
   }
 
   async function saveEntry() {
@@ -1496,13 +1567,13 @@
         buildExerciseResponse(),
 
       action:
-        document.getElementById("action").value,
+        (document.getElementById("actionResponseInline")?.value || document.getElementById("action").value),
 
       learning:
         document.getElementById("learning").value,
 
       evening_integration:
-        document.getElementById("eveningIntegration").value,
+        (document.getElementById("eveningResponseInline")?.value || document.getElementById("eveningIntegration").value),
 
       reaction:
         document.getElementById("reaction").value,
@@ -1551,6 +1622,7 @@
 
       status.textContent =
         "✅ Journée sauvegardée dans le cloud.";
+      await loadScoreEvolution();
     }
   }
 
@@ -1573,10 +1645,51 @@
     document.getElementById("impulseScore").value = "";
     document.getElementById("valuesScore").value = "";
     document.getElementById("selfRelationScore").value = "";
+    ["practiceResponse","traceResponse","actionResponseInline","eveningResponseInline"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
 
     document.getElementById("saveStatus").textContent = "";
   }
 
+
+  /* ============================================================
+     ÉVOLUTION DES SCORES
+     ============================================================ */
+  async function loadScoreEvolution() {
+    const { data, error } = await supabaseClient
+      .from("daily_entries")
+      .select("day_number,presence,impulse_control,values_coherence,self_relation")
+      .order("day_number", { ascending: true });
+    if (error) { console.error(error); return; }
+    allDailyEntries = data || [];
+    renderScoreEvolution();
+  }
+
+  function setChartRange(range) {
+    scoreChartRange = range;
+    [91,30,7].forEach(n => document.getElementById("chartRange"+n)?.classList.toggle("active", n === range));
+    renderScoreEvolution();
+  }
+
+  function renderScoreEvolution() {
+    const canvas = document.getElementById("scoreEvolutionChart");
+    const empty = document.getElementById("scoreChartEmpty");
+    if (!canvas || typeof Chart === "undefined") return;
+    const entries = allDailyEntries.filter(e => e.day_number >= Math.max(1, 92 - scoreChartRange));
+    const hasScores = entries.some(e => [e.presence,e.impulse_control,e.values_coherence,e.self_relation].some(v => v !== null && v !== undefined));
+    empty?.classList.toggle("hidden", hasScores);
+    canvas.parentElement.classList.toggle("hidden", !hasScores);
+    if (!hasScores) { if(scoreChart){scoreChart.destroy();scoreChart=null;} return; }
+    const labels = Array.from({length: scoreChartRange}, (_,i) => Math.max(1,92-scoreChartRange)+i);
+    const byDay = new Map(allDailyEntries.map(e => [Number(e.day_number), e]));
+    const values = key => labels.map(d => { const v=byDay.get(d)?.[key]; return v==null ? null : Number(v); });
+    if (scoreChart) scoreChart.destroy();
+    scoreChart = new Chart(canvas, { type:"line", data:{ labels:labels.map(d=>"J"+d), datasets:[
+      {label:"Présence",data:values("presence"),tension:.25,spanGaps:true},
+      {label:"Maîtrise de l'impulsion",data:values("impulse_control"),tension:.25,spanGaps:true},
+      {label:"Cohérence avec mes valeurs",data:values("values_coherence"),tension:.25,spanGaps:true},
+      {label:"Relation à moi-même",data:values("self_relation"),tension:.25,spanGaps:true}
+    ]}, options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},scales:{y:{min:1,max:10,ticks:{stepSize:1},title:{display:true,text:"Score / 10"}},x:{ticks:{maxTicksLimit:13}}},plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y}/10`}}}}});
+  }
 
   /* ============================================================
      JOURNAL INTIME
@@ -2058,14 +2171,15 @@
     ) {
       return `
         <div class="exercise-section">
-          <div class="exercise-section-title">🧭 PRATIQUE DU JOUR</div>
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">🧭 PRATIQUE DU JOUR</div>
           <p class="exercise-text">Classe jusqu'à <strong>15 préoccupations réelles</strong> dans le tableau ci-dessous. Pour chaque préoccupation qui dépend de toi, identifie une action concrète.</p>
+          <div class="inline-response"><label for="practiceResponse">✍️ Ma réponse</label><textarea id="practiceResponse" placeholder="Quelles préoccupations identifies-tu ?"></textarea></div>
         </div>
       `;
     }
 
     /*
-      V18 — Le texte importé depuis le PDF est issu d'une mise en page
+      V19 — Le texte importé depuis le PDF est issu d'une mise en page
       en colonnes : les titres PRATIQUE DU JOUR / ACTE DE TERRAIN sont
       suivis du contenu des deux colonnes, puis de "Trace écrite".
 
@@ -2117,8 +2231,9 @@
     if (practiceText) {
       output += `
         <div class="exercise-section">
-          <div class="exercise-section-title">🧭 PRATIQUE DU JOUR</div>
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">🧭 PRATIQUE DU JOUR</div>
           <p class="exercise-text">${escapeHtml(practiceText)}</p>
+          <div class="inline-response"><label for="practiceResponse">✍️ Ma réponse</label><textarea id="practiceResponse" placeholder="Écris ta réponse à cette pratique..."></textarea></div>
         </div>
       `;
     }
@@ -2126,8 +2241,9 @@
     if (traceText) {
       output += `
         <div class="exercise-section exercise-trace-section">
-          <div class="exercise-section-title">✍️ TRACE ÉCRITE</div>
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">✍️ TRACE ÉCRITE</div>
           <p class="exercise-text">${escapeHtml(traceText)}</p>
+          <div class="inline-response"><label for="traceResponse">📝 Ma trace écrite</label><textarea id="traceResponse" placeholder="Note ce que tu as réellement observé..."></textarea></div>
         </div>
       `;
     }
@@ -2135,8 +2251,9 @@
     if (actText) {
       output += `
         <div class="exercise-section">
-          <div class="exercise-section-title">🎯 ACTE DE TERRAIN</div>
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('action')" title="Aller à la zone Action">🎯 ACTE DE TERRAIN</div>
           <p class="exercise-text">${escapeHtml(actText)}</p>
+          <div class="inline-response"><label for="actionResponseInline">🎯 Ce que j'ai fait</label><textarea id="actionResponseInline" placeholder="Quelle action as-tu réellement réalisée ?"></textarea></div>
         </div>
       `;
     }
@@ -2147,18 +2264,38 @@
       output = lines.map(line => `<p class="exercise-text">${escapeHtml(line)}</p>`).join("");
     }
 
-    // Ajout de la partie du soir : la question est affichée avant les champs de réponse.
+    // Soir — intégration. Le Jour 7 contient un bloc SCORE spécifique
+    // au bilan de semaine : on l'affiche comme de vrais scores interactifs.
     if (eveningPart) {
-      const eveningBody = eveningPart
+      let eveningBody = eveningPart
         .replace(/^\s*SOIR\s*[—-]\s*INT[ÉE]GRATION\s*/i, "")
         .replace(/^\s*SCORE\s*/i, "")
         .trim();
 
-      if (eveningBody) {
+      const weeklyMarker = eveningBody.search(/\bBilan de Semaine\s*1\b/i);
+      let eveningQuestion = weeklyMarker >= 0 ? eveningBody.slice(0, weeklyMarker).trim() : eveningBody;
+
+      output += `
+        <div class="exercise-section">
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('eveningIntegration')" title="Aller à la zone d'intégration">🌙 SOIR — INTÉGRATION</div>
+          ${eveningQuestion ? `<p class="exercise-text">${escapeHtml(eveningQuestion)}</p>` : ""}
+          <div class="inline-response"><label for="eveningResponseInline">🌙 Mon intégration</label><textarea id="eveningResponseInline" placeholder="Qu'est-ce que tu retiens de cette journée ?"></textarea></div>
+        </div>
+      `;
+
+      if (weeklyMarker >= 0) {
         output += `
           <div class="exercise-section">
-            <div class="exercise-section-title">🌙 SOIR — INTÉGRATION</div>
-            <p class="exercise-text">${escapeHtml(eveningBody)}</p>
+            <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('weeklyScores')" title="Aller aux scores du bilan">📊 SCORE — BILAN DE SEMAINE</div>
+            <p class="exercise-text">Indique ton niveau de 0 à 10 pour chaque indicateur :</p>
+            <div class="weekly-score-grid" id="weeklyScores">
+              ${weeklyScoreField('weeklySilence', 'Tolérance au silence')}
+              ${weeklyScoreField('weeklyRumination', 'Rumination')}
+              ${weeklyScoreField('weeklyImpulsivity', 'Impulsivité')}
+              ${weeklyScoreField('weeklyValidation', 'Autonomie / validation')}
+              ${weeklyScoreField('weeklyJudgment', 'Clarté du jugement')}
+              ${weeklyScoreField('weeklyEnergy', 'Énergie / engagement')}
+            </div>
           </div>
         `;
       }
@@ -2167,6 +2304,32 @@
     return output;
   }
 
+
+  function scrollToResponse(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      if (typeof target.focus === "function") target.focus({ preventScroll: true });
+    }, 450);
+  }
+
+  function weeklyScoreField(id, label) {
+    const options = ['<option value="">— / 10</option>'];
+    for (let i = 0; i <= 10; i++) {
+      if (i === 0) continue;
+      options.push(`<option value="${i}">${i} / 10</option>`);
+    }
+    return `<div class="weekly-score-item"><label for="${id}">${escapeHtml(label)}</label><select id="${id}" data-weekly-score="${id}">${options.join("")}</select></div>`;
+  }
+
+  function collectWeeklyScores() {
+    const ids = ['weeklySilence','weeklyRumination','weeklyImpulsivity','weeklyValidation','weeklyJudgment','weeklyEnergy'];
+    return ids.map(id => {
+      const el = document.getElementById(id);
+      return el && el.value ? `${id}: ${el.value}/10` : '';
+    }).filter(Boolean).join("\n");
+  }
 
   function renderInteractiveExercise(text) {
     const container = document.getElementById("interactiveExercise");
