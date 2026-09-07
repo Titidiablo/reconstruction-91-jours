@@ -440,27 +440,132 @@
 </style>
 
 
-<style id="version-badge">
-  .app-version {
-    position: fixed;
-    right: 14px;
-    bottom: 12px;
-    z-index: 9999;
-    padding: 6px 10px;
-    border: 1px solid #ddd;
-    border-radius: 999px;
-    background: rgba(255,255,255,.94);
-    color: #555;
-    font: 12px/1.2 Arial, sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    pointer-events: none;
+<style id="reconstruction-v12-layout">
+/* =========================================================
+   V12 — Mise en page commune des exercices
+   Objectif : titres et textes proches, sans "gouffres".
+   ========================================================= */
+
+/* Le cadre de l'exercice reste aéré globalement, mais compact à l'intérieur. */
+.exercise-card {
+  padding-top: 20px !important;
+  padding-bottom: 22px !important;
+}
+
+.exercise-card .exercise-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px 0 !important;
+  padding: 0 !important;
+}
+
+.exercise-card .exercise-heading-icon {
+  margin: 0 !important;
+  line-height: 1.1 !important;
+  flex: 0 0 auto;
+}
+
+.exercise-card .exercise-heading h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.15 !important;
+}
+
+/* Le sous-titre peut exister pour compatibilité avec le JS,
+   mais ne doit jamais créer un espace visuel vide. */
+.exercise-card .exercise-subtitle {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Contenu principal : aucune marge implicite entre les blocs. */
+.exercise-card #exerciseContent {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.exercise-card #exerciseContent .exercise-section {
+  margin: 0 0 12px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.exercise-card #exerciseContent .exercise-section:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Titre de section collé à son texte. */
+.exercise-card #exerciseContent .exercise-section-title {
+  margin: 0 0 3px 0 !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+}
+
+/* Texte : respiration légère, mais pas de paragraphe géant. */
+.exercise-card #exerciseContent .exercise-text {
+  margin: 0 0 5px 0 !important;
+  padding: 0 !important;
+  line-height: 1.45 !important;
+}
+
+.exercise-card #exerciseContent p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Les éléments interactifs suivent naturellement leur consigne. */
+.exercise-card #exerciseContent textarea,
+.exercise-card #exerciseContent input,
+.exercise-card #exerciseContent select {
+  margin-top: 5px;
+}
+
+/* Tableaux : marge courte par rapport à leur titre/consigne. */
+.exercise-card #exerciseContent .control-table-wrap,
+.exercise-card #exerciseContent .table-actions,
+.exercise-card #exerciseContent .response-box {
+  margin-top: 8px;
+}
+
+/* Sur mobile, on conserve la même logique compacte. */
+@media (max-width: 600px) {
+  .exercise-card {
+    padding-top: 16px !important;
+    padding-bottom: 18px !important;
   }
+
+  .exercise-card .exercise-heading {
+    gap: 8px;
+    margin-bottom: 5px !important;
+  }
+
+  .exercise-card #exerciseContent .exercise-section {
+    margin-bottom: 10px !important;
+  }
+}
+
+/* Badge de version visible */
+.app-version-v12 {
+  position: fixed;
+  right: 14px;
+  bottom: 12px;
+  z-index: 9999;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: rgba(255,255,255,.94);
+  color: #555;
+  font: 12px/1.2 Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  pointer-events: none;
+}
 </style>
 
 </head>
 
 <body>
-  <div class="app-version">Version V11</div>
+  <div class="app-version-v12">Version V12</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
