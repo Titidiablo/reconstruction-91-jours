@@ -82,15 +82,25 @@
     }
 
     .nav-buttons button.nav-active {
-      background: #222;
-      color: white;
-      box-shadow: 0 0 0 3px rgba(34,34,34,0.15);
+      background: #222 !important;
+      color: white !important;
+      border: 2px solid #222;
+      box-shadow: 0 0 0 3px rgba(34,34,34,0.18);
+      font-weight: bold;
+      transform: translateY(-1px);
+    }
+
+    .nav-buttons button.nav-active::before {
+      content: "✓ ";
       font-weight: bold;
     }
 
     .nav-buttons button:not(.nav-active) {
-      background: #e8e5df;
-      color: #222;
+      background: #e8e5df !important;
+      color: #222 !important;
+      border: 2px solid #ccc;
+      box-shadow: none;
+      font-weight: 500;
     }
 
     .secondary {
@@ -470,6 +480,12 @@
   line-height: 1.25 !important;
 }
 
+/* V15 — petit espace autour de PRATIQUE DU JOUR */
+#exerciseContent .exercise-section:first-child {
+  padding-top: 7px !important;
+  margin-bottom: 9px !important;
+}
+
 #exerciseContent .exercise-text {
   white-space: normal !important;
   margin: 0 0 5px 0 !important;
@@ -501,7 +517,7 @@
 }
 
 /* Badge discret */
-.app-version-v14 {
+.app-version-v16 {
   position: fixed;
   right: 12px;
   bottom: 10px;
@@ -520,7 +536,7 @@
 </head>
 
 <body>
-  <div class="app-version-v14">V14</div>
+  <div class="app-version-v16">V16</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1185,17 +1201,27 @@
     const journal =
       document.getElementById("journalSection");
 
+    const programButton =
+      document.getElementById("programNavButton");
+
+    const journalButton =
+      document.getElementById("journalNavButton");
+
     if (section === "program") {
 
       program.classList.remove("hidden");
-
       journal.classList.add("hidden");
+
+      programButton.classList.add("nav-active");
+      journalButton.classList.remove("nav-active");
 
     } else {
 
       program.classList.add("hidden");
-
       journal.classList.remove("hidden");
+
+      programButton.classList.remove("nav-active");
+      journalButton.classList.add("nav-active");
 
       loadJournalEntries();
     }
