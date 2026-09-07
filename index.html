@@ -417,27 +417,34 @@
   margin: 0 0 2px 0;
 }
 #exerciseContent,
-#interactiveExercise {
-  margin: 0 !important;
-  padding: 0 !important;
-}
 #exerciseContent .exercise-section,
-#interactiveExercise .exercise-section {
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  white-space: normal !important;
-}
 #exerciseContent .exercise-section-title,
-#interactiveExercise .exercise-section-title {
-  margin: 0 0 2px 0 !important;
-  padding: 0 !important;
-  white-space: normal !important;
-}
 #exerciseContent .exercise-text,
-#interactiveExercise .exercise-text {
-  margin: 0 0 4px 0 !important;
-  padding: 0 !important;
+</style>
+
+
+<style id="structural-tight-layout-v12">
+/* V12 : la présentation de l'exercice est désormais structurelle, pas seulement CSS. */
+.exercise-card .exercise-heading,
+.exercise-card .exercise-heading h2,
+.exercise-card #exerciseContent,
+.exercise-card #exerciseContent .exercise-section,
+.exercise-card #exerciseContent .exercise-section-title,
+.exercise-card #exerciseContent .exercise-text {
+  margin-top: 0 !important;
+}
+.exercise-card .exercise-heading {
+  margin-bottom: 4px !important;
+}
+.exercise-card #exerciseContent {
+  padding-top: 0 !important;
+}
+.exercise-card #exerciseContent .exercise-section {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.exercise-card #exerciseContent .exercise-section + .exercise-section {
+  margin-top: 8px !important;
 }
 </style>
 
@@ -598,13 +605,10 @@
           <h2 id="exerciseTitle">Chargement...</h2>
         </div>
 
-        <div id="exerciseSubtitle" class="exercise-subtitle"></div>
-
         <div id="exerciseContent" class="content-text">
           Chargement du programme...
         </div>
 
-        <div id="interactiveExercise"></div>
 
       </div>
 
@@ -1232,11 +1236,7 @@
 
     document.getElementById("exerciseIcon").textContent =
       getExerciseIcon(data.title);
-
-    document.getElementById("exerciseSubtitle").textContent =
-      getSubtitle(data.title);
-
-    document.getElementById("exerciseContent").innerHTML =
+document.getElementById("exerciseContent").innerHTML =
       formatExerciseContent(data.content);
 
     renderInteractiveExercise(data.content);
@@ -2014,10 +2014,8 @@
 
 
   function renderInteractiveExercise(text) {
-    const container = document.getElementById("interactiveExercise");
+    const container = document.getElementById("exerciseContent");
     const lower = String(text || "").toLowerCase();
-
-    container.innerHTML = "";
 
     if (
       lower.includes("faites trois colonnes") ||
@@ -2027,7 +2025,7 @@
         lower.includes("hors de mon contrôle")
       )
     ) {
-      container.innerHTML = `
+      container.insertAdjacentHTML("beforeend", `
         <div class="exercise-section">
           <div class="exercise-section-title">📋 Mes préoccupations</div>
           <p class="exercise-text">Tu peux renseigner jusqu'à <strong>15 préoccupations</strong>. Tu n'es pas obligé de remplir toutes les lignes.</p>
