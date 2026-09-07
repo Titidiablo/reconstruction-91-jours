@@ -407,6 +407,20 @@
       }
     }
   </style>
+
+<style id="compact-exercise-heading">
+.exercise-card h2,
+.exercise-card .exercise-subtitle,
+.exercise-card .section-title {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+.exercise-card h2 + *,
+.exercise-card .exercise-subtitle + * {
+    margin-top: 0 !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -561,7 +575,7 @@
 
         <div class="exercise-heading">
           <div class="exercise-heading-icon" id="exerciseIcon">🏛️</div>
-          <h2 id="exerciseTitle">Chargement...</h2>
+          <h2 style="margin-top:0;margin-bottom:0" id="exerciseTitle">Chargement...</h2>
         </div>
 
         <div id="exerciseSubtitle" class="exercise-subtitle"></div>
