@@ -9,40 +9,66 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 30px 20px;
-      background: #f5f3ef;
-      color: #222;
+    * {
+      box-sizing: border-box;
     }
 
-    h1 {
-      margin-bottom: 5px;
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f3ef;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.25;
     }
 
     .subtitle {
       color: #666;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
 
     .card {
       background: white;
       padding: 25px;
-      border-radius: 12px;
+      border-radius: 14px;
       margin-bottom: 20px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 15px;
+      background: white;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
     }
 
     button {
       border: none;
-      padding: 12px 18px;
+      padding: 11px 17px;
       border-radius: 8px;
       cursor: pointer;
       font-size: 15px;
-      margin-right: 8px;
-      margin-top: 8px;
+      margin: 4px 5px 4px 0;
+    }
+
+    button:hover {
+      opacity: 0.85;
     }
 
     .primary {
@@ -55,42 +81,199 @@
       color: #222;
     }
 
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-    }
-
-    #app {
-      display: none;
-    }
-
-    #status {
-      margin-top: 15px;
-      padding: 12px;
-      border-radius: 8px;
+    .danger {
       background: #eee;
+      color: #a00;
     }
 
-    .day {
-      font-size: 28px;
+    .success {
+      color: #26733d;
+      margin-top: 10px;
+    }
+
+    .error {
+      color: #a00;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Navigation */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .nav-buttons button {
+      margin: 0;
+    }
+
+    .day-navigation {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .day-navigation button {
+      flex: 1;
+    }
+
+    .day-number {
+      font-size: 30px;
       font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .week-label {
+      color: #777;
+      margin-bottom: 20px;
+    }
+
+    .progress-container {
+      background: #ddd;
+      border-radius: 20px;
+      height: 12px;
+      overflow: hidden;
+      margin: 10px 0 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #333;
+      width: 1%;
+    }
+
+    .content-block {
+      margin-top: 20px;
+    }
+
+    .content-block h3 {
+      margin-bottom: 8px;
+    }
+
+    .content-text {
+      white-space: pre-wrap;
+    }
+
+    /* Journal */
+    .journal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .journal-entry {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 15px;
+      background: #fafafa;
+    }
+
+    .journal-entry-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .journal-entry-date {
+      color: #777;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .journal-entry-content {
+      white-space: pre-wrap;
+      margin-bottom: 15px;
+    }
+
+    .mood {
+      display: inline-block;
+      background: #eee;
+      padding: 4px 9px;
+      border-radius: 15px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .emoji-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: -5px 0 15px;
+    }
+
+    .emoji-buttons button {
+      background: #f0eee9;
+      font-size: 20px;
+      padding: 5px 9px;
+      margin: 0;
+    }
+
+    .search-box {
+      margin: 20px 0;
+    }
+
+    .empty {
+      color: #777;
+      text-align: center;
+      padding: 25px;
+    }
+
+    .section-title {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .day-number {
+        font-size: 25px;
+      }
     }
   </style>
 </head>
 
 <body>
 
+  <!-- ========================================================= -->
+  <!-- EN-TÊTE -->
+  <!-- ========================================================= -->
+
   <h1>RECONSTRUCTION — 91 JOURS</h1>
+
   <div class="subtitle">
     Stoïcisme × Jung × Méditation
   </div>
 
+
+  <!-- ========================================================= -->
   <!-- CONNEXION -->
+  <!-- ========================================================= -->
+
   <div id="login" class="card">
 
     <h2>Connexion</h2>
@@ -125,124 +308,387 @@
   </div>
 
 
+  <!-- ========================================================= -->
   <!-- APPLICATION -->
-  <div id="app">
+  <!-- ========================================================= -->
 
-    <div class="card">
+  <div id="app" class="hidden">
 
-      <div class="day" id="dayTitle">
-        Jour 1
+    <!-- Navigation principale -->
+
+    <div class="topbar">
+
+      <div class="nav-buttons">
+
+        <button
+          class="primary"
+          onclick="showSection('program')">
+          📅 Programme
+        </button>
+
+        <button
+          class="secondary"
+          onclick="showSection('journal')">
+          📔 Mon journal intime
+        </button>
+
       </div>
 
-      <h2 id="exerciseTitle">
-        Chargement...
-      </h2>
-
-      <div id="exerciseContent">
-        Chargement du programme...
-      </div>
-
-    </div>
-
-    <div class="card">
-
-      <h2>🧘 Méditation</h2>
-
-      <p>
-        Durée :
-        <strong id="meditationDuration">—</strong>
-        minutes
-      </p>
-
-      <div id="meditation"></div>
-
-    </div>
-
-    <div class="card">
-
-      <h2>✍️ Mon journal</h2>
-
-      <label>
-        Notes de méditation
-      </label>
-
-      <textarea
-        id="meditationNotes"
-        rows="5"
-        style="width:100%;box-sizing:border-box;"
-      ></textarea>
-
-      <br><br>
-
-      <label>
-        Réponse à l'exercice
-      </label>
-
-      <textarea
-        id="exerciseResponse"
-        rows="7"
-        style="width:100%;box-sizing:border-box;"
-      ></textarea>
-
-      <br><br>
-
-      <label>
-        Action réalisée
-      </label>
-
-      <textarea
-        id="action"
-        rows="4"
-        style="width:100%;box-sizing:border-box;"
-      ></textarea>
-
-      <br><br>
-
-      <label>
-        Ce que j'ai appris
-      </label>
-
-      <textarea
-        id="learning"
-        rows="4"
-        style="width:100%;box-sizing:border-box;"
-      ></textarea>
-
-      <br><br>
-
-      <label>
-        Intégration du soir
-      </label>
-
-      <textarea
-        id="eveningIntegration"
-        rows="5"
-        style="width:100%;box-sizing:border-box;"
-      ></textarea>
-
-      <br><br>
-
-      <label>
-        Ma réaction
-      </label>
-
-      <textarea
-        id="reaction"
-        rows="4"
-        style="width:100%;box-sizing:border-box;"
-      ></textarea>
-
-      <br><br>
-
-      <button class="primary" onclick="saveEntry()">
-        💾 Sauvegarder ma journée
-      </button>
-
-      <button class="secondary" onclick="logout()">
+      <button
+        class="secondary"
+        onclick="logout()">
         Se déconnecter
       </button>
 
-      <div id="saveStatus"></div>
+    </div>
+
+
+    <!-- ======================================================= -->
+    <!-- PROGRAMME 91 JOURS -->
+    <!-- ======================================================= -->
+
+    <div id="programSection">
+
+      <div class="card">
+
+        <div class="day-number" id="dayTitle">
+          Jour 1
+        </div>
+
+        <div class="week-label" id="weekLabel">
+          Semaine 1
+        </div>
+
+        <div class="progress-container">
+          <div
+            class="progress-bar"
+            id="progressBar">
+          </div>
+        </div>
+
+        <p id="progressText">
+          Jour 1 sur 91
+        </p>
+
+        <label for="daySelector">
+          Aller directement à un jour :
+        </label>
+
+        <select
+          id="daySelector"
+          onchange="goToSelectedDay()">
+        </select>
+
+      </div>
+
+
+      <!-- Navigation jours -->
+
+      <div class="day-navigation">
+
+        <button
+          class="secondary"
+          onclick="previousDay()">
+          ← Jour précédent
+        </button>
+
+        <button
+          class="secondary"
+          onclick="nextDay()">
+          Jour suivant →
+        </button>
+
+      </div>
+
+
+      <!-- Contenu du jour -->
+
+      <div class="card">
+
+        <h2 id="exerciseTitle">
+          Chargement...
+        </h2>
+
+        <div
+          id="exerciseContent"
+          class="content-text">
+          Chargement du programme...
+        </div>
+
+      </div>
+
+
+      <!-- Méditation -->
+
+      <div class="card">
+
+        <h2 class="section-title">
+          🧘 Méditation
+        </h2>
+
+        <p>
+          Durée :
+          <strong id="meditationDuration">—</strong>
+          minutes
+        </p>
+
+        <div
+          id="meditation"
+          class="content-text">
+        </div>
+
+      </div>
+
+
+      <!-- Journal du programme -->
+
+      <div class="card">
+
+        <h2 class="section-title">
+          ✍️ Mon journal du programme
+        </h2>
+
+        <label>
+          Notes de méditation
+        </label>
+
+        <textarea
+          id="meditationNotes"
+          placeholder="Qu'as-tu observé pendant la méditation ?">
+        </textarea>
+
+
+        <label>
+          Réponse à l'exercice
+        </label>
+
+        <textarea
+          id="exerciseResponse"
+          placeholder="Écris ici ta réflexion...">
+        </textarea>
+
+
+        <label>
+          Action réalisée
+        </label>
+
+        <textarea
+          id="action"
+          placeholder="Quelle action as-tu réalisée ?">
+        </textarea>
+
+
+        <label>
+          Ce que j'ai appris
+        </label>
+
+        <textarea
+          id="learning"
+          placeholder="Qu'as-tu appris aujourd'hui ?">
+        </textarea>
+
+
+        <label>
+          Intégration du soir
+        </label>
+
+        <textarea
+          id="eveningIntegration"
+          placeholder="Qu'est-ce que tu retiens de cette journée ?">
+        </textarea>
+
+
+        <label>
+          Ma réaction
+        </label>
+
+        <textarea
+          id="reaction"
+          placeholder="Comment ai-je réagi ?">
+        </textarea>
+
+
+        <button
+          class="primary"
+          onclick="saveEntry()">
+          💾 Sauvegarder ma journée
+        </button>
+
+        <div id="saveStatus"></div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================= -->
+    <!-- JOURNAL INTIME -->
+    <!-- ======================================================= -->
+
+    <div id="journalSection" class="hidden">
+
+      <div class="card">
+
+        <div class="journal-header">
+
+          <div>
+            <h2>📔 Mon journal intime</h2>
+
+            <p>
+              Un espace personnel pour écrire librement,
+              sans consigne imposée.
+            </p>
+          </div>
+
+          <button
+            class="primary"
+            onclick="newJournalEntry()">
+            ＋ Nouvelle entrée
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- Nouvelle entrée / modification -->
+
+      <div
+        id="journalEditor"
+        class="card hidden">
+
+        <h2 id="journalEditorTitle">
+          Nouvelle entrée
+        </h2>
+
+
+        <label>
+          Titre
+        </label>
+
+        <input
+          id="journalTitle"
+          type="text"
+          placeholder="Un titre... 😊">
+
+
+        <label>
+          Ajouter un emoji
+        </label>
+
+        <div class="emoji-buttons">
+
+          <button onclick="insertEmoji('😊')">😊</button>
+          <button onclick="insertEmoji('😌')">😌</button>
+          <button onclick="insertEmoji('🙂')">🙂</button>
+          <button onclick="insertEmoji('😔')">😔</button>
+          <button onclick="insertEmoji('😢')">😢</button>
+          <button onclick="insertEmoji('😡')">😡</button>
+          <button onclick="insertEmoji('❤️')">❤️</button>
+          <button onclick="insertEmoji('💔')">💔</button>
+          <button onclick="insertEmoji('🧘')">🧘</button>
+          <button onclick="insertEmoji('🌱')">🌱</button>
+          <button onclick="insertEmoji('🌅')">🌅</button>
+          <button onclick="insertEmoji('🙏')">🙏</button>
+          <button onclick="insertEmoji('💭')">💭</button>
+          <button onclick="insertEmoji('🔥')">🔥</button>
+          <button onclick="insertEmoji('✨')">✨</button>
+
+        </div>
+
+
+        <label>
+          Humeur
+        </label>
+
+        <select id="journalMood">
+
+          <option value="">
+            — Pas d'humeur renseignée —
+          </option>
+
+          <option value="😊 Heureux">
+            😊 Heureux
+          </option>
+
+          <option value="😌 Serein">
+            😌 Serein
+          </option>
+
+          <option value="🙂 Bien">
+            🙂 Bien
+          </option>
+
+          <option value="😐 Neutre">
+            😐 Neutre
+          </option>
+
+          <option value="😕 Mitigé">
+            😕 Mitigé
+          </option>
+
+          <option value="😔 Triste">
+            😔 Triste
+          </option>
+
+          <option value="😡 En colère">
+            😡 En colère
+          </option>
+
+          <option value="😰 Anxieux">
+            😰 Anxieux
+          </option>
+
+        </select>
+
+
+        <label>
+          Mon journal
+        </label>
+
+        <textarea
+          id="journalContent"
+          rows="14"
+          placeholder="Écris librement ce que tu veux...">
+        </textarea>
+
+
+        <button
+          class="primary"
+          onclick="saveJournalEntry()">
+          💾 Enregistrer
+        </button>
+
+        <button
+          class="secondary"
+          onclick="cancelJournalEdit()">
+          Annuler
+        </button>
+
+        <div id="journalSaveStatus"></div>
+
+      </div>
+
+
+      <!-- Recherche -->
+
+      <div class="card">
+
+        <h2 class="section-title">
+          🔎 Rechercher dans mon journal
+        </h2>
+
+        <input
+          id="journalSearch"
+          type="search"
+          placeholder="Recherche par mot-clé..."
+          oninput="filterJournalEntries()">
+
+        <div id="journalEntries">
+          Chargement...
+        </div>
+
+      </div>
 
     </div>
 
@@ -251,9 +697,9 @@
 
 <script>
 
-  /*
-   * CONFIGURATION SUPABASE
-   */
+  /* ============================================================
+     CONFIGURATION SUPABASE
+     ============================================================ */
 
   const SUPABASE_URL =
     "https://tjtmvxvtzuxetdwcjrvq.supabase.co";
@@ -268,21 +714,25 @@
     );
 
 
-  /*
-   * JOUR ACTUEL
-   */
+  /* ============================================================
+     VARIABLES
+     ============================================================ */
 
   let currentDay = 1;
 
+  let currentJournalEntryId = null;
 
-  /*
-   * INSCRIPTION
-   */
+  let allJournalEntries = [];
+
+
+  /* ============================================================
+     INSCRIPTION
+     ============================================================ */
 
   async function signUp() {
 
     const email =
-      document.getElementById("email").value;
+      document.getElementById("email").value.trim();
 
     const password =
       document.getElementById("password").value;
@@ -291,8 +741,12 @@
       document.getElementById("loginStatus");
 
     if (!email || !password) {
+
+      status.className = "error";
+
       status.textContent =
         "Indique ton e-mail et ton mot de passe.";
+
       return;
     }
 
@@ -304,25 +758,29 @@
 
     if (error) {
 
+      status.className = "error";
+
       status.textContent =
         "Erreur : " + error.message;
 
     } else {
 
+      status.className = "success";
+
       status.textContent =
-        "Compte créé. Vérifie ton e-mail si Supabase te le demande.";
+        "Compte créé. Vérifie ton e-mail si nécessaire.";
     }
   }
 
 
-  /*
-   * CONNEXION
-   */
+  /* ============================================================
+     CONNEXION
+     ============================================================ */
 
   async function signIn() {
 
     const email =
-      document.getElementById("email").value;
+      document.getElementById("email").value.trim();
 
     const password =
       document.getElementById("password").value;
@@ -338,38 +796,136 @@
 
     if (error) {
 
+      status.className = "error";
+
       status.textContent =
         "Erreur : " + error.message;
 
+      return;
+    }
+
+    status.textContent = "";
+
+    await showApplication();
+  }
+
+
+  /* ============================================================
+     AFFICHER APPLICATION
+     ============================================================ */
+
+  async function showApplication() {
+
+    document.getElementById("login").classList.add("hidden");
+
+    document.getElementById("app").classList.remove("hidden");
+
+    populateDaySelector();
+
+    await loadDay(currentDay);
+
+    await loadJournalEntries();
+  }
+
+
+  /* ============================================================
+     NAVIGATION SECTIONS
+     ============================================================ */
+
+  function showSection(section) {
+
+    const program =
+      document.getElementById("programSection");
+
+    const journal =
+      document.getElementById("journalSection");
+
+    if (section === "program") {
+
+      program.classList.remove("hidden");
+
+      journal.classList.add("hidden");
+
     } else {
 
-      status.textContent =
-        "";
+      program.classList.add("hidden");
 
-      await showApplication();
+      journal.classList.remove("hidden");
+
+      loadJournalEntries();
     }
   }
 
 
-  /*
-   * AFFICHER L'APPLICATION
-   */
+  /* ============================================================
+     SELECTEUR DES 91 JOURS
+     ============================================================ */
 
-  async function showApplication() {
+  function populateDaySelector() {
 
-    document.getElementById("login").style.display =
-      "none";
+    const selector =
+      document.getElementById("daySelector");
 
-    document.getElementById("app").style.display =
-      "block";
+    selector.innerHTML = "";
 
-    await loadDay(currentDay);
+    for (let i = 1; i <= 91; i++) {
+
+      const option =
+        document.createElement("option");
+
+      option.value = i;
+
+      option.textContent =
+        "Jour " + i;
+
+      selector.appendChild(option);
+    }
+
+    selector.value = currentDay;
   }
 
 
-  /*
-   * CHARGER UN JOUR
-   */
+  function goToSelectedDay() {
+
+    const selector =
+      document.getElementById("daySelector");
+
+    currentDay =
+      parseInt(selector.value);
+
+    loadDay(currentDay);
+  }
+
+
+  function previousDay() {
+
+    if (currentDay <= 1) return;
+
+    currentDay--;
+
+    document.getElementById("daySelector").value =
+      currentDay;
+
+    loadDay(currentDay);
+  }
+
+
+  function nextDay() {
+
+    if (currentDay >= 91) return;
+
+    currentDay++;
+
+    document.getElementById("daySelector").value =
+      currentDay;
+
+    loadDay(currentDay);
+  }
+
+
+  /* ============================================================
+     CHARGER UN JOUR
+     ============================================================ */
 
   async function loadDay(dayNumber) {
 
@@ -394,28 +950,49 @@
       return;
     }
 
+
     document.getElementById("dayTitle").textContent =
       "Jour " + data.day_number;
+
+
+    document.getElementById("weekLabel").textContent =
+      "Semaine " + data.week_number;
+
 
     document.getElementById("exerciseTitle").textContent =
       data.title;
 
+
     document.getElementById("exerciseContent").innerHTML =
       formatText(data.content);
+
 
     document.getElementById("meditationDuration").textContent =
       data.meditation_duration;
 
+
     document.getElementById("meditation").innerHTML =
       formatText(data.meditation);
+
+
+    const percent =
+      Math.round((dayNumber / 91) * 100);
+
+    document.getElementById("progressBar").style.width =
+      percent + "%";
+
+
+    document.getElementById("progressText").textContent =
+      "Jour " + dayNumber + " sur 91 — " + percent + "%";
+
 
     await loadExistingEntry(dayNumber);
   }
 
 
-  /*
-   * CHARGER LE JOURNAL EXISTANT
-   */
+  /* ============================================================
+     JOURNAL DU PROGRAMME
+     ============================================================ */
 
   async function loadExistingEntry(dayNumber) {
 
@@ -429,10 +1006,14 @@
         .eq("day_number", dayNumber)
         .maybeSingle();
 
+
     if (error || !data) {
-      clearJournal();
+
+      clearProgramJournal();
+
       return;
     }
+
 
     document.getElementById("meditationNotes").value =
       data.meditation_notes || "";
@@ -454,10 +1035,6 @@
   }
 
 
-  /*
-   * SAUVEGARDER LE JOURNAL
-   */
-
   async function saveEntry() {
 
     const {
@@ -467,10 +1044,14 @@
     } =
       await supabaseClient.auth.getUser();
 
+
     if (!user) {
+
       alert("Tu dois être connecté.");
+
       return;
     }
+
 
     const entry = {
 
@@ -517,10 +1098,14 @@
 
     if (error) {
 
+      status.className = "error";
+
       status.textContent =
         "Erreur : " + error.message;
 
     } else {
+
+      status.className = "success";
 
       status.textContent =
         "✅ Journée sauvegardée dans le cloud.";
@@ -528,53 +1113,502 @@
   }
 
 
-  /*
-   * NETTOYER LE JOURNAL
-   */
-
-  function clearJournal() {
+  function clearProgramJournal() {
 
     document.getElementById("meditationNotes").value = "";
+
     document.getElementById("exerciseResponse").value = "";
+
     document.getElementById("action").value = "";
+
     document.getElementById("learning").value = "";
+
     document.getElementById("eveningIntegration").value = "";
+
     document.getElementById("reaction").value = "";
+
+    document.getElementById("saveStatus").textContent = "";
   }
 
 
-  /*
-   * FORMATAGE DU TEXTE
-   */
+  /* ============================================================
+     JOURNAL INTIME
+     ============================================================ */
+
+  async function loadJournalEntries() {
+
+    const container =
+      document.getElementById("journalEntries");
+
+    container.innerHTML =
+      "Chargement...";
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("journal_entries")
+        .select("*")
+        .order("entry_date", {
+          ascending: false
+        });
+
+
+    if (error) {
+
+      container.innerHTML =
+        '<div class="error">Erreur : ' +
+        escapeHtml(error.message) +
+        '</div>';
+
+      return;
+    }
+
+
+    allJournalEntries =
+      data || [];
+
+
+    filterJournalEntries();
+  }
+
+
+  function newJournalEntry() {
+
+    currentJournalEntryId = null;
+
+    document.getElementById("journalEditorTitle").textContent =
+      "Nouvelle entrée";
+
+    document.getElementById("journalTitle").value = "";
+
+    document.getElementById("journalContent").value = "";
+
+    document.getElementById("journalMood").value = "";
+
+    document.getElementById("journalSaveStatus").textContent = "";
+
+    document.getElementById("journalEditor")
+      .classList.remove("hidden");
+
+    document.getElementById("journalTitle").focus();
+  }
+
+
+  function editJournalEntry(id) {
+
+    const entry =
+      allJournalEntries.find(
+        item => item.id === id
+      );
+
+
+    if (!entry) return;
+
+
+    currentJournalEntryId =
+      entry.id;
+
+
+    document.getElementById("journalEditorTitle").textContent =
+      "Modifier mon entrée";
+
+
+    document.getElementById("journalTitle").value =
+      entry.title || "";
+
+
+    document.getElementById("journalContent").value =
+      entry.content || "";
+
+
+    document.getElementById("journalMood").value =
+      entry.mood || "";
+
+
+    document.getElementById("journalSaveStatus").textContent =
+      "";
+
+
+    document.getElementById("journalEditor")
+      .classList.remove("hidden");
+
+
+    document.getElementById("journalTitle").focus();
+  }
+
+
+  async function saveJournalEntry() {
+
+    const {
+      data: {
+        user
+      }
+    } =
+      await supabaseClient.auth.getUser();
+
+
+    if (!user) {
+
+      alert("Tu dois être connecté.");
+
+      return;
+    }
+
+
+    const title =
+      document.getElementById("journalTitle")
+        .value.trim();
+
+
+    const content =
+      document.getElementById("journalContent")
+        .value.trim();
+
+
+    const mood =
+      document.getElementById("journalMood")
+        .value;
+
+
+    const status =
+      document.getElementById("journalSaveStatus");
+
+
+    if (!content) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Écris quelque chose dans ton journal.";
+
+      return;
+    }
+
+
+    let error;
+
+
+    if (currentJournalEntryId) {
+
+      const result =
+        await supabaseClient
+          .from("journal_entries")
+          .update({
+            title: title || null,
+            content: content,
+            mood: mood || null
+          })
+          .eq("id", currentJournalEntryId);
+
+      error = result.error;
+
+    } else {
+
+      const result =
+        await supabaseClient
+          .from("journal_entries")
+          .insert({
+            user_id: user.id,
+            entry_date: new Date().toISOString(),
+            title: title || null,
+            content: content,
+            mood: mood || null
+          });
+
+      error = result.error;
+    }
+
+
+    if (error) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+      return;
+    }
+
+
+    status.className = "success";
+
+    status.textContent =
+      "✅ Entrée enregistrée dans ton journal.";
+
+
+    currentJournalEntryId = null;
+
+
+    await loadJournalEntries();
+
+
+    setTimeout(() => {
+
+      document.getElementById("journalEditor")
+        .classList.add("hidden");
+
+    }, 500);
+  }
+
+
+  function cancelJournalEdit() {
+
+    currentJournalEntryId = null;
+
+    document.getElementById("journalEditor")
+      .classList.add("hidden");
+  }
+
+
+  async function deleteJournalEntry(id) {
+
+    const confirmed =
+      confirm(
+        "Supprimer définitivement cette entrée ?"
+      );
+
+
+    if (!confirmed) return;
+
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from("journal_entries")
+        .delete()
+        .eq("id", id);
+
+
+    if (error) {
+
+      alert(
+        "Erreur : " + error.message
+      );
+
+      return;
+    }
+
+
+    await loadJournalEntries();
+  }
+
+
+  /* ============================================================
+     RECHERCHE JOURNAL
+     ============================================================ */
+
+  function filterJournalEntries() {
+
+    const search =
+      document.getElementById("journalSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    let entries =
+      allJournalEntries;
+
+
+    if (search) {
+
+      entries =
+        allJournalEntries.filter(entry => {
+
+          const title =
+            (entry.title || "")
+              .toLowerCase();
+
+          const content =
+            (entry.content || "")
+              .toLowerCase();
+
+          const mood =
+            (entry.mood || "")
+              .toLowerCase();
+
+
+          return (
+            title.includes(search) ||
+            content.includes(search) ||
+            mood.includes(search)
+          );
+        });
+    }
+
+
+    displayJournalEntries(entries);
+  }
+
+
+  function displayJournalEntries(entries) {
+
+    const container =
+      document.getElementById("journalEntries");
+
+
+    if (!entries.length) {
+
+      container.innerHTML =
+        '<div class="empty">' +
+        'Aucune entrée trouvée.' +
+        '</div>';
+
+      return;
+    }
+
+
+    container.innerHTML =
+      entries.map(entry => {
+
+        const date =
+          new Date(entry.entry_date)
+            .toLocaleString(
+              "fr-FR",
+              {
+                dateStyle: "long",
+                timeStyle: "short"
+              }
+            );
+
+
+        const title =
+          entry.title ||
+          "Sans titre";
+
+
+        const mood =
+          entry.mood
+            ? '<div class="mood">' +
+              escapeHtml(entry.mood) +
+              '</div>'
+            : "";
+
+
+        return `
+          <div class="journal-entry">
+
+            <div class="journal-entry-title">
+              ${escapeHtml(title)}
+            </div>
+
+            <div class="journal-entry-date">
+              ${escapeHtml(date)}
+            </div>
+
+            ${mood}
+
+            <div class="journal-entry-content">
+              ${escapeHtml(entry.content)}
+            </div>
+
+            <button
+              class="secondary"
+              onclick="editJournalEntry('${entry.id}')">
+              ✏️ Modifier
+            </button>
+
+            <button
+              class="danger"
+              onclick="deleteJournalEntry('${entry.id}')">
+              🗑️ Supprimer
+            </button>
+
+          </div>
+        `;
+
+      }).join("");
+  }
+
+
+  /* ============================================================
+     EMOJIS
+     ============================================================ */
+
+  function insertEmoji(emoji) {
+
+    const textarea =
+      document.getElementById("journalContent");
+
+    const start =
+      textarea.selectionStart;
+
+    const end =
+      textarea.selectionEnd;
+
+    const text =
+      textarea.value;
+
+
+    textarea.value =
+      text.substring(0, start) +
+      emoji +
+      text.substring(end);
+
+
+    textarea.focus();
+
+    textarea.selectionStart =
+      textarea.selectionEnd =
+        start + emoji.length;
+  }
+
+
+  /* ============================================================
+     FORMATAGE PROGRAMME
+     ============================================================ */
 
   function formatText(text) {
 
     if (!text) return "";
 
-    return text
+    return escapeHtml(text)
       .replace(/\n/g, "<br>");
   }
 
 
-  /*
-   * DECONNEXION
-   */
+  /* ============================================================
+     SECURITE AFFICHAGE HTML
+     ============================================================ */
+
+  function escapeHtml(text) {
+
+    const div =
+      document.createElement("div");
+
+    div.textContent =
+      text == null ? "" : String(text);
+
+    return div.innerHTML;
+  }
+
+
+  /* ============================================================
+     DECONNEXION
+     ============================================================ */
 
   async function logout() {
 
     await supabaseClient.auth.signOut();
 
-    document.getElementById("app").style.display =
-      "none";
+    document.getElementById("app")
+      .classList.add("hidden");
 
-    document.getElementById("login").style.display =
-      "block";
+    document.getElementById("login")
+      .classList.remove("hidden");
+
+    document.getElementById("journalEditor")
+      .classList.add("hidden");
   }
 
 
-  /*
-   * VERIFIER LA SESSION AU CHARGEMENT
-   */
+  /* ============================================================
+     VERIFICATION SESSION
+     ============================================================ */
 
   async function checkSession() {
 
@@ -585,11 +1619,17 @@
     } =
       await supabaseClient.auth.getSession();
 
+
     if (session) {
+
       await showApplication();
     }
   }
 
+
+  /* ============================================================
+     DEMARRAGE
+     ============================================================ */
 
   checkSession();
 
