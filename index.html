@@ -520,7 +520,7 @@
       }
     }
   
-/* V36 - suppression des lignes du tableau fiabilisée + historique V34 conservé */
+/* V37 - suppression des lignes : listener direct + capture document */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V36</div>
+  <div class="app-version-v18">V37</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -2455,11 +2455,22 @@
       <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
       <td><textarea placeholder="Préoccupation..." data-control-col="2"></textarea></td>
       <td class="control-delete-cell">
-        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne" onclick="window.deleteControlRow(this); return false;">🗑️</button>
+        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne">🗑️</button>
       </td>
     `;
 
     body.appendChild(row);
+
+    // Listener DIRECT sur chaque bouton : suppression fiable même si le tableau
+    // est reconstruit dynamiquement.
+    const deleteButton = row.querySelector(".control-delete-button");
+    if (deleteButton) {
+      deleteButton.addEventListener("click", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.deleteControlRow(this);
+      });
+    }
 
     const fields = row.querySelectorAll("textarea");
     fields.forEach((field, index) => {
@@ -2477,12 +2488,13 @@
   // Délégation d'événement : même si le tableau est reconstruit dynamiquement,
   // un clic sur une corbeille déclenche toujours la suppression de la ligne.
   document.addEventListener("click", function(event) {
-    const button = event.target.closest(".control-delete-button");
+    const target = event.target && event.target.nodeType === 3 ? event.target.parentElement : event.target;
+    const button = target && target.closest ? target.closest(".control-delete-button") : null;
     if (!button) return;
     event.preventDefault();
     event.stopPropagation();
     window.deleteControlRow(button);
-  });
+  }, true);
 
   function removeControlRow() {
     const body = document.getElementById("controlTableBody");
