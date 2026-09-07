@@ -1587,10 +1587,14 @@
     if (practice) parts.push("PRATIQUE DU JOUR\n" + practice);
     if (trace) parts.push("TRACE ÉCRITE\n" + trace);
     if (base && !practice && !trace) parts.push(base);
-    // Le tableau doit être sauvegardé même lorsqu'il est vide : cela permet
-    // de mémoriser la suppression de toutes les lignes.
+    // Le tableau est sauvegardé dans un format JSON exact : le nombre de lignes
+    // et leur contenu sont ainsi restaurés à l'identique après rechargement.
     if (document.getElementById("controlTableBody")) {
-      parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table + "\n__FIN_TABLEAU_CONTROLE__");
+      const tableRows = [...document.querySelectorAll("#controlTableBody tr")].map(row =>
+        [...row.querySelectorAll("textarea")].map(t => t.value)
+      );
+      parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" +
+        "__CONTROL_TABLE_JSON__" + JSON.stringify(tableRows) + "\n__FIN_TABLEAU_CONTROLE__");
     }
     if (decision) parts.push("DÉCISION SANS VALIDATION\n" + decision);
     if (weeklyScores) parts.push("BILAN DE SEMAINE — SCORES\n" + weeklyScores);
@@ -2498,34 +2502,50 @@
     }
 
     let section = raw.slice(start + marker.length);
-    // Nouveau format : fin explicite du tableau.
     const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
     const endPos = section.indexOf(endMarker);
-    if (endPos >= 0) {
-      section = section.slice(0, endPos).trim();
-    } else {
-      // Compatibilité avec les anciennes sauvegardes.
-      const nextMarkers = [
-        "\nDÉCISION SANS VALIDATION\n",
-        "\nBILAN DE SEMAINE — SCORES\n"
-      ];
-      let end = section.length;
-      nextMarkers.forEach(m => {
-        const idx = section.indexOf(m);
-        if (idx >= 0 && idx < end) end = idx;
-      });
-      section = section.slice(0, end).trim();
+    if (endPos >= 0) section = section.slice(0, endPos).trim();
+
+    // Nouveau format : restauration EXACTE du tableau, y compris zéro ligne.
+    const jsonMarker = "__CONTROL_TABLE_JSON__";
+    const jsonPos = section.indexOf(jsonMarker);
+    if (jsonPos >= 0) {
+      const json = section.slice(jsonPos + jsonMarker.length).trim();
+      try {
+        const rows = JSON.parse(json);
+        if (Array.isArray(rows)) {
+          rows.slice(0, 15).forEach(values => {
+            if (Array.isArray(values)) addControlRow([values[0] || "", values[1] || "", values[2] || ""]);
+          });
+          return;
+        }
+      } catch (e) {
+        console.warn("Impossible de restaurer le tableau JSON", e);
+      }
     }
 
-    const rows = section ? section.split("\n") : [];
+    // Compatibilité avec les anciennes sauvegardes.
+    const nextMarkers = [
+      "\nDÉCISION SANS VALIDATION\n",
+      "\nBILAN DE SEMAINE — SCORES\n"
+    ];
+    let legacySection = section;
+    if (endPos < 0) {
+      let end = legacySection.length;
+      nextMarkers.forEach(m => {
+        const idx = legacySection.indexOf(m);
+        if (idx >= 0 && idx < end) end = idx;
+      });
+      legacySection = legacySection.slice(0, end).trim();
+    }
+
+    const rows = legacySection ? legacySection.split("\n") : [];
     rows.forEach(line => {
       const m = line.match(/^\d+\.\s*Contrôle:\s*(.*?)\s*\|\s*Influence:\s*(.*?)\s*\|\s*Hors contrôle:\s*(.*)$/);
       if (m) addControlRow([m[1], m[2], m[3]]);
     });
 
-    // Si le tableau a été volontairement vidé, on le laisse vide.
-    // Pour une ancienne sauvegarde sans contenu, on garde 3 lignes vierges.
-    if (!rows.length && endPos < 0) {
+    if (!rows.length) {
       for (let i = 0; i < 3; i++) addControlRow();
     }
   }
