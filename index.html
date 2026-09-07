@@ -7,6 +7,7 @@
   <title>Reconstruction — 91 jours</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
   <style>
@@ -745,6 +746,20 @@
         <p id="scoreChartEmpty" class="empty hidden">Tes scores apparaîtront ici au fur et à mesure que tu complèteras tes journées.</p>
       </div>
 
+      <!-- Évolution des scores -->
+      <div class="card chart-card">
+        <h2 class="section-title">📈 Évolution de mes scores</h2>
+        <div class="chart-toolbar">
+          <button id="chart7Button" onclick="setChartRange(7)">7 derniers jours</button>
+          <button id="chart30Button" onclick="setChartRange(30)">30 derniers jours</button>
+          <button id="chart90Button" class="active" onclick="setChartRange(90)">90 jours</button>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="scoreEvolutionChart"></canvas>
+        </div>
+        <div id="chartStatus" class="empty">Les scores apparaîtront ici après tes premières sauvegardes.</div>
+      </div>
+
 
       <!-- Navigation jours -->
 
@@ -1404,6 +1419,9 @@
       formatExerciseContent(data.content);
 
     renderInteractiveExercise(data.content);
+
+    const isDay1 = Number(dayNumber) === 1;
+    document.getElementById("programSection").classList.toggle("day1-hide-generic-response", isDay1);
 
 
     document.getElementById("meditationDuration").textContent =
@@ -2287,7 +2305,7 @@
         output += `
           <div class="exercise-section">
             <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('weeklyScores')" title="Aller aux scores du bilan">📊 SCORE — BILAN DE SEMAINE</div>
-            <p class="exercise-text">Indique ton niveau de 0 à 10 pour chaque indicateur :</p>
+            <p class="exercise-text">Indique ton niveau de 1 à 10 pour chaque indicateur :</p>
             <div class="weekly-score-grid" id="weeklyScores">
               ${weeklyScoreField('weeklySilence', 'Tolérance au silence')}
               ${weeklyScoreField('weeklyRumination', 'Rumination')}
@@ -2434,9 +2452,181 @@
       .join("\n");
   }
 
+  function restoreControlTable(text) {
+    const body = document.getElementById("controlTableBody");
+    if (!body) return;
+
+    body.innerHTML = "";
+
+    const raw = String(text || "");
+    const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";
+    const start = raw.indexOf(marker);
+
+    if (start < 0) {
+      for (let i = 0; i < 3; i++) addControlRow();
+      return;
+    }
+
+    let section = raw.slice(start + marker.length);
+    const nextMarkers = [
+      "\nACTIONS\n",
+      "\nTRACE ÉCRITE\n",
+      "\nDÉCISION SANS VALIDATION\n",
+      "\nBILAN DE SEMAINE — SCORES\n"
+    ];
+
+    let end = section.length;
+    nextMarkers.forEach(m => {
+      const idx = section.indexOf(m);
+      if (idx >= 0 && idx < end) end = idx;
+    });
+    section = section.slice(0, end).trim();
+
+    const rows = section.split("\n").filter(Boolean);
+
+    rows.forEach(line => {
+      const m = line.match(/^\d+\.\s*Contrôle:\s*(.*?)\s*\|\s*Influence:\s*(.*?)\s*\|\s*Hors contrôle:\s*(.*)$/);
+      if (m) addControlRow([m[1], m[2], m[3]]);
+    });
+
+    if (!body.children.length) {
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
+  }
+
   function parseScore(id) {
     const value = document.getElementById(id)?.value ?? "";
     return value === "" ? null : parseInt(value, 10);
+  }
+
+
+  /* ============================================================
+     GRAPHIQUE ÉVOLUTION DES SCORES
+     ============================================================ */
+
+  async function loadScoreHistory() {
+    const {
+      data: {
+        user
+      }
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) return;
+
+    const { data, error } = await supabaseClient
+      .from("daily_entries")
+      .select("day_number,presence,impulse_control,values_coherence,self_relation")
+      .eq("user_id", user.id)
+      .order("day_number", { ascending: true });
+
+    if (error) {
+      const status = document.getElementById("chartStatus");
+      if (status) status.textContent = "Impossible de charger les scores : " + error.message;
+      return;
+    }
+
+    dailyScoreHistory = data || [];
+    renderScoreEvolutionChart();
+  }
+
+  function setChartRange(range) {
+    chartRange = range;
+
+    [7, 30, 90].forEach(r => {
+      const button = document.getElementById("chart" + r + "Button");
+      if (button) button.classList.toggle("active", r === range);
+    });
+
+    renderScoreEvolutionChart();
+  }
+
+  function renderScoreEvolutionChart() {
+    const canvas = document.getElementById("scoreEvolutionChart");
+    const status = document.getElementById("chartStatus");
+    if (!canvas || typeof Chart === "undefined") return;
+
+    const startDay = Math.max(1, 91 - chartRange + 1);
+    const rows = dailyScoreHistory.filter(row => Number(row.day_number) >= startDay);
+
+    if (!rows.length) {
+      if (scoreEvolutionChart) {
+        scoreEvolutionChart.destroy();
+        scoreEvolutionChart = null;
+      }
+      if (status) {
+        status.textContent = "Aucun score enregistré sur cette période.";
+        status.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (status) status.classList.add("hidden");
+
+    const labels = [];
+    const map = new Map(rows.map(row => [Number(row.day_number), row]));
+
+    for (let day = startDay; day <= 91; day++) labels.push("J" + day);
+
+    const value = (day, key) => {
+      const row = map.get(day);
+      if (!row || row[key] == null) return null;
+      return Number(row[key]);
+    };
+
+    const datasets = [
+      {
+        label: "Présence",
+        data: labels.map((_, i) => value(startDay + i, "presence")),
+        tension: 0.25,
+        spanGaps: false
+      },
+      {
+        label: "Maîtrise de l'impulsion",
+        data: labels.map((_, i) => value(startDay + i, "impulse_control")),
+        tension: 0.25,
+        spanGaps: false
+      },
+      {
+        label: "Cohérence avec mes valeurs",
+        data: labels.map((_, i) => value(startDay + i, "values_coherence")),
+        tension: 0.25,
+        spanGaps: false
+      },
+      {
+        label: "Relation à moi-même",
+        data: labels.map((_, i) => value(startDay + i, "self_relation")),
+        tension: 0.25,
+        spanGaps: false
+      }
+    ];
+
+    if (scoreEvolutionChart) scoreEvolutionChart.destroy();
+
+    scoreEvolutionChart = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom" }
+        },
+        scales: {
+          y: {
+            min: 0,
+            max: 10,
+            ticks: { stepSize: 1 },
+            title: { display: true, text: "Score / 10" }
+          },
+          x: {
+            ticks: {
+              maxTicksLimit: chartRange === 7 ? 7 : (chartRange === 30 ? 10 : 12)
+            }
+          }
+        }
+      }
+    });
   }
 
   /* ============================================================
