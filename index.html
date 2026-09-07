@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Reconstruction — 91 jours</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      background: #f5f3ef;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    button {
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+
+    .primary {
+      background: #222;
+      color: white;
+    }
+
+    .secondary {
+      background: #e8e5df;
+      color: #222;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    #app {
+      display: none;
+    }
+
+    #status {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #eee;
+    }
+
+    .day {
+      font-size: 28px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>RECONSTRUCTION — 91 JOURS</h1>
+  <div class="subtitle">
+    Stoïcisme × Jung × Méditation
+  </div>
+
+  <!-- CONNEXION -->
+  <div id="login" class="card">
+
+    <h2>Connexion</h2>
+
+    <p>
+      Connecte-toi pour accéder à ton programme et sauvegarder
+      automatiquement ton journal dans le cloud.
+    </p>
+
+    <input
+      id="email"
+      type="email"
+      placeholder="Ton adresse e-mail"
+    >
+
+    <input
+      id="password"
+      type="password"
+      placeholder="Ton mot de passe"
+    >
+
+    <button class="primary" onclick="signIn()">
+      Se connecter
+    </button>
+
+    <button class="secondary" onclick="signUp()">
+      Créer mon compte
+    </button>
+
+    <div id="loginStatus"></div>
+
+  </div>
+
+
+  <!-- APPLICATION -->
+  <div id="app">
+
+    <div class="card">
+
+      <div class="day" id="dayTitle">
+        Jour 1
+      </div>
+
+      <h2 id="exerciseTitle">
+        Chargement...
+      </h2>
+
+      <div id="exerciseContent">
+        Chargement du programme...
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>🧘 Méditation</h2>
+
+      <p>
+        Durée :
+        <strong id="meditationDuration">—</strong>
+        minutes
+      </p>
+
+      <div id="meditation"></div>
+
+    </div>
+
+    <div class="card">
+
+      <h2>✍️ Mon journal</h2>
+
+      <label>
+        Notes de méditation
+      </label>
+
+      <textarea
+        id="meditationNotes"
+        rows="5"
+        style="width:100%;box-sizing:border-box;"
+      ></textarea>
+
+      <br><br>
+
+      <label>
+        Réponse à l'exercice
+      </label>
+
+      <textarea
+        id="exerciseResponse"
+        rows="7"
+        style="width:100%;box-sizing:border-box;"
+      ></textarea>
+
+      <br><br>
+
+      <label>
+        Action réalisée
+      </label>
+
+      <textarea
+        id="action"
+        rows="4"
+        style="width:100%;box-sizing:border-box;"
+      ></textarea>
+
+      <br><br>
+
+      <label>
+        Ce que j'ai appris
+      </label>
+
+      <textarea
+        id="learning"
+        rows="4"
+        style="width:100%;box-sizing:border-box;"
+      ></textarea>
+
+      <br><br>
+
+      <label>
+        Intégration du soir
+      </label>
+
+      <textarea
+        id="eveningIntegration"
+        rows="5"
+        style="width:100%;box-sizing:border-box;"
+      ></textarea>
+
+      <br><br>
+
+      <label>
+        Ma réaction
+      </label>
+
+      <textarea
+        id="reaction"
+        rows="4"
+        style="width:100%;box-sizing:border-box;"
+      ></textarea>
+
+      <br><br>
+
+      <button class="primary" onclick="saveEntry()">
+        💾 Sauvegarder ma journée
+      </button>
+
+      <button class="secondary" onclick="logout()">
+        Se déconnecter
+      </button>
+
+      <div id="saveStatus"></div>
+
+    </div>
+
+  </div>
+
+
+<script>
+
+  /*
+   * CONFIGURATION SUPABASE
+   */
+
+  const SUPABASE_URL =
+    "https://tjtmvxvtzuxetdwcjrvq.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_NPauAhlEI3TJKIUNSLywGQ_k6FGMs2a";
+
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+
+  /*
+   * JOUR ACTUEL
+   */
+
+  let currentDay = 1;
+
+
+  /*
+   * INSCRIPTION
+   */
+
+  async function signUp() {
+
+    const email =
+      document.getElementById("email").value;
+
+    const password =
+      document.getElementById("password").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    if (!email || !password) {
+      status.textContent =
+        "Indique ton e-mail et ton mot de passe.";
+      return;
+    }
+
+    const { error } =
+      await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+    } else {
+
+      status.textContent =
+        "Compte créé. Vérifie ton e-mail si Supabase te le demande.";
+    }
+  }
+
+
+  /*
+   * CONNEXION
+   */
+
+  async function signIn() {
+
+    const email =
+      document.getElementById("email").value;
+
+    const password =
+      document.getElementById("password").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+    } else {
+
+      status.textContent =
+        "";
+
+      await showApplication();
+    }
+  }
+
+
+  /*
+   * AFFICHER L'APPLICATION
+   */
+
+  async function showApplication() {
+
+    document.getElementById("login").style.display =
+      "none";
+
+    document.getElementById("app").style.display =
+      "block";
+
+    await loadDay(currentDay);
+  }
+
+
+  /*
+   * CHARGER UN JOUR
+   */
+
+  async function loadDay(dayNumber) {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("program_days")
+        .select("*")
+        .eq("day_number", dayNumber)
+        .single();
+
+    if (error) {
+
+      document.getElementById("exerciseTitle").textContent =
+        "Erreur";
+
+      document.getElementById("exerciseContent").textContent =
+        error.message;
+
+      return;
+    }
+
+    document.getElementById("dayTitle").textContent =
+      "Jour " + data.day_number;
+
+    document.getElementById("exerciseTitle").textContent =
+      data.title;
+
+    document.getElementById("exerciseContent").innerHTML =
+      formatText(data.content);
+
+    document.getElementById("meditationDuration").textContent =
+      data.meditation_duration;
+
+    document.getElementById("meditation").innerHTML =
+      formatText(data.meditation);
+
+    await loadExistingEntry(dayNumber);
+  }
+
+
+  /*
+   * CHARGER LE JOURNAL EXISTANT
+   */
+
+  async function loadExistingEntry(dayNumber) {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("daily_entries")
+        .select("*")
+        .eq("day_number", dayNumber)
+        .maybeSingle();
+
+    if (error || !data) {
+      clearJournal();
+      return;
+    }
+
+    document.getElementById("meditationNotes").value =
+      data.meditation_notes || "";
+
+    document.getElementById("exerciseResponse").value =
+      data.exercise_response || "";
+
+    document.getElementById("action").value =
+      data.action || "";
+
+    document.getElementById("learning").value =
+      data.learning || "";
+
+    document.getElementById("eveningIntegration").value =
+      data.evening_integration || "";
+
+    document.getElementById("reaction").value =
+      data.reaction || "";
+  }
+
+
+  /*
+   * SAUVEGARDER LE JOURNAL
+   */
+
+  async function saveEntry() {
+
+    const {
+      data: {
+        user
+      }
+    } =
+      await supabaseClient.auth.getUser();
+
+    if (!user) {
+      alert("Tu dois être connecté.");
+      return;
+    }
+
+    const entry = {
+
+      user_id: user.id,
+
+      day_number: currentDay,
+
+      meditation_notes:
+        document.getElementById("meditationNotes").value,
+
+      exercise_response:
+        document.getElementById("exerciseResponse").value,
+
+      action:
+        document.getElementById("action").value,
+
+      learning:
+        document.getElementById("learning").value,
+
+      evening_integration:
+        document.getElementById("eveningIntegration").value,
+
+      reaction:
+        document.getElementById("reaction").value
+    };
+
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from("daily_entries")
+        .upsert(
+          entry,
+          {
+            onConflict: "user_id,day_number"
+          }
+        );
+
+
+    const status =
+      document.getElementById("saveStatus");
+
+
+    if (error) {
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+    } else {
+
+      status.textContent =
+        "✅ Journée sauvegardée dans le cloud.";
+    }
+  }
+
+
+  /*
+   * NETTOYER LE JOURNAL
+   */
+
+  function clearJournal() {
+
+    document.getElementById("meditationNotes").value = "";
+    document.getElementById("exerciseResponse").value = "";
+    document.getElementById("action").value = "";
+    document.getElementById("learning").value = "";
+    document.getElementById("eveningIntegration").value = "";
+    document.getElementById("reaction").value = "";
+  }
+
+
+  /*
+   * FORMATAGE DU TEXTE
+   */
+
+  function formatText(text) {
+
+    if (!text) return "";
+
+    return text
+      .replace(/\n/g, "<br>");
+  }
+
+
+  /*
+   * DECONNEXION
+   */
+
+  async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    document.getElementById("app").style.display =
+      "none";
+
+    document.getElementById("login").style.display =
+      "block";
+  }
+
+
+  /*
+   * VERIFIER LA SESSION AU CHARGEMENT
+   */
+
+  async function checkSession() {
+
+    const {
+      data: {
+        session
+      }
+    } =
+      await supabaseClient.auth.getSession();
+
+    if (session) {
+      await showApplication();
+    }
+  }
+
+
+  checkSession();
+
+</script>
+
+</body>
+</html>
