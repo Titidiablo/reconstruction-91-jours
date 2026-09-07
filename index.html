@@ -487,7 +487,18 @@
         font-size: 25px;
       }
     }
-  </style>
+  
+/* V30 - graphique SVG autonome */
+#scoreEvolutionChartContainer { width:100%; min-height:360px; }
+.score-svg-wrap { width:100%; overflow-x:auto; }
+.score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
+.chart-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:12px 20px; margin-top:8px; font-size:12px; }
+.chart-legend-item { display:inline-flex; align-items:center; gap:6px; }
+.chart-legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.chart-empty { min-height:180px; display:flex; align-items:center; justify-content:center; color:#777; font-size:14px; }
+#saveStatus.hidden { display:none !important; }
+
+</style>
 
 
 <style id="final-tight-layout-v11">
@@ -614,7 +625,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V29</div>
+  <div class="app-version-v18">V30</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1441,6 +1452,7 @@
 
 
     await loadExistingEntry(dayNumber);
+    renderScoreEvolutionChart();
   }
 
 
@@ -1468,6 +1480,7 @@
       await supabaseClient
         .from("daily_entries")
         .select("*")
+        .eq("user_id", (await supabaseClient.auth.getUser()).data.user?.id)
         .eq("day_number", dayNumber)
         .maybeSingle();
 
@@ -1549,7 +1562,7 @@
     // Le tableau doit être sauvegardé même lorsqu'il est vide : cela permet
     // de mémoriser la suppression de toutes les lignes.
     if (document.getElementById("controlTableBody")) {
-      parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table);
+      parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" + table + "\n__FIN_TABLEAU_CONTROLE__");
     }
     if (decision) parts.push("DÉCISION SANS VALIDATION\n" + decision);
     if (weeklyScores) parts.push("BILAN DE SEMAINE — SCORES\n" + weeklyScores);
@@ -1638,19 +1651,20 @@
 
     } else {
 
+      // Recharge d'abord les données réellement enregistrées.
+      // Le message est affiché APRÈS le rechargement afin qu'aucune fonction
+      // de restauration ne puisse l'effacer prématurément.
+      await loadScoreHistory();
+      await loadExistingEntry(currentDay);
+
       status.className = "success";
       status.textContent = "✅ Journée sauvegardée dans le cloud.";
-
       if (saveStatusTimer) clearTimeout(saveStatusTimer);
       saveStatusTimer = setTimeout(() => {
         status.textContent = "";
-        status.className = "";
+        status.className = "hidden";
+        saveStatusTimer = null;
       }, 5000);
-
-      // Recharge les données réellement enregistrées : le tableau affiché
-      // doit correspondre à Supabase, y compris après suppression de lignes.
-      await loadScoreHistory();
-      await loadExistingEntry(currentDay);
     }
   }
 
@@ -2409,17 +2423,12 @@
     const body = document.getElementById("controlTableBody");
     if (!body) return "";
 
-    return [...body.querySelectorAll("tr")]
-      .map((row, index) => {
-        const cells = [...row.querySelectorAll("textarea")]
-          .map(t => t.value.trim());
-
-        if (!cells.some(Boolean)) return "";
-
-        return `${index + 1}. Contrôle: ${cells[0] || ""} | Influence: ${cells[1] || ""} | Hors contrôle: ${cells[2] || ""}`;
-      })
-      .filter(Boolean)
-      .join("\n");
+    // On conserve EXACTEMENT l'état visuel du tableau, y compris les lignes vides.
+    // Ainsi, supprimer des lignes puis sauvegarder ne peut plus restaurer l'ancien état.
+    return [...body.querySelectorAll("tr")].map((row, index) => {
+      const cells = [...row.querySelectorAll("textarea")].map(t => t.value.trim());
+      return `${index + 1}. Contrôle: ${cells[0] || ""} | Influence: ${cells[1] || ""} | Hors contrôle: ${cells[2] || ""}`;
+    }).join("\n");
   }
 
   function restoreControlTable(text) {
@@ -2427,7 +2436,6 @@
     if (!body) return;
 
     body.innerHTML = "";
-
     const raw = String(text || "");
     const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";
     const start = raw.indexOf(marker);
@@ -2438,29 +2446,36 @@
     }
 
     let section = raw.slice(start + marker.length);
-    const nextMarkers = [
-      "\nACTIONS\n",
-      "\nTRACE ÉCRITE\n",
-      "\nDÉCISION SANS VALIDATION\n",
-      "\nBILAN DE SEMAINE — SCORES\n"
-    ];
+    // Nouveau format : fin explicite du tableau.
+    const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
+    const endPos = section.indexOf(endMarker);
+    if (endPos >= 0) {
+      section = section.slice(0, endPos).trim();
+    } else {
+      // Compatibilité avec les anciennes sauvegardes.
+      const nextMarkers = [
+        "\nDÉCISION SANS VALIDATION\n",
+        "\nBILAN DE SEMAINE — SCORES\n"
+      ];
+      let end = section.length;
+      nextMarkers.forEach(m => {
+        const idx = section.indexOf(m);
+        if (idx >= 0 && idx < end) end = idx;
+      });
+      section = section.slice(0, end).trim();
+    }
 
-    let end = section.length;
-    nextMarkers.forEach(m => {
-      const idx = section.indexOf(m);
-      if (idx >= 0 && idx < end) end = idx;
-    });
-    section = section.slice(0, end).trim();
-
-    const rows = section.split("\n").filter(Boolean);
-
+    const rows = section ? section.split("\n") : [];
     rows.forEach(line => {
       const m = line.match(/^\d+\.\s*Contrôle:\s*(.*?)\s*\|\s*Influence:\s*(.*?)\s*\|\s*Hors contrôle:\s*(.*)$/);
       if (m) addControlRow([m[1], m[2], m[3]]);
     });
 
-    // Si le tableau a été volontairement vidé puis sauvegardé, on conserve 0 ligne.
-    // Les 3 lignes initiales ne sont créées que lorsqu'aucune sauvegarde du tableau n'existe.
+    // Si le tableau a été volontairement vidé, on le laisse vide.
+    // Pour une ancienne sauvegarde sans contenu, on garde 3 lignes vierges.
+    if (!rows.length && endPos < 0) {
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
   }
 
   function parseScore(id) {
@@ -2524,117 +2539,105 @@
   }
 
   function renderScoreEvolutionChart() {
-    const container = document.getElementById("scoreEvolutionChart");
+    const container = document.getElementById("scoreEvolutionChartContainer");
     const status = document.getElementById("chartStatus");
     if (!container) return;
 
-    // Les "X derniers jours" signifient les jours passés AVANT le jour courant.
-    // Exemple : au Jour 20, "7 derniers jours" = J13 à J19.
-    const endDay = Math.max(0, Number(currentDay) - 1);
-    const startDay = Math.max(1, endDay - Number(chartRange) + 1);
+    const endDay = Number(currentDay) || 1;
 
-    if (endDay < 1 || startDay > endDay) {
-      container.innerHTML = "";
-      container.style.display = "none";
-      if (status) {
-        status.textContent = "Aucun jour passé à afficher pour le moment.";
-        status.classList.remove("hidden");
-      }
+    // Le jour 1 n'a pas encore de jour précédent : aucun graphique.
+    if (endDay <= 1) {
+      container.innerHTML = '<div class="chart-empty">Le graphique apparaîtra à partir du Jour 2.</div>';
+      if (status) { status.textContent = ""; status.classList.add("hidden"); }
       return;
     }
 
+    const startDay = Math.max(1, endDay - chartRange + 1);
     const rows = (dailyScoreHistory || [])
       .filter(row => {
         const d = Number(row.day_number);
         return Number.isFinite(d) && d >= startDay && d <= endDay;
       })
-      .sort((a, b) => Number(a.day_number) - Number(b.day_number));
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
 
     const map = new Map(rows.map(row => [Number(row.day_number), row]));
-    const metrics = [
+    const days = [];
+    for (let d = startDay; d <= endDay; d++) days.push(d);
+
+    const keys = [
       ["presence", "Présence"],
       ["impulse_control", "Maîtrise de l'impulsion"],
       ["values_coherence", "Cohérence avec mes valeurs"],
       ["self_relation", "Relation à moi-même"]
     ];
 
-    const hasScores = rows.some(row => metrics.some(([key]) => row[key] !== null && row[key] !== undefined && row[key] !== ""));
+    const hasScores = rows.some(row =>
+      keys.some(([k]) => row[k] !== null && row[k] !== undefined && row[k] !== "")
+    );
 
     if (!hasScores) {
-      container.innerHTML = "";
-      container.style.display = "none";
-      if (status) {
-        status.textContent = `Aucun score enregistré entre J${startDay} et J${endDay}.`;
-        status.classList.remove("hidden");
-      }
+      container.innerHTML = '<div class="chart-empty">Aucun score enregistré sur cette période.</div>';
+      if (status) { status.textContent = ""; status.classList.add("hidden"); }
       return;
     }
 
-    if (status) {
-      status.textContent = "";
-      status.classList.add("hidden");
-    }
-    container.style.display = "block";
+    // SVG autonome : aucun CDN, aucun canvas, aucun problème de hauteur.
+    const W = 900, H = 360, L = 58, R = 20, T = 20, B = 48;
+    const PW = W-L-R, PH = H-T-B;
+    const x = i => L + (days.length === 1 ? PW/2 : i * PW/(days.length-1));
+    const y = v => T + PH - (Number(v)/10)*PH;
 
-    const width = 1000, height = 340;
-    const left = 52, right = 20, top = 22, bottom = 42;
-    const plotW = width - left - right;
-    const plotH = height - top - bottom;
-    const count = endDay - startDay + 1;
-    const x = day => count === 1 ? left + plotW / 2 : left + ((day - startDay) / (count - 1)) * plotW;
-    const y = score => top + plotH - (Number(score) / 10) * plotH;
-
-    const esc = value => String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-    const lineColors = ["#4b5563", "#2563eb", "#059669", "#9333ea"];
-
-    let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Évolution des scores du Jour ${startDay} au Jour ${endDay}" style="width:100%;height:100%;display:block">`;
-
-    // Grille et axe Y 0–10
-    for (let v = 0; v <= 10; v++) {
-      const yy = y(v);
-      svg += `<line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" stroke="#ddd" stroke-width="1"/>`;
-      svg += `<text x="${left-10}" y="${yy+4}" text-anchor="end" font-size="12" fill="#555">${v}</text>`;
-    }
-
-    // Labels de jours : tous pour 7, environ 10 pour 30, et environ 12 pour 90.
-    const maxLabels = chartRange === 7 ? count : chartRange === 30 ? 10 : 12;
-    const step = Math.max(1, Math.ceil(count / maxLabels));
-    for (let d = startDay; d <= endDay; d += step) {
-      svg += `<text x="${x(d)}" y="${height-14}" text-anchor="middle" font-size="11" fill="#555">J${d}</text>`;
-    }
-    if ((endDay - startDay) % step !== 0) {
-      svg += `<text x="${x(endDay)}" y="${height-14}" text-anchor="middle" font-size="11" fill="#555">J${endDay}</text>`;
-    }
-
-    metrics.forEach(([key, label], idx) => {
-      let segment = [];
-      const flush = () => {
-        if (segment.length >= 2) svg += `<polyline fill="none" stroke="${lineColors[idx]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="${segment.join(" ")}"/>`;
-        segment = [];
-      };
-      for (let d = startDay; d <= endDay; d++) {
+    const series = keys.map(([key,label]) => ({
+      key, label,
+      points: days.map((d,i) => {
         const row = map.get(d);
-        const val = row ? Number(row[key]) : NaN;
-        if (Number.isFinite(val)) {
-          segment.push(`${x(d)},${y(Math.max(0, Math.min(10, val)))}`);
-          svg += `<circle cx="${x(d)}" cy="${y(Math.max(0, Math.min(10, val)))}" r="3.5" fill="${lineColors[idx]}"><title>J${d} — ${esc(label)} : ${val}/10</title></circle>`;
-        } else {
-          flush();
-        }
+        const v = row && row[key] !== null && row[key] !== undefined && row[key] !== "" ? Number(row[key]) : null;
+        return v !== null && Number.isFinite(v) ? {x:x(i), y:y(v), v, d} : null;
+      })
+    }));
+
+    const lines = [];
+    for (let n=0;n<=10;n++) {
+      const yy=y(n);
+      lines.push(`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#ddd" stroke-width="1"/>`);
+      lines.push(`<text x="${L-10}" y="${yy+4}" text-anchor="end" font-size="11" fill="#666">${n}</text>`);
+    }
+
+    const xStep = days.length <= 10 ? 1 : Math.ceil(days.length/10);
+    days.forEach((d,i) => {
+      if (i % xStep === 0 || i === days.length-1) {
+        lines.push(`<text x="${x(i)}" y="${H-16}" text-anchor="middle" font-size="11" fill="#666">J${d}</text>`);
       }
-      flush();
     });
 
-    // Légende
-    const legendY = 12;
-    metrics.forEach(([key, label], idx) => {
-      const lx = left + idx * ((plotW) / 4);
-      svg += `<line x1="${lx}" y1="${legendY}" x2="${lx+22}" y2="${legendY}" stroke="${lineColors[idx]}" stroke-width="3"/>`;
-      svg += `<text x="${lx+28}" y="${legendY+4}" font-size="11" fill="#444">${esc(label)}</text>`;
-    });
+    const palette = ["#222","#666","#999","#bbb"];
+    const paths = series.map((ser,si) => {
+      let path="", started=false, circles="";
+      ser.points.forEach(p => {
+        if (!p) { started=false; return; }
+        path += (started ? " L " : "M ") + p.x.toFixed(1) + " " + p.y.toFixed(1);
+        started=true;
+        circles += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${palette[si]}" data-day="${p.d}" data-score="${p.v}"/>`;
+      });
+      return `<path d="${path}" fill="none" stroke="${palette[si]}" stroke-width="2.5"/>${circles}`;
+    }).join("");
 
-    svg += `</svg>`;
-    container.innerHTML = svg;
+    const legend = series.map((ser,si) =>
+      `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${palette[si]}"></span>${escapeHtml(ser.label)}</span>`
+    ).join("");
+
+    container.innerHTML = `
+      <div class="score-svg-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution des scores du Jour ${startDay} au Jour ${endDay}">
+          ${lines.join("")}
+          <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#999"/>
+          <line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#999"/>
+          ${paths}
+        </svg>
+      </div>
+      <div class="chart-legend">${legend}</div>
+    `;
+    if (status) { status.textContent = ""; status.classList.add("hidden"); }
   }
 
   /* ============================================================
