@@ -410,16 +410,12 @@
 
 
 <style id="final-tight-layout-v11">
-.exercise-card {
-  padding-top: 20px;
-}
-.exercise-card .exercise-heading {
-  margin: 0 0 2px 0;
-}
-#exerciseContent,
-#exerciseContent .exercise-section,
-#exerciseContent .exercise-section-title,
-#exerciseContent .exercise-text,
+.exercise-card { padding-top: 20px; }
+.exercise-card .exercise-heading { margin: 0 0 2px 0; }
+#exerciseContent { margin: 0 !important; padding: 0 !important; }
+#exerciseContent .exercise-section { margin: 0 !important; padding: 0 !important; border: 0 !important; }
+#exerciseContent .exercise-section-title { margin: 0 0 2px 0 !important; padding: 0 !important; }
+#exerciseContent .exercise-text { margin: 0 0 4px 0 !important; padding: 0 !important; }
 </style>
 
 
@@ -2063,7 +2059,7 @@ document.getElementById("exerciseContent").innerHTML =
             <textarea id="controlDecisionResponse" placeholder="Quelle petite décision as-tu prise sans demander d'avis ni rechercher de validation ?"></textarea>
           </div>
         </div>
-      `;
+      `);
 
       // Seulement 3 lignes de départ : l'utilisateur peut en ajouter jusqu'à 15.
       for (let i = 0; i < 3; i++) addControlRow();
