@@ -614,7 +614,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V28</div>
+  <div class="app-version-v18">V29</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -770,7 +770,7 @@
           <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>
         </div>
         <div class="score-chart-wrap">
-          <canvas id="scoreEvolutionChart"></canvas>
+          <div id="scoreEvolutionChart" aria-label="Graphique d’évolution des scores"></div>
         </div>
         <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
         </div>
@@ -1153,6 +1153,7 @@
   let allDailyEntries = [];
   let scoreEvolutionChart = null;
   let chartRange = 90;
+  let saveStatusTimer = null;
 
 
   /* ============================================================
@@ -2523,100 +2524,117 @@
   }
 
   function renderScoreEvolutionChart() {
-    const canvas = document.getElementById("scoreEvolutionChart");
+    const container = document.getElementById("scoreEvolutionChart");
     const status = document.getElementById("chartStatus");
-    if (!canvas || typeof Chart === "undefined") return;
+    if (!container) return;
 
-    const endDay = 91;
-    // Les plages sont les derniers jours du programme : 7, 30 ou 90.
-    // Pour 90 jours, on affiche J2 à J91 (90 jours). J1 reste visible
-    // dans la plage 90 uniquement si l'on choisit explicitement 91 jours.
-    const startDay = Math.max(1, endDay - chartRange + 1);
-    const rows = dailyScoreHistory
+    // Les "X derniers jours" signifient les jours passés AVANT le jour courant.
+    // Exemple : au Jour 20, "7 derniers jours" = J13 à J19.
+    const endDay = Math.max(0, Number(currentDay) - 1);
+    const startDay = Math.max(1, endDay - Number(chartRange) + 1);
+
+    if (endDay < 1 || startDay > endDay) {
+      container.innerHTML = "";
+      container.style.display = "none";
+      if (status) {
+        status.textContent = "Aucun jour passé à afficher pour le moment.";
+        status.classList.remove("hidden");
+      }
+      return;
+    }
+
+    const rows = (dailyScoreHistory || [])
       .filter(row => {
         const d = Number(row.day_number);
         return Number.isFinite(d) && d >= startDay && d <= endDay;
       })
-      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
+      .sort((a, b) => Number(a.day_number) - Number(b.day_number));
 
-    const labels = [];
-    const map = new Map(dailyScoreHistory.map(row => [Number(row.day_number), row]));
-
-    for (let day = startDay; day <= endDay; day++) labels.push("J" + day);
-
-    const hasScores = rows.some(row =>
-      [row.presence, row.impulse_control, row.values_coherence, row.self_relation]
-        .some(v => v !== null && v !== undefined)
-    );
-
-    if (status) {
-      status.textContent = hasScores
-        ? ""
-        : "Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.";
-      status.classList.toggle("hidden", hasScores);
-    }
-
-    const value = (day, key) => {
-      const row = map.get(day);
-      if (!row || row[key] == null) return null;
-      return Number(row[key]);
-    };
-
-    const datasets = [
-      {
-        label: "Présence",
-        data: labels.map((_, i) => value(startDay + i, "presence")),
-        tension: 0.25,
-        spanGaps: false
-      },
-      {
-        label: "Maîtrise de l'impulsion",
-        data: labels.map((_, i) => value(startDay + i, "impulse_control")),
-        tension: 0.25,
-        spanGaps: false
-      },
-      {
-        label: "Cohérence avec mes valeurs",
-        data: labels.map((_, i) => value(startDay + i, "values_coherence")),
-        tension: 0.25,
-        spanGaps: false
-      },
-      {
-        label: "Relation à moi-même",
-        data: labels.map((_, i) => value(startDay + i, "self_relation")),
-        tension: 0.25,
-        spanGaps: false
-      }
+    const map = new Map(rows.map(row => [Number(row.day_number), row]));
+    const metrics = [
+      ["presence", "Présence"],
+      ["impulse_control", "Maîtrise de l'impulsion"],
+      ["values_coherence", "Cohérence avec mes valeurs"],
+      ["self_relation", "Relation à moi-même"]
     ];
 
-    if (scoreEvolutionChart) scoreEvolutionChart.destroy();
+    const hasScores = rows.some(row => metrics.some(([key]) => row[key] !== null && row[key] !== undefined && row[key] !== ""));
 
-    canvas.style.display = "block";
-    scoreEvolutionChart = new Chart(canvas.getContext("2d"), {
-      type: "line",
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-          legend: { position: "bottom" }
-        },
-        scales: {
-          y: {
-            min: 0,
-            max: 10,
-            ticks: { stepSize: 1 },
-            title: { display: true, text: "Score / 10" }
-          },
-          x: {
-            ticks: {
-              maxTicksLimit: chartRange === 7 ? 7 : (chartRange === 30 ? 10 : 12)
-            }
-          }
+    if (!hasScores) {
+      container.innerHTML = "";
+      container.style.display = "none";
+      if (status) {
+        status.textContent = `Aucun score enregistré entre J${startDay} et J${endDay}.`;
+        status.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (status) {
+      status.textContent = "";
+      status.classList.add("hidden");
+    }
+    container.style.display = "block";
+
+    const width = 1000, height = 340;
+    const left = 52, right = 20, top = 22, bottom = 42;
+    const plotW = width - left - right;
+    const plotH = height - top - bottom;
+    const count = endDay - startDay + 1;
+    const x = day => count === 1 ? left + plotW / 2 : left + ((day - startDay) / (count - 1)) * plotW;
+    const y = score => top + plotH - (Number(score) / 10) * plotH;
+
+    const esc = value => String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    const lineColors = ["#4b5563", "#2563eb", "#059669", "#9333ea"];
+
+    let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Évolution des scores du Jour ${startDay} au Jour ${endDay}" style="width:100%;height:100%;display:block">`;
+
+    // Grille et axe Y 0–10
+    for (let v = 0; v <= 10; v++) {
+      const yy = y(v);
+      svg += `<line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" stroke="#ddd" stroke-width="1"/>`;
+      svg += `<text x="${left-10}" y="${yy+4}" text-anchor="end" font-size="12" fill="#555">${v}</text>`;
+    }
+
+    // Labels de jours : tous pour 7, environ 10 pour 30, et environ 12 pour 90.
+    const maxLabels = chartRange === 7 ? count : chartRange === 30 ? 10 : 12;
+    const step = Math.max(1, Math.ceil(count / maxLabels));
+    for (let d = startDay; d <= endDay; d += step) {
+      svg += `<text x="${x(d)}" y="${height-14}" text-anchor="middle" font-size="11" fill="#555">J${d}</text>`;
+    }
+    if ((endDay - startDay) % step !== 0) {
+      svg += `<text x="${x(endDay)}" y="${height-14}" text-anchor="middle" font-size="11" fill="#555">J${endDay}</text>`;
+    }
+
+    metrics.forEach(([key, label], idx) => {
+      let segment = [];
+      const flush = () => {
+        if (segment.length >= 2) svg += `<polyline fill="none" stroke="${lineColors[idx]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="${segment.join(" ")}"/>`;
+        segment = [];
+      };
+      for (let d = startDay; d <= endDay; d++) {
+        const row = map.get(d);
+        const val = row ? Number(row[key]) : NaN;
+        if (Number.isFinite(val)) {
+          segment.push(`${x(d)},${y(Math.max(0, Math.min(10, val)))}`);
+          svg += `<circle cx="${x(d)}" cy="${y(Math.max(0, Math.min(10, val)))}" r="3.5" fill="${lineColors[idx]}"><title>J${d} — ${esc(label)} : ${val}/10</title></circle>`;
+        } else {
+          flush();
         }
       }
+      flush();
     });
+
+    // Légende
+    const legendY = 12;
+    metrics.forEach(([key, label], idx) => {
+      const lx = left + idx * ((plotW) / 4);
+      svg += `<line x1="${lx}" y1="${legendY}" x2="${lx+22}" y2="${legendY}" stroke="${lineColors[idx]}" stroke-width="3"/>`;
+      svg += `<text x="${lx+28}" y="${legendY+4}" font-size="11" fill="#444">${esc(label)}</text>`;
+    });
+
+    svg += `</svg>`;
+    container.innerHTML = svg;
   }
 
   /* ============================================================
