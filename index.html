@@ -410,43 +410,57 @@
 
 
 <style id="final-tight-layout-v11">
-.exercise-card { padding-top: 20px; }
-.exercise-card .exercise-heading { margin: 0 0 2px 0; }
-#exerciseContent { margin: 0 !important; padding: 0 !important; }
-#exerciseContent .exercise-section { margin: 0 !important; padding: 0 !important; border: 0 !important; }
-#exerciseContent .exercise-section-title { margin: 0 0 2px 0 !important; padding: 0 !important; }
-#exerciseContent .exercise-text { margin: 0 0 4px 0 !important; padding: 0 !important; }
+.exercise-card {
+  padding-top: 20px;
+}
+.exercise-card .exercise-heading {
+  margin: 0 0 2px 0;
+}
+#exerciseContent,
+#interactiveExercise {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#exerciseContent .exercise-section,
+#interactiveExercise .exercise-section {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+#exerciseContent .exercise-section-title,
+#interactiveExercise .exercise-section-title {
+  margin: 0 0 2px 0 !important;
+  padding: 0 !important;
+}
+#exerciseContent .exercise-text,
+#interactiveExercise .exercise-text {
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+}
 </style>
 
 
-<style id="structural-tight-layout-v12">
-/* V12 : la présentation de l'exercice est désormais structurelle, pas seulement CSS. */
-.exercise-card .exercise-heading,
-.exercise-card .exercise-heading h2,
-.exercise-card #exerciseContent,
-.exercise-card #exerciseContent .exercise-section,
-.exercise-card #exerciseContent .exercise-section-title,
-.exercise-card #exerciseContent .exercise-text {
-  margin-top: 0 !important;
-}
-.exercise-card .exercise-heading {
-  margin-bottom: 4px !important;
-}
-.exercise-card #exerciseContent {
-  padding-top: 0 !important;
-}
-.exercise-card #exerciseContent .exercise-section {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-.exercise-card #exerciseContent .exercise-section + .exercise-section {
-  margin-top: 8px !important;
-}
+<style id="version-badge">
+  .app-version {
+    position: fixed;
+    right: 14px;
+    bottom: 12px;
+    z-index: 9999;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: rgba(255,255,255,.94);
+    color: #555;
+    font: 12px/1.2 Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    pointer-events: none;
+  }
 </style>
 
 </head>
 
 <body>
+  <div class="app-version">Version V11</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -601,10 +615,13 @@
           <h2 id="exerciseTitle">Chargement...</h2>
         </div>
 
+        <div id="exerciseSubtitle" class="exercise-subtitle"></div>
+
         <div id="exerciseContent" class="content-text">
           Chargement du programme...
         </div>
 
+        <div id="interactiveExercise"></div>
 
       </div>
 
@@ -1232,7 +1249,11 @@
 
     document.getElementById("exerciseIcon").textContent =
       getExerciseIcon(data.title);
-document.getElementById("exerciseContent").innerHTML =
+
+    document.getElementById("exerciseSubtitle").textContent =
+      getSubtitle(data.title);
+
+    document.getElementById("exerciseContent").innerHTML =
       formatExerciseContent(data.content);
 
     renderInteractiveExercise(data.content);
@@ -2010,8 +2031,10 @@ document.getElementById("exerciseContent").innerHTML =
 
 
   function renderInteractiveExercise(text) {
-    const container = document.getElementById("exerciseContent");
+    const container = document.getElementById("interactiveExercise");
     const lower = String(text || "").toLowerCase();
+
+    container.innerHTML = "";
 
     if (
       lower.includes("faites trois colonnes") ||
@@ -2021,7 +2044,7 @@ document.getElementById("exerciseContent").innerHTML =
         lower.includes("hors de mon contrôle")
       )
     ) {
-      container.insertAdjacentHTML("beforeend", `
+      container.innerHTML = `
         <div class="exercise-section">
           <div class="exercise-section-title">📋 Mes préoccupations</div>
           <p class="exercise-text">Tu peux renseigner jusqu'à <strong>15 préoccupations</strong>. Tu n'es pas obligé de remplir toutes les lignes.</p>
@@ -2059,7 +2082,7 @@ document.getElementById("exerciseContent").innerHTML =
             <textarea id="controlDecisionResponse" placeholder="Quelle petite décision as-tu prise sans demander d'avis ni rechercher de validation ?"></textarea>
           </div>
         </div>
-      `);
+      `;
 
       // Seulement 3 lignes de départ : l'utilisateur peut en ajouter jusqu'à 15.
       for (let i = 0; i < 3; i++) addControlRow();
