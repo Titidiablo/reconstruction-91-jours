@@ -488,7 +488,7 @@
       }
     }
   
-/* V30 - graphique SVG autonome */
+/* V32 - graphique en barres autonome */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -625,7 +625,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V30</div>
+  <div class="app-version-v18">V32</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -781,7 +781,7 @@
           <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>
         </div>
         <div class="score-chart-wrap">
-          <div id="scoreEvolutionChart" aria-label="Graphique d’évolution des scores"></div>
+          <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>
         </div>
         <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
         </div>
@@ -1625,17 +1625,32 @@
     };
 
 
-    const {
-      error
-    } =
-      await supabaseClient
+    // Sauvegarde explicite : on cherche d'abord l'entrée existante puis UPDATE,
+    // sinon INSERT. Cela évite qu'un upsert dépende d'une contrainte UNIQUE
+    // qui pourrait ne pas être présente sur la table Supabase.
+    let error = null;
+    const existing = await supabaseClient
+      .from("daily_entries")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("day_number", currentDay)
+      .maybeSingle();
+
+    if (existing.error) {
+      error = existing.error;
+    } else if (existing.data?.id) {
+      const result = await supabaseClient
         .from("daily_entries")
-        .upsert(
-          entry,
-          {
-            onConflict: "user_id,day_number"
-          }
-        );
+        .update(entry)
+        .eq("id", existing.data.id)
+        .eq("user_id", user.id);
+      error = result.error;
+    } else {
+      const result = await supabaseClient
+        .from("daily_entries")
+        .insert(entry);
+      error = result.error;
+    }
 
 
     const status =
@@ -1651,11 +1666,12 @@
 
     } else {
 
-      // Recharge d'abord les données réellement enregistrées.
-      // Le message est affiché APRÈS le rechargement afin qu'aucune fonction
-      // de restauration ne puisse l'effacer prématurément.
+      // On réapplique immédiatement EXACTEMENT l'état qui vient d'être sauvegardé.
+      // Cela évite qu'un ancien contenu en mémoire ne réinjecte des lignes supprimées.
+      restoreControlTable(entry.exercise_response);
+      restoreWeeklyScores(entry.exercise_response);
+      restoreInlineResponses(entry);
       await loadScoreHistory();
-      await loadExistingEntry(currentDay);
 
       status.className = "success";
       status.textContent = "✅ Journée sauvegardée dans le cloud.";
@@ -2545,13 +2561,8 @@
 
     const endDay = Number(currentDay) || 1;
 
-    // Le jour 1 n'a pas encore de jour précédent : aucun graphique.
-    if (endDay <= 1) {
-      container.innerHTML = '<div class="chart-empty">Le graphique apparaîtra à partir du Jour 2.</div>';
-      if (status) { status.textContent = ""; status.classList.add("hidden"); }
-      return;
-    }
-
+    // Le graphique est également visible au Jour 1.
+    // La période commence simplement à J1 lorsqu'il n'existe pas encore de jours précédents.
     const startDay = Math.max(1, endDay - chartRange + 1);
     const rows = (dailyScoreHistory || [])
       .filter(row => {
@@ -2611,16 +2622,20 @@
     });
 
     const palette = ["#222","#666","#999","#bbb"];
-    const paths = series.map((ser,si) => {
-      let path="", started=false, circles="";
-      ser.points.forEach(p => {
-        if (!p) { started=false; return; }
-        path += (started ? " L " : "M ") + p.x.toFixed(1) + " " + p.y.toFixed(1);
-        started=true;
-        circles += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${palette[si]}" data-day="${p.d}" data-score="${p.v}"/>`;
-      });
-      return `<path d="${path}" fill="none" stroke="${palette[si]}" stroke-width="2.5"/>${circles}`;
-    }).join("");
+
+    // Histogramme groupé : une barre par score et par jour.
+    const groupWidth = days.length ? PW / days.length : PW;
+    const barWidth = Math.max(2, Math.min(10, groupWidth / (series.length + 1)));
+    const bars = series.map((ser,si) => {
+      return ser.points.map((p,di) => {
+        if (!p) return '';
+        const baseX = L + di * groupWidth;
+        const bx = baseX + (groupWidth - barWidth * series.length) / 2 + si * barWidth;
+        const bh = (p.v / 10) * PH;
+        const by = T + PH - bh;
+        return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${Math.max(1.5, barWidth-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${palette[si]}" rx="1" data-day="${p.d}" data-score="${p.v}"/>`;
+      }).join('');
+    }).join('');
 
     const legend = series.map((ser,si) =>
       `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${palette[si]}"></span>${escapeHtml(ser.label)}</span>`
@@ -2632,7 +2647,7 @@
           ${lines.join("")}
           <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#999"/>
           <line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#999"/>
-          ${paths}
+          ${bars}
         </svg>
       </div>
       <div class="chart-legend">${legend}</div>
