@@ -520,7 +520,7 @@
       }
     }
   
-/* V37 - suppression des lignes : listener direct + capture document */
+/* V40 - suppression tableau persistée immédiatement en BDD */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V37</div>
+  <div class="app-version-v18">V40</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1607,6 +1607,11 @@
 
   async function saveEntry() {
 
+    // Si une suppression vient juste d'être effectuée, on attend sa persistance
+    // avant toute nouvelle sauvegarde pour éviter qu'un ancien état ne repasse
+    // par-dessus le dernier état du tableau.
+    await pendingTableSave.catch(() => {});
+
     const {
       data: {
         user
@@ -1679,13 +1684,19 @@
         .from("daily_entries")
         .update(entry)
         .eq("id", existing.data.id)
-        .eq("user_id", user.id);
+        .eq("user_id", user.id)
+        .select("id")
+        .single();
       error = result.error;
+      if (!error && !result.data) error = new Error("Aucune ligne modifiée après UPDATE.");
     } else {
       const result = await supabaseClient
         .from("daily_entries")
-        .insert(entry);
+        .insert(entry)
+        .select("id")
+        .single();
       error = result.error;
+      if (!error && !result.data) error = new Error("Aucune ligne créée après INSERT.");
     }
 
 
@@ -2444,12 +2455,125 @@
     }
   }
 
+  let pendingTableSave = Promise.resolve();
+
+  function queueTablePersistence() {
+    pendingTableSave = pendingTableSave
+      .catch(() => {})
+      .then(() => persistCurrentTableToDatabase());
+    return pendingTableSave;
+  }
+
+  async function persistCurrentTableToDatabase() {
+    try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) return;
+
+      const body = document.getElementById("controlTableBody");
+      if (!body) return;
+
+      const tableRows = [...body.querySelectorAll("tr")].map(row =>
+        [...row.querySelectorAll("textarea")].map(t => t.value)
+      );
+      const currentResponse = buildExerciseResponse();
+
+      const { data: existing, error: findError } = await supabaseClient
+        .from("daily_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("day_number", currentDay)
+        .maybeSingle();
+
+      if (findError) throw findError;
+
+      const payload = {
+        user_id: user.id,
+        day_number: currentDay,
+        exercise_response: currentResponse
+      };
+
+      let dbError = null;
+      let savedRowId = existing?.id || null;
+
+      if (existing?.id) {
+        // UPDATE + SELECT : on exige que Supabase nous retourne réellement
+        // la ligne modifiée. Un UPDATE qui touche 0 ligne ne sera plus
+        // considéré comme une sauvegarde réussie.
+        const result = await supabaseClient
+          .from("daily_entries")
+          .update({ exercise_response: payload.exercise_response })
+          .eq("id", existing.id)
+          .eq("user_id", user.id)
+          .select("id,exercise_response")
+          .single();
+        dbError = result.error;
+        if (!dbError) savedRowId = result.data?.id || null;
+        if (!dbError && !result.data) {
+          dbError = new Error("Supabase n'a retourné aucune ligne après UPDATE.");
+        }
+      } else {
+        // Pas encore d'entrée pour ce jour : on crée une entrée minimale afin que
+        // l'état (y compris zéro ligne) soit immédiatement persistant.
+        const result = await supabaseClient
+          .from("daily_entries")
+          .insert(payload)
+          .select("id,exercise_response")
+          .single();
+        dbError = result.error;
+        if (!dbError) savedRowId = result.data?.id || null;
+      }
+
+      if (dbError) throw dbError;
+
+      // Vérification indépendante : on relit la BDD et on compare exactement
+      // le tableau JSON enregistré avec celui affiché dans l'interface.
+      const verify = await supabaseClient
+        .from("daily_entries")
+        .select("id,exercise_response")
+        .eq("id", savedRowId)
+        .eq("user_id", user.id)
+        .single();
+
+      if (verify.error) throw verify.error;
+
+      const expected = tableRows;
+      const verifyText = String(verify.data?.exercise_response || "");
+      const verifyMarker = "__CONTROL_TABLE_JSON__";
+      const verifyPos = verifyText.indexOf(verifyMarker);
+      if (verifyPos < 0) {
+        throw new Error("La BDD ne contient pas le marqueur du tableau de contrôle.");
+      }
+      const verifyJson = verifyText.slice(verifyPos + verifyMarker.length);
+      const verifyEnd = verifyJson.indexOf("__FIN_TABLEAU_CONTROLE__");
+      const verifyRows = JSON.parse(verifyEnd >= 0 ? verifyJson.slice(0, verifyEnd).trim() : verifyJson.trim());
+      if (JSON.stringify(verifyRows) !== JSON.stringify(expected)) {
+        throw new Error("La BDD ne correspond pas au tableau affiché après la suppression.");
+      }
+
+      const status = document.getElementById("saveStatus");
+      if (status) {
+        status.className = "success";
+        status.textContent = "✓ Ligne supprimée et tableau enregistré";
+        clearTimeout(window.__tableDeleteSaveTimer);
+        window.__tableDeleteSaveTimer = setTimeout(() => {
+          status.className = "hidden";
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Erreur de persistance après suppression du tableau", error);
+      const status = document.getElementById("saveStatus");
+      if (status) {
+        status.className = "error";
+        status.textContent = "Erreur de sauvegarde : " + (error?.message || error);
+      }
+    }
+  }
+
   function addControlRow(values = ["", "", ""]) {
     const body = document.getElementById("controlTableBody");
     if (!body || body.children.length >= 15) return;
 
     const row = document.createElement("tr");
-
     row.innerHTML = `
       <td><textarea placeholder="Préoccupation..." data-control-col="0"></textarea></td>
       <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
@@ -2458,22 +2582,9 @@
         <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne">🗑️</button>
       </td>
     `;
-
     body.appendChild(row);
 
-    // Listener DIRECT sur chaque bouton : suppression fiable même si le tableau
-    // est reconstruit dynamiquement.
-    const deleteButton = row.querySelector(".control-delete-button");
-    if (deleteButton) {
-      deleteButton.addEventListener("click", function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        window.deleteControlRow(this);
-      });
-    }
-
-    const fields = row.querySelectorAll("textarea");
-    fields.forEach((field, index) => {
+    row.querySelectorAll("textarea").forEach((field, index) => {
       field.value = values[index] || "";
     });
   }
@@ -2482,18 +2593,22 @@
     const row = button && button.closest ? button.closest("tr") : null;
     if (!row) return false;
     row.remove();
+    void queueTablePersistence();
     return false;
   };
 
-  // Délégation d'événement : même si le tableau est reconstruit dynamiquement,
-  // un clic sur une corbeille déclenche toujours la suppression de la ligne.
+  // Un seul gestionnaire délégué : il fonctionne aussi pour les lignes
+  // créées/recréées dynamiquement et persiste immédiatement la suppression.
   document.addEventListener("click", function(event) {
     const target = event.target && event.target.nodeType === 3 ? event.target.parentElement : event.target;
     const button = target && target.closest ? target.closest(".control-delete-button") : null;
     if (!button) return;
     event.preventDefault();
     event.stopPropagation();
-    window.deleteControlRow(button);
+    const row = button.closest("tr");
+    if (!row) return;
+    row.remove();
+    void queueTablePersistence();
   }, true);
 
   function removeControlRow() {
