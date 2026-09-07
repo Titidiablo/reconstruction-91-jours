@@ -440,30 +440,46 @@
 </style>
 
 
-<style id="reconstruction-v12-layout">
+<style id="reconstruction-v13-layout">
 /* =========================================================
-   V12 — Mise en page commune des exercices
-   Objectif : titres et textes proches, sans "gouffres".
+   V13 — présentation commune + états sélectionnés
+   Base fonctionnelle : V11
    ========================================================= */
 
-/* Le cadre de l'exercice reste aéré globalement, mais compact à l'intérieur. */
+/* Badge de version discret */
+.app-version-v13 {
+  position: fixed;
+  right: 12px;
+  bottom: 10px;
+  z-index: 9999;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  color: #777;
+  font: 11px/1.2 Arial, sans-serif;
+  box-shadow: 0 1px 5px rgba(0,0,0,.06);
+  pointer-events: none;
+}
+
+/* ---------- Carte exercice ---------- */
 .exercise-card {
-  padding-top: 20px !important;
-  padding-bottom: 22px !important;
+  padding-top: 18px !important;
+  padding-bottom: 20px !important;
 }
 
 .exercise-card .exercise-heading {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 6px 0 !important;
+  gap: 8px;
+  margin: 0 0 7px !important;
   padding: 0 !important;
 }
 
 .exercise-card .exercise-heading-icon {
   margin: 0 !important;
-  line-height: 1.1 !important;
-  flex: 0 0 auto;
+  padding: 0 !important;
+  line-height: 1 !important;
 }
 
 .exercise-card .exercise-heading h2 {
@@ -472,100 +488,126 @@
   line-height: 1.15 !important;
 }
 
-/* Le sous-titre peut exister pour compatibilité avec le JS,
-   mais ne doit jamais créer un espace visuel vide. */
 .exercise-card .exercise-subtitle {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1.2 !important;
-}
-
-/* Contenu principal : aucune marge implicite entre les blocs. */
-.exercise-card #exerciseContent {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.exercise-card #exerciseContent .exercise-section {
-  margin: 0 0 12px 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
-
-.exercise-card #exerciseContent .exercise-section:last-child {
-  margin-bottom: 0 !important;
-}
-
-/* Titre de section collé à son texte. */
-.exercise-card #exerciseContent .exercise-section-title {
-  margin: 0 0 3px 0 !important;
+  margin: 0 0 7px !important;
   padding: 0 !important;
   line-height: 1.25 !important;
 }
 
-/* Texte : respiration légère, mais pas de paragraphe géant. */
-.exercise-card #exerciseContent .exercise-text {
-  margin: 0 0 5px 0 !important;
+/* Conteneurs sans marge parasite */
+.exercise-card #exerciseContent,
+.exercise-card #interactiveExercise {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Chaque bloc : titre collé au texte */
+.exercise-card .exercise-section {
+  margin: 0 0 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.exercise-card .exercise-section:last-child {
+  margin-bottom: 0 !important;
+}
+
+.exercise-card .exercise-section-title {
+  margin: 0 0 3px !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.exercise-card .exercise-text {
+  margin: 0 0 5px !important;
   padding: 0 !important;
   line-height: 1.45 !important;
 }
 
-.exercise-card #exerciseContent p:last-child {
-  margin-bottom: 0 !important;
+/* ---------- Etats actifs / sélectionnés ---------- */
+
+/* Navigation des jours */
+.day-navigation button,
+.nav-buttons button {
+  transition: background-color .15s ease, color .15s ease,
+              border-color .15s ease, box-shadow .15s ease;
 }
 
-/* Les éléments interactifs suivent naturellement leur consigne. */
-.exercise-card #exerciseContent textarea,
-.exercise-card #exerciseContent input,
-.exercise-card #exerciseContent select {
-  margin-top: 5px;
+/* Classe active générique */
+.nav-active,
+.day-navigation .active,
+button.active,
+button.selected,
+.emoji-buttons button.selected {
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 2px currentColor inset !important;
 }
 
-/* Tableaux : marge courte par rapport à leur titre/consigne. */
-.exercise-card #exerciseContent .control-table-wrap,
-.exercise-card #exerciseContent .table-actions,
-.exercise-card #exerciseContent .response-box {
-  margin-top: 8px;
+/* Navigation principale : le bouton actif doit être évident */
+.nav-buttons button.nav-active {
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 2px currentColor inset !important;
 }
 
-/* Sur mobile, on conserve la même logique compacte. */
+/* Emojis sélectionnés */
+.emoji-buttons button.selected,
+.emoji-buttons button.active {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px currentColor inset !important;
+  font-weight: 700 !important;
+}
+
+/* Contrôles de choix */
+.choice-button.selected,
+.choice-button.active,
+.option-button.selected,
+.option-button.active {
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 2px currentColor inset !important;
+}
+
+/* Sélecteurs : l'option choisie est native, mais on rend le champ lui-même clair */
+select:focus,
+textarea:focus,
+input:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* Boutons qui ont été cliqués / états visuels génériques */
+button[aria-pressed="true"],
+button[aria-selected="true"] {
+  font-weight: 700 !important;
+  box-shadow: 0 0 0 2px currentColor inset !important;
+}
+
+/* Mobile */
 @media (max-width: 600px) {
   .exercise-card {
-    padding-top: 16px !important;
-    padding-bottom: 18px !important;
+    padding-top: 15px !important;
+    padding-bottom: 17px !important;
   }
 
   .exercise-card .exercise-heading {
-    gap: 8px;
-    margin-bottom: 5px !important;
+    margin-bottom: 6px !important;
   }
 
-  .exercise-card #exerciseContent .exercise-section {
+  .exercise-card .exercise-section {
     margin-bottom: 10px !important;
   }
-}
 
-/* Badge de version visible */
-.app-version-v12 {
-  position: fixed;
-  right: 14px;
-  bottom: 12px;
-  z-index: 9999;
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 999px;
-  background: rgba(255,255,255,.94);
-  color: #555;
-  font: 12px/1.2 Arial, sans-serif;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
-  pointer-events: none;
+  .app-version-v13 {
+    right: 8px;
+    bottom: 7px;
+    font-size: 10px;
+  }
 }
 </style>
 
 </head>
 
 <body>
-  <div class="app-version-v12">Version V12</div>
+  <div class="app-version-v13">V13</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -631,14 +673,14 @@
         <button
           id="programNavButton"
           class="primary nav-active"
-          onclick="showSection('program')">
+          onclick="showSection('program'); if(window.setV13ActiveNav) setV13ActiveNav('programNavButton')">
           📅 Programme
         </button>
 
         <button
           id="journalNavButton"
           class="secondary"
-          onclick="showSection('journal')">
+          onclick="showSection('journal'); if(window.setV13ActiveNav) setV13ActiveNav('journalNavButton')">
           📔 Mon journal intime
         </button>
 
@@ -2319,6 +2361,24 @@
 
   checkSession();
 
+</script>
+
+
+<script id="v13-active-state">
+(function () {
+  function setActiveNav(activeId) {
+    document.querySelectorAll('.nav-buttons button').forEach(function (btn) {
+      btn.classList.toggle('nav-active', btn.id === activeId);
+      btn.setAttribute('aria-pressed', btn.id === activeId ? 'true' : 'false');
+    });
+  }
+
+  window.setV13ActiveNav = setActiveNav;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    setActiveNav('programNavButton');
+  });
+})();
 </script>
 
 </body>
