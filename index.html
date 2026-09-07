@@ -321,6 +321,10 @@
       line-height: 1;
       padding: 6px;
       border-radius: 6px;
+      position: relative;
+      z-index: 20;
+      pointer-events: auto;
+      user-select: none;
     }
 
     .control-delete-button:hover {
@@ -516,7 +520,7 @@
       }
     }
   
-/* V34 - graphique en barres autonome + corbeilles tableau */
+/* V35 - suppression des lignes du tableau fiabilisée + historique V34 conservé */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -653,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V34</div>
+  <div class="app-version-v18">V35</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -2451,21 +2455,25 @@
       <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
       <td><textarea placeholder="Préoccupation..." data-control-col="2"></textarea></td>
       <td class="control-delete-cell">
-        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne">🗑️</button>
+        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne" onclick="deleteControlRow(this); return false;">🗑️</button>
       </td>
     `;
 
     body.appendChild(row);
 
-    const deleteButton = row.querySelector(".control-delete-button");
-    if (deleteButton) {
-      deleteButton.addEventListener("click", () => row.remove());
-    }
-
     const fields = row.querySelectorAll("textarea");
     fields.forEach((field, index) => {
       field.value = values[index] || "";
     });
+  }
+
+  function deleteControlRow(button) {
+    const row = button?.closest("tr");
+    if (!row) return;
+
+    // Suppression directe du DOM : la ligne disparaît immédiatement.
+    // Le prochain enregistrement sérialisera exactement les lignes restantes.
+    row.remove();
   }
 
   function removeControlRow() {
