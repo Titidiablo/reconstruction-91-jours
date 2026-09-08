@@ -802,7 +802,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V87</div>
+  <div class="app-version-v18">V88</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3794,7 +3794,23 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     picker.className='meditation-media-picker';
     picker.id='meditationMediaPicker';
     picker.innerHTML=`<label for="meditationMediaSelect">🎧 Choisir l’audio de méditation</label><select id="meditationMediaSelect"><option value="">— Aucun audio sélectionné —</option></select><p class="meditation-media-help">Les MP3 classés « Méditation » dans 🎧 Média apparaissent ici.</p><div id="meditationMediaPlayer" class="meditation-media-player"></div>`;
-    if(host === $('programSection')) host.prepend(picker); else host.parentNode.insertBefore(picker,host);
+    const sections=Array.from(host.querySelectorAll('.exercise-section'));
+    const meditationSection=sections.find(section=>{
+      const text=(section.innerText||section.textContent||'').toLowerCase();
+      return text.includes('méditation') || text.includes('meditation');
+    });
+    if(meditationSection){
+      const explanatoryText=meditationSection.querySelector('.exercise-text');
+      if(explanatoryText){
+        explanatoryText.insertAdjacentElement('afterend',picker);
+      } else {
+        meditationSection.appendChild(picker);
+      }
+    } else if(host === $('programSection')) {
+      host.prepend(picker);
+    } else {
+      host.parentNode.insertBefore(picker,host);
+    }
     $('meditationMediaSelect').addEventListener('change',()=>applySelection(true));
     loadMeditationChoices();
   }
@@ -3930,6 +3946,12 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 </script>
+
+
+<style id="v88-meditation-picker-position">
+/* Le sélecteur audio reste visuellement dans le bloc Méditation, sous son texte explicatif. */
+.meditation-media-picker { margin-top:12px; margin-bottom:16px; }
+</style>
 
 </body>
 </html>
