@@ -1,4 +1,4 @@
-name: Deploy V97
+name: Deploy V98
 
 on:
   push:
@@ -72,35 +72,40 @@ jobs:
         run: python3 scripts/patch_v96_mobile_score_layout.py
       - name: Apply V97 evolution mobile no overlap
         run: python3 scripts/patch_v97_evolution_mobile_no_overlap.py
+      - name: Apply V98 settings menu
+        run: python3 scripts/patch_v98_settings.py
 
-      - name: Set displayed version V97
+      - name: Set displayed version V98
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94','V95','V96'):
-              s=s.replace(f'>{old}</div>','>V97</div>')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94','V95','V96','V97'):
+              s=s.replace(f'>{old}</div>','>V98</div>')
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Validate V97
+      - name: Validate V98
         run: |
-          grep -q '>V97</div>' index.html
-          grep -q 'id="v97-evolution-mobile-no-overlap"' index.html
-          grep -q 'id="v96-reperes-detail"' index.html
-          grep -q 'id="v96-mobile-score-layout"' index.html
-          grep -q 'id="v95-bilan-piliers"' index.html
-          grep -q 'id="v94-evolution-scores"' index.html
+          grep -q '>V98</div>' index.html
+          grep -q 'id="v98-settings"' index.html
+          grep -q 'id="settingsNavButton"' index.html
+          grep -q 'id="v98SettingsPanel"' index.html
+          grep -q 'Méditation' index.html
+          grep -q 'Respiration / relaxation' index.html
+          grep -q 'Sommeil' index.html
+          grep -q 'Développement personnel' index.html
+          grep -q 'Motivation' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
-          test "$(grep -o '>V97</div>' index.html | wc -l)" -eq 1
-      - name: Commit V97
+          test "$(grep -o '>V98</div>' index.html | wc -l)" -eq 1
+      - name: Commit V98
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          if git diff --cached --quiet; then echo "V97 déjà présent"; exit 0; fi
-          git commit -m "V97 - eliminate mobile evolution overlaps"
+          if git diff --cached --quiet; then echo "V98 déjà présent"; exit 0; fi
+          git commit -m "V98 - add settings menu and module preferences"
           git pull --rebase origin main
           git push origin HEAD:main
-# V97 mobile overlap fix - 2026-09-08T13:55:00Z
+# V98 settings menu - 2026-09-08T14:00:00Z
