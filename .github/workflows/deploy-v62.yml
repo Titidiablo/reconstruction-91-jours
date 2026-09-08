@@ -1,0 +1,36 @@
+name: Deploy V62
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Prepare V62
+        run: python3 scripts/deploy_v62.py
+
+      - name: Validate V62
+        run: |
+          grep -q '>V62</div>' index.html
+          grep -q 'id="floatingSaveButton"' index.html
+          grep -q 'id="v62-save-button-cleanup"' index.html
+          ! grep -q 'Sauvegarder ma journée' index.html
+
+      - name: Commit V62
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Update index.html V62 - single save button"
+          git push
