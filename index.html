@@ -801,7 +801,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V71</div>
+  <div class="app-version-v18">V72</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3378,6 +3378,28 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   else install();
   window.addEventListener('load',()=>setTimeout(install,500));
   new MutationObserver(install).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="v72-dashboard-no-today-duplicates">
+/* V72 — Tableau de bord ne répète aucun élément du cockpit Aujourd'hui. */
+#v61Dashboard .v72-today-duplicate { display:none !important; }
+</style>
+<script id="v72-dashboard-no-today-duplicates">
+(function(){
+  function clean(){
+    const dashboard=document.getElementById('v61Dashboard');
+    if(!dashboard) return;
+    const firstCard=dashboard.querySelector('.card');
+    if(firstCard && firstCard.querySelector('#v61Progress, #v61Score, #v61Streak, #v61Last')){
+      firstCard.classList.add('v72-today-duplicate');
+      firstCard.remove();
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean);
+  else clean();
+  window.addEventListener('load',()=>setTimeout(clean,1000));
+  new MutationObserver(()=>setTimeout(clean,0)).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 
