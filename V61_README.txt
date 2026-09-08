@@ -1,0 +1,1 @@
+Le workflow V61 est installé. Le déploiement est déclenché par l'ouverture d'une issue DEPLOY V61.
