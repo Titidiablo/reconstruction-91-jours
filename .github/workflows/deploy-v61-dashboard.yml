@@ -1,0 +1,244 @@
+name: Deploy V61 dashboard
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply V61 dashboard and analysis
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Version badge
+          if '>V61</div>' not in s:
+              if '>V60</div>' not in s:
+                  raise SystemExit('V60 badge not found')
+              s = s.replace('>V60</div>', '>V61</div>', 1)
+
+          # Styles for dashboard
+          if 'id="v61-dashboard-style"' not in s:
+              css = r'''
+<style id="v61-dashboard-style">
+.dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.dashboard-stat{background:#f7f5f1;border:1px solid #ddd9d1;border-radius:12px;padding:14px;min-width:0}
+.dashboard-stat-label{display:block;color:#777;font-size:12px;margin-bottom:5px}
+.dashboard-stat-value{display:block;font-size:24px;font-weight:700;line-height:1.15}
+.dashboard-stat-note{display:block;color:#777;font-size:12px;margin-top:5px}
+.dashboard-insight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.dashboard-insight{background:white;border:1px solid #e1ddd6;border-radius:12px;padding:14px}
+.dashboard-insight h3{margin:0 0 6px;font-size:16px}
+.dashboard-insight p{margin:0;color:#444}
+.dashboard-progress{height:10px;background:#e6e2db;border-radius:999px;overflow:hidden;margin-top:10px}
+.dashboard-progress > span{display:block;height:100%;background:#333;border-radius:999px;width:0;transition:width .25s ease}
+.dashboard-mini-list{margin:8px 0 0;padding-left:18px}
+.dashboard-mini-list li{margin:4px 0}
+.dashboard-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eee9e3;font-size:12px;color:#555}
+@media (max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}.dashboard-insight-grid{grid-template-columns:1fr}}
+@media (max-width:480px){.dashboard-grid{grid-template-columns:1fr}}
+</style>
+'''
+              s = s.replace('</head>', css + '</head>', 1)
+
+          # Runtime dashboard + analysis. Kept self-contained so the existing V60 page remains intact.
+          if 'id="v61-dashboard-runtime"' not in s:
+              js = r'''
+<script id="v61-dashboard-runtime">
+(function(){
+  let v61OriginalShowSection = window.showSection;
+  let v61DashboardReady = false;
+  let v61Entries = [];
+
+  function v61ValidScore(v){ const n=Number(v); return Number.isFinite(n)&&n>=1&&n<=10?n:null; }
+  function v61Avg(row){
+    const vals=[row?.presence,row?.impulse_control,row?.values_coherence,row?.self_relation]
+      .map(v61ValidScore).filter(v=>v!==null);
+    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+  }
+  function v61Sorted(){ return [...(v61Entries||[])].filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number)); }
+  function v61LastScored(){ const rows=v61Sorted().filter(r=>v61Avg(r)!==null); return rows.length?rows[rows.length-1]:null; }
+  function v61FirstScored(){ const rows=v61Sorted().filter(r=>v61Avg(r)!==null); return rows.length?rows[0]:null; }
+  function v61Streak(){
+    const days=new Set(v61Sorted().map(r=>Number(r.day_number)));
+    let latest=0; days.forEach(d=>{if(d>latest)latest=d;});
+    if(!latest) return 0;
+    let streak=0; for(let d=latest;days.has(d);d--){streak++;}
+    return streak;
+  }
+  function v61MakeDashboard(){
+    const app=document.getElementById('app');
+    if(!app || document.getElementById('v61Dashboard')) return;
+    const topbar=app.querySelector('.topbar');
+    if(!topbar) return;
+    const nav=topbar.querySelector('.nav-buttons');
+    if(nav && !document.getElementById('dashboardNavButton')){
+      const b=document.createElement('button');
+      b.id='dashboardNavButton'; b.className='secondary'; b.type='button'; b.textContent='🏠 Tableau de bord';
+      b.onclick=()=>window.showSection('dashboard');
+      nav.insertBefore(b, nav.firstChild);
+    }
+    const section=document.createElement('div');
+    section.id='v61Dashboard'; section.className='hidden';
+    section.innerHTML=`
+      <div class="card">
+        <h2 class="section-title">🏠 Mon tableau de bord</h2>
+        <div id="v61WelcomeLine">Ton parcours en un coup d'œil.</div>
+        <div class="dashboard-progress"><span id="v61ProgressBar"></span></div>
+        <div class="dashboard-grid">
+          <div class="dashboard-stat"><span class="dashboard-stat-label">Progression</span><strong id="v61Progress" class="dashboard-stat-value">—</strong><span class="dashboard-stat-note">jours du programme</span></div>
+          <div class="dashboard-stat"><span class="dashboard-stat-label">Score global</span><strong id="v61Score" class="dashboard-stat-value">—</strong><span id="v61ScoreNote" class="dashboard-stat-note">sur 10</span></div>
+          <div class="dashboard-stat"><span class="dashboard-stat-label">Streak</span><strong id="v61Streak" class="dashboard-stat-value">—</strong><span class="dashboard-stat-note">jours consécutifs sauvegardés</span></div>
+          <div class="dashboard-stat"><span class="dashboard-stat-label">Dernière journée</span><strong id="v61LastDay" class="dashboard-stat-value">—</strong><span class="dashboard-stat-note">dernière journée avec score</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🧠 Analyse de mon évolution</h2>
+        <div class="dashboard-insight-grid">
+          <div class="dashboard-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div>
+          <div class="dashboard-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strongest">—</p></div>
+          <div class="dashboard-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weakest">—</p></div>
+          <div class="dashboard-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🗓️ Mes dernières journées</h2>
+        <div id="v61RecentList">—</div>
+      </div>`;
+    topbar.insertAdjacentElement('afterend',section);
+    v61DashboardReady=true;
+  }
+  async function v61LoadData(){
+    try{
+      const client = typeof getSupabaseClient==='function' ? getSupabaseClient() : window.supabaseClient;
+      if(!client) return;
+      const {data:{user}}=await client.auth.getUser(); if(!user) return;
+      const {data,error}=await client.from('daily_entries').select('day_number,presence,impulse_control,values_coherence,self_relation').eq('user_id',user.id).order('day_number',{ascending:true});
+      if(!error) v61Entries=data||[];
+    }catch(e){ console.warn('V61 dashboard',e); }
+    v61Render();
+  }
+  function v61Render(){
+    v61MakeDashboard();
+    if(!v61DashboardReady) return;
+    const rows=v61Sorted(); const scored=rows.filter(r=>v61Avg(r)!==null);
+    const last=v61LastScored(), first=v61FirstScored();
+    const lastDay=last?Number(last.day_number):0;
+    const progress=Math.max(0,Math.min(91, lastDay || (typeof currentDay!=='undefined'?Number(currentDay):1)));
+    document.getElementById('v61Progress').textContent=progress+'/91';
+    document.getElementById('v61ProgressBar').style.width=((progress/91)*100)+'%';
+    document.getElementById('v61Score').textContent=last?v61Avg(last).toFixed(1)+'/10':'—';
+    document.getElementById('v61ScoreNote').textContent=last?'J'+lastDay:'aucun score enregistré';
+    document.getElementById('v61Streak').textContent=v61Streak();
+    document.getElementById('v61LastDay').textContent=last?'J'+lastDay:'—';
+    document.getElementById('v61WelcomeLine').textContent='Jour '+(typeof currentDay!=='undefined'?currentDay:'1')+' — garde le cap, observe avant de juger.';
+
+    const dims=[['presence','Présence'],['impulse_control','Maîtrise de l’impulsion'],['values_coherence','Cohérence avec mes valeurs'],['self_relation','Relation à moi-même']];
+    if(first && last){
+      const delta=v61Avg(last)-v61Avg(first);
+      document.getElementById('v61Delta').textContent=(delta>=0?'+':'')+delta.toFixed(1)+' point'+(Math.abs(delta)>=2?'s':'')+' entre J'+Number(first.day_number)+' et J'+Number(last.day_number)+'.';
+    } else document.getElementById('v61Delta').textContent='Il faut au moins deux journées notées pour mesurer une progression.';
+    const changes=dims.map(([k,label])=>{
+      const ss=scored.filter(r=>v61ValidScore(r[k])!==null);
+      if(!ss.length) return {label,delta:null};
+      const a=v61ValidScore(ss[0][k]), b=v61ValidScore(ss[ss.length-1][k]);
+      return {label,delta:b-a};
+    }).filter(x=>x.delta!==null).sort((a,b)=>b.delta-a.delta);
+    document.getElementById('v61Strongest').textContent=changes[0]?changes[0].label+' ('+(changes[0].delta>=0?'+':'')+changes[0].delta.toFixed(1)+')':'—';
+    const recent=scored.slice(-7);
+    const recAvg={};
+    dims.forEach(([k,label])=>{ const v=recent.map(r=>v61ValidScore(r[k])).filter(x=>x!==null); recAvg[label]=v.length?v.reduce((a,b)=>a+b,0)/v.length:null; });
+    const sortedRecent=Object.entries(recAvg).filter(([,v])=>v!==null).sort((a,b)=>a[1]-b[1]);
+    document.getElementById('v61Weakest').textContent=sortedRecent[0]?sortedRecent[0][0]+' · '+sortedRecent[0][1].toFixed(1)+'/10 sur les 7 derniers scores':'—';
+    if(scored.length>=2){ const recentAvg=recent.length?recent.map(v61Avg).reduce((a,b)=>a+b,0)/recent.length:null; const globalAvg=scored.map(v61Avg).reduce((a,b)=>a+b,0)/scored.length; document.getElementById('v61Recent').textContent=recentAvg!==null?'Moyenne des 7 derniers scores : '+recentAvg.toFixed(1)+'/10 (ensemble du parcours : '+globalAvg.toFixed(1)+').':'—'; }
+    else document.getElementById('v61Recent').textContent='Continue à renseigner tes journées : l’analyse deviendra plus pertinente avec le temps.';
+    const list=rows.slice(-5).reverse().map(r=>{ const a=v61Avg(r); return '<div class="dashboard-insight" style="margin-top:8px"><span class="dashboard-badge">J'+Number(r.day_number)+'</span> <strong>'+(a!==null?a.toFixed(1)+'/10':'sans score')+'</strong></div>'; }).join('');
+    document.getElementById('v61RecentList').innerHTML=list||'<div class="empty">Aucune journée sauvegardée pour le moment.</div>';
+  }
+  function v61ShowSection(section){
+    v61MakeDashboard();
+    const dash=document.getElementById('v61Dashboard');
+    const dashBtn=document.getElementById('dashboardNavButton');
+    if(section==='dashboard'){
+      ['programSection','journalSection','evolutionSection'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+      document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+      dash?.classList.remove('hidden'); dashBtn?.classList.add('nav-active');
+      v61Render();
+      return;
+    }
+    dash?.classList.add('hidden'); dashBtn?.classList.remove('nav-active');
+    if(typeof v61OriginalShowSection==='function') v61OriginalShowSection(section);
+  }
+  window.showSection=v61ShowSection;
+  window.addEventListener('load',()=>{ setTimeout(()=>{v61MakeDashboard(); v61LoadData();},700); });
+  if(typeof showApplication==='function'){
+    const oldShowApplication=window.showApplication;
+    window.showApplication=async function(){
+      const result=await oldShowApplication.apply(this,arguments);
+      setTimeout(()=>v61LoadData(),300);
+      return result;
+    };
+  }
+  if(typeof loadScoreHistory==='function'){
+    const oldLoadScoreHistory=window.loadScoreHistory;
+    window.loadScoreHistory=async function(){
+      const result=await oldLoadScoreHistory.apply(this,arguments);
+      setTimeout(()=>v61LoadData(),150);
+      return result;
+    };
+  }
+})();
+</script>
+'''
+              s = s.replace('</body>', js + '</body>', 1)
+
+          checks = [
+              '>V61</div>',
+              'id="v61-dashboard-style"',
+              'id="v61-dashboard-runtime"',
+              'id="v61Dashboard"',
+              'id="dashboardNavButton"',
+              'function v61Render()',
+              'Progression depuis J1',
+              'Dimension qui progresse le plus',
+              'Dimension à surveiller'
+          ]
+          for c in checks:
+              if c not in s: raise SystemExit('Missing V61 content: '+c)
+          if s.count('id="v61-dashboard-runtime"') != 1: raise SystemExit('V61 runtime duplicate')
+          if s.count('>V61</div>') != 1: raise SystemExit('V61 badge count invalid')
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validate V61
+        run: |
+          grep -q '>V61</div>' index.html
+          grep -q 'id="v61-dashboard-style"' index.html
+          grep -q 'id="v61-dashboard-runtime"' index.html
+          grep -q 'id="v61Dashboard"' index.html
+          grep -q 'id="dashboardNavButton"' index.html
+          grep -q 'function v61Render()' index.html
+          grep -q 'Progression depuis J1' index.html
+          grep -q 'Dimension qui progresse le plus' index.html
+          grep -q 'Dimension à surveiller' index.html
+          test "$(grep -o 'id=\"v61-dashboard-runtime\"' index.html | wc -l)" -eq 1
+          test "$(grep -o '>V61</div>' index.html | wc -l)" -eq 1
+
+      - name: Commit V61
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Update index.html V61 - dashboard and analysis'
+          git push
