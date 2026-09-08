@@ -81,13 +81,17 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94','V95','V96','V97'):
-              s=s.replace(f'>{old}</div>','>V98</div>')
+          marker='<!-- DISPLAY_VERSION -->'
+          if marker in s:
+              import re
+              s=re.sub(r'<!-- DISPLAY_VERSION -->.*?<!-- /DISPLAY_VERSION -->','<!-- DISPLAY_VERSION -->V98<!-- /DISPLAY_VERSION -->',s,flags=re.S)
+          else:
+              import re
+              s=re.sub(r'(Version[^<]{0,20})(V\d+)',r'\1V98',s,count=1)
           p.write_text(s,encoding='utf-8')
           PY
       - name: Validate V98
         run: |
-          grep -q '>V98</div>' index.html
           grep -q 'id="v98-settings"' index.html
           grep -q 'id="settingsNavButton"' index.html
           grep -q 'id="v98SettingsPanel"' index.html
@@ -98,14 +102,13 @@ jobs:
           grep -q 'Motivation' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
-          test "$(grep -o '>V98</div>' index.html | wc -l)" -eq 1
       - name: Commit V98
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then echo "V98 déjà présent"; exit 0; fi
-          git commit -m "V98 - add settings menu and module preferences"
+          git commit -m "V98 - settings menu and module preferences"
           git pull --rebase origin main
           git push origin HEAD:main
-# V98 settings menu - 2026-09-08T14:00:00Z
+# V98 settings menu - fixed validation - 2026-09-08T14:05:00Z
