@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   deploy:
-    if: "!contains(github.event.head_commit.message, 'V49 - corriger initialisation Supabase')"
+    if: "!contains(github.event.head_commit.message, 'V49 direct patch completed')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7
@@ -37,5 +37,5 @@ jobs:
             s = s.replace('<div class="app-version-v18">V48</div>', '<div class="app-version-v18">V49</div>');
             if (!s.includes('<div class="app-version-v18">V49</div>')) throw new Error('V49 marker missing');
             if (!s.includes('function getSupabaseClient()')) throw new Error('getSupabaseClient missing');
-            await github.rest.repos.createOrUpdateFileContents({owner, repo, path: 'index.html', message: 'V49 - corriger initialisation Supabase', content: Buffer.from(s, 'utf8').toString('base64'), sha: file.sha, branch: 'main'});
+            await github.rest.repos.createOrUpdateFileContents({owner, repo, path: 'index.html', message: 'V49 direct patch completed', content: Buffer.from(s, 'utf8').toString('base64'), sha: file.sha, branch: 'main'});
             core.info('index.html V49 déployé');
