@@ -3780,7 +3780,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   function getClient(){ return typeof getSupabaseClient==='function' ? getSupabaseClient() : null; }
 
   function programmeHasMeditation(){
-    const roots=[$('exerciseContent'),$('interactiveExercise')].filter(Boolean);
+    const roots=[$('programSection'),$('exerciseContent'),$('interactiveExercise')].filter(Boolean);
     const text=roots.map(r=>r.innerText||r.textContent||'').join(' ').toLowerCase();
     return text.includes('méditation') || text.includes('meditation');
   }
@@ -3788,13 +3788,13 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   function insertPicker(){
     if(!programmeHasMeditation()) { removePicker(); return; }
     if($('meditationMediaPicker')) return;
-    const host=$('exerciseContent') || $('interactiveExercise');
+    const host=$('exerciseContent') || $('interactiveExercise') || $('programSection');
     if(!host) return;
     const picker=document.createElement('div');
     picker.className='meditation-media-picker';
     picker.id='meditationMediaPicker';
     picker.innerHTML=`<label for="meditationMediaSelect">🎧 Choisir l’audio de méditation</label><select id="meditationMediaSelect"><option value="">— Aucun audio sélectionné —</option></select><p class="meditation-media-help">Les MP3 classés « Méditation » dans 🎧 Média apparaissent ici.</p><div id="meditationMediaPlayer" class="meditation-media-player"></div>`;
-    host.parentNode.insertBefore(picker,host);
+    if(host === $('programSection')) host.prepend(picker); else host.parentNode.insertBefore(picker,host);
     $('meditationMediaSelect').addEventListener('change',()=>applySelection(true));
     loadMeditationChoices();
   }
@@ -3818,6 +3818,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     }
   }
   function findSavedMediaId(){
+    if(window.__v85SavedMeditationId) return window.__v85SavedMeditationId;
     const raw=String(window.__v85CurrentEntry?.exercise_response || '');
     const m=raw.match(MARKER_RE);
     return m ? m[1] : '';
@@ -3863,6 +3864,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     const original=window.loadExistingEntry;
     async function wrapped(entry){
       const raw=entry?.exercise_response;
+      const saved=String(raw||'').match(MARKER_RE);
+      window.__v85SavedMeditationId=saved ? saved[1] : '';
       window.__v85CurrentEntry=entry ? {...entry} : null;
       if(window.__v85CurrentEntry && typeof raw==='string') window.__v85CurrentEntry.exercise_response=raw.replace(/\n?\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
       const cleanEntry=window.__v85CurrentEntry;
