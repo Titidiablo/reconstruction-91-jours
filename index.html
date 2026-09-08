@@ -1,1 +1,2926 @@
-<!DOCTYPE html><html><body>RECOVER</body></html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Reconstruction — 91 jours</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f3ef;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.25;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 15px;
+      background: white;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    button {
+      border: none;
+      padding: 11px 17px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      margin: 4px 5px 4px 0;
+    }
+
+    button:hover {
+      opacity: 0.85;
+    }
+
+    .primary {
+      background: #222;
+      color: white;
+    }
+
+    .nav-buttons button {
+      transition: all 0.15s ease;
+      font-weight: 500;
+    }
+
+    .nav-buttons button.nav-active {
+      background: #222 !important;
+      color: white !important;
+      border: 2px solid #222;
+      box-shadow: 0 0 0 3px rgba(34,34,34,0.18);
+      font-weight: bold;
+      transform: translateY(-1px);
+    }
+
+    .nav-buttons button.nav-active::before {
+      content: "✓ ";
+      font-weight: bold;
+    }
+
+    .nav-buttons button:not(.nav-active) {
+      background: #e8e5df !important;
+      color: #222 !important;
+      border: 2px solid #ccc;
+      box-shadow: none;
+      font-weight: 500;
+    }
+
+    .secondary {
+      background: #e8e5df;
+      color: #222;
+    }
+
+    .danger {
+      background: #eee;
+      color: #a00;
+    }
+
+    .success {
+      color: #26733d;
+      margin-top: 10px;
+    }
+
+    .error {
+      color: #a00;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Navigation */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .nav-buttons button {
+      margin: 0;
+    }
+
+    .day-navigation {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .day-navigation button {
+      flex: 1;
+    }
+
+    .day-number {
+      font-size: 30px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .week-label {
+      color: #777;
+      margin-bottom: 20px;
+    }
+
+    .progress-container {
+      background: #ddd;
+      border-radius: 20px;
+      height: 12px;
+      overflow: hidden;
+      margin: 10px 0 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #333;
+      width: 1%;
+    }
+
+    .content-block {
+      margin-top: 20px;
+    }
+
+    .content-block h3 {
+      margin-bottom: 8px;
+    }
+
+    .exercise-card {
+      padding: 28px;
+      border-top: 5px solid #333;
+    }
+
+    .exercise-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 0;
+    }
+
+    .exercise-heading-icon {
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .exercise-heading h2 {
+      margin: 0;
+    }
+
+    .exercise-subtitle {
+      display: none;
+    }
+
+    .exercise-section {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .exercise-section:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .exercise-section-title {
+      font-size: 17px;
+      font-weight: bold;
+      margin: 0 0 2px;
+      line-height: 1.25;
+    }
+
+    .exercise-section-title.clickable-section-title {
+      cursor: pointer;
+      display: inline-block;
+      padding: 3px 7px;
+      margin-left: -7px !important;
+      border-radius: 7px;
+      transition: background .15s ease, transform .15s ease;
+    }
+
+    .exercise-section-title.clickable-section-title:hover {
+      background: #f0eee9;
+      transform: translateX(2px);
+    }
+
+    .exercise-section-title.clickable-section-title::after {
+      content: ' ↘';
+      font-size: 12px;
+      opacity: .45;
+    }
+
+    .exercise-text {
+      margin: 0 0 4px;
+      white-space: pre-wrap;
+      line-height: 1.35;
+    }
+
+    .response-box {
+      margin-top: 16px;
+    }
+
+    .response-box label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .response-box textarea {
+      min-height: 110px;
+    }
+
+    .control-table-wrap {
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
+    .control-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    .control-table th,
+    .control-table td {
+      border: 1px solid #d8d4cd;
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    .control-table th {
+      background: #f0eee9;
+      text-align: left;
+    }
+
+    .control-delete-col {
+      width: 48px;
+      min-width: 48px;
+      text-align: center !important;
+    }
+
+    .control-delete-cell {
+      width: 48px;
+      min-width: 48px;
+      text-align: center;
+      vertical-align: middle !important;
+      padding: 4px !important;
+    }
+
+    .control-delete-button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 6px;
+      border-radius: 6px;
+      position: relative;
+      z-index: 20;
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    .control-delete-button:hover {
+      background: #eee9e3;
+    }
+
+    .control-table textarea {
+      min-height: 58px;
+      margin: 0;
+      resize: vertical;
+    }
+
+    .table-actions {
+      margin-top: 10px;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+      align-items: stretch;
+    }
+
+    .score-item {
+      background: #f7f5f1;
+      border: 1px solid #ddd9d1;
+      border-radius: 10px;
+      padding: 12px;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .score-item label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 7px;
+    }
+
+    .score-item select {
+      margin: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 700px) {
+      .score-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .weekly-score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 4px;
+    }
+
+    .weekly-score-item {
+      background: #f7f5f1;
+      border: 1px solid #ddd9d1;
+      border-radius: 9px;
+      padding: 9px;
+    }
+
+    .weekly-score-item label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .weekly-score-item select {
+      margin: 0;
+      width: 100%;
+    }
+
+    @media (max-width: 700px) {
+      .weekly-score-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .content-text {
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    /* Journal */
+    .journal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .journal-entry {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 18px;
+      margin-top: 15px;
+      background: #fafafa;
+    }
+
+    .journal-entry-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .journal-entry-date {
+      color: #777;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .journal-entry-content {
+      white-space: pre-wrap;
+      margin-bottom: 15px;
+    }
+
+    .mood {
+      display: inline-block;
+      background: #eee;
+      padding: 4px 9px;
+      border-radius: 15px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .emoji-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: -5px 0 15px;
+    }
+
+    .emoji-buttons button {
+      background: #f0eee9;
+      font-size: 20px;
+      padding: 5px 9px;
+      margin: 0;
+    }
+
+    .search-box {
+      margin: 20px 0;
+    }
+
+    .empty {
+      color: #777;
+      text-align: center;
+      padding: 25px;
+    }
+
+    .section-title {
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .score-chart-card { margin-top: 20px; }
+    .score-chart-wrap { position: relative; height: 360px; width: 100%; display:block; }
+    .score-chart-toolbar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .score-chart-toolbar button { margin:0; }
+    .score-chart-toolbar button.active { background:#222; color:#fff; }
+    .inline-response { margin: 8px 0 0; }
+    .inline-response label { display:block; font-weight:bold; margin-bottom:5px; }
+    .inline-response textarea { min-height:95px; margin:0; }
+    .inline-response.compact textarea { min-height:80px; }
+    .score-chart-header { display:flex; align-items:center; justify-content:space-between; cursor:pointer; user-select:none; }
+    .score-chart-header .section-title { margin:0; }
+    .score-chart-toggle { margin:0; width:34px; height:34px; padding:0; border-radius:50%; border:1px solid #ccc; background:#e8e5df; color:#222; font-size:18px; line-height:1; cursor:pointer; }
+    .score-chart-toggle:hover { transform:translateY(-1px); }
+    .score-chart-body { overflow:hidden; }
+    .score-chart-body.collapsed { display:none; }
+
+    @media (max-width:700px) { .score-chart-wrap { height:300px; } }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .day-number {
+        font-size: 25px;
+      }
+    }
+  
+/* V51 - base V45 + restauration fiable du tableau depuis la BDD */
+#scoreEvolutionChartContainer { width:100%; min-height:360px; }
+.score-svg-wrap { width:100%; overflow-x:auto; }
+.score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
+.chart-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:12px 20px; margin-top:8px; font-size:12px; }
+.chart-legend-item { display:inline-flex; align-items:center; gap:6px; }
+.chart-legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.chart-empty { min-height:180px; display:flex; align-items:center; justify-content:center; color:#777; font-size:14px; }
+#saveStatus.hidden { display:none !important; }
+
+</style>
+
+
+<style id="final-tight-layout-v11">
+.exercise-card {
+  padding-top: 20px;
+}
+.exercise-card .exercise-heading {
+  margin: 0 0 2px 0;
+}
+#exerciseContent,
+#interactiveExercise {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#exerciseContent .exercise-section,
+#interactiveExercise .exercise-section {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+#exerciseContent .exercise-section-title,
+#interactiveExercise .exercise-section-title {
+  margin: 0 0 2px 0 !important;
+  padding: 0 !important;
+}
+#exerciseContent .exercise-text,
+#interactiveExercise .exercise-text {
+  margin: 0 0 4px 0 !important;
+  padding: 0 !important;
+}
+</style>
+
+
+<style id="reconstruction-v14-real-fix">
+/* V14 — correction réelle du "gouffre".
+   #exerciseContent porte la classe .content-text, qui avait
+   white-space: pre-wrap. Les retours à la ligne/indentations du HTML
+   généré étaient donc rendus comme de vraies lignes vides.
+   On neutralise cela sur le conteneur et on conserve pre-wrap
+   uniquement sur les vrais textes d'exercice. */
+
+#exerciseContent {
+  white-space: normal !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#exerciseContent .exercise-section {
+  margin: 0 0 12px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+#exerciseContent .exercise-section:first-child {
+  margin-top: 0 !important;
+}
+
+#exerciseContent .exercise-section-title {
+  margin: 0 0 3px 0 !important;
+  padding: 0 !important;
+  line-height: 1.25 !important;
+}
+
+/* V15 — petit espace autour de PRATIQUE DU JOUR */
+#exerciseContent .exercise-section:first-child {
+  padding-top: 7px !important;
+  margin-bottom: 9px !important;
+}
+
+#exerciseContent .exercise-text {
+  white-space: normal !important;
+  margin: 0 0 5px 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Même correction pour le conteneur interactif : aucun espace
+   provenant de retours à la ligne du HTML généré. */
+#interactiveExercise {
+  white-space: normal !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#interactiveExercise .exercise-section {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#interactiveExercise .exercise-section-title {
+  margin: 0 0 3px 0 !important;
+  padding: 0 !important;
+}
+
+#interactiveExercise .exercise-text {
+  margin: 0 0 5px 0 !important;
+  padding: 0 !important;
+}
+
+/* Badge discret */
+.app-version-v18 {
+  position: fixed;
+  right: 12px;
+  bottom: 10px;
+  z-index: 9999;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  color: #777;
+  font: 11px/1.2 Arial, sans-serif;
+  box-shadow: 0 1px 5px rgba(0,0,0,.06);
+  pointer-events: none;
+}
+</style>
+
+
+<style id="reconstruction-v18">
+#exerciseContent .exercise-trace-section {
+  margin-top: 2px !important;
+  margin-bottom: 8px !important;
+}
+</style>
+</head>
+
+<body>
+  <div class="app-version-v18">V51</div>
+
+  <!-- ========================================================= -->
+  <!-- EN-TÊTE -->
+  <!-- ========================================================= -->
+
+  <h1>RECONSTRUCTION — 91 JOURS</h1>
+
+  <div class="subtitle">
+    Stoïcisme × Jung × Méditation
+  </div>
+
+
+  <!-- ========================================================= -->
+  <!-- CONNEXION -->
+  <!-- ========================================================= -->
+
+  <div id="login" class="card">
+
+    <h2>Connexion</h2>
+
+    <p>
+      Connecte-toi pour accéder à ton programme et sauvegarder
+      automatiquement ton journal dans le cloud.
+    </p>
+
+    <input
+      id="email"
+      type="email"
+      placeholder="Ton adresse e-mail"
+    >
+
+    <input
+      id="password"
+      type="password"
+      placeholder="Ton mot de passe"
+    >
+
+    <button class="primary" onclick="signIn()">
+      Se connecter
+    </button>
+
+    <button class="secondary" onclick="signUp()">
+      Créer mon compte
+    </button>
+
+    <div id="loginStatus"></div>
+
+  </div>
+
+
+  <!-- ========================================================= -->
+  <!-- APPLICATION -->
+  <!-- ========================================================= -->
+
+  <div id="app" class="hidden">
+
+    <!-- Navigation principale -->
+
+    <div class="topbar">
+
+      <div class="nav-buttons">
+
+        <button
+          id="programNavButton"
+          class="primary nav-active"
+          onclick="showSection('program')">
+          📅 Programme
+        </button>
+
+        <button
+          id="journalNavButton"
+          class="secondary"
+          onclick="showSection('journal')">
+          📔 Mon journal intime
+        </button>
+
+      </div>
+
+      <button
+        class="secondary"
+        onclick="logout()">
+        Se déconnecter
+      </button>
+
+    </div>
+
+
+    <!-- ======================================================= -->
+    <!-- PROGRAMME 91 JOURS -->
+    <!-- ======================================================= -->
+
+    <div id="programSection">
+
+      <div class="card">
+
+        <div class="day-number" id="dayTitle">
+          Jour 1
+        </div>
+
+        <div class="week-label" id="weekLabel">
+          Semaine 1
+        </div>
+
+        <div class="progress-container">
+          <div
+            class="progress-bar"
+            id="progressBar">
+          </div>
+        </div>
+
+        <p id="progressText">
+          Jour 1 sur 91
+        </p>
+
+        <label for="daySelector">
+          Aller directement à un jour :
+        </label>
+
+        <select
+          id="daySelector"
+          onchange="goToSelectedDay()">
+        </select>
+
+      </div>
+
+      <!-- Navigation jours -->
+      <div class="day-navigation day-navigation-top">
+
+        <button
+          class="secondary"
+          onclick="previousDay()">
+          ← Jour précédent
+        </button>
+
+        <button
+          class="secondary"
+          onclick="nextDay()">
+          Jour suivant →
+        </button>
+
+      </div>
+
+      <!-- Évolution des scores -->
+      <div class="card chart-card score-chart-card">
+        <div class="score-chart-header" onclick="toggleScoreEvolution()" role="button" tabindex="0" onkeydown="if(event.key==="Enter"||event.key===" "){toggleScoreEvolution();}">
+          <h2 class="section-title">📈 Évolution de mes scores</h2>
+          <button id="scoreEvolutionToggle" class="score-chart-toggle" type="button" aria-expanded="true" aria-controls="scoreEvolutionBody" onclick="event.stopPropagation(); toggleScoreEvolution();">▼</button>
+        </div>
+        <div id="scoreEvolutionBody" class="score-chart-body">
+        <div class="score-chart-toolbar">
+          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 derniers jours</button>
+          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 derniers jours</button>
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>
+        </div>
+        <div class="score-chart-wrap">
+          <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>
+        </div>
+        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
+        </div>
+      </div>
+
+      <!-- Contenu du jour -->
+
+      <div class="card exercise-card">
+
+        <div class="exercise-heading">
+          <div class="exercise-heading-icon" id="exerciseIcon">🏛️</div>
+          <h2 id="exerciseTitle">Chargement...</h2>
+        </div>
+
+        <div id="exerciseSubtitle" class="exercise-subtitle"></div>
+
+        <div id="exerciseContent" class="content-text">
+          Chargement du programme...
+        </div>
+
+        <div id="interactiveExercise"></div>
+
+      </div>
+
+
+      <!-- Méditation -->
+
+      <div class="card">
+
+        <h2 class="section-title">
+          🧘 Méditation
+        </h2>
+
+        <p>
+          Durée :
+          <strong id="meditationDuration">—</strong>
+          minutes
+        </p>
+
+        <div
+          id="meditation"
+          class="content-text">
+        </div>
+
+      </div>
+
+
+      <!-- Journal du programme -->
+
+      <div class="card">
+
+        <h2 class="section-title">
+          ✍️ Mon journal du programme
+        </h2>
+
+        <label>
+          Notes de méditation
+        </label>
+
+        <textarea
+          id="meditationNotes"
+          placeholder="Qu'as-tu observé pendant la méditation ?">
+        </textarea>
+
+
+        <input type="hidden" id="exerciseResponse">
+        <input type="hidden" id="action">
+        <input type="hidden" id="eveningIntegration">
+
+        <label>
+          Ce que j'ai appris
+        </label>
+
+        <textarea
+          id="learning"
+          placeholder="Qu'as-tu appris aujourd'hui ?">
+        </textarea>
+
+
+        <label>
+          Ma réaction
+        </label>
+
+        <textarea
+          id="reaction"
+          placeholder="Comment ai-je réagi ?">
+        </textarea>
+
+
+
+        <h3 class="section-title">📊 Mes scores du jour</h3>
+
+        <div class="score-grid">
+          <div class="score-item">
+            <label for="presenceScore">🧘 Présence</label>
+            <select id="presenceScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+
+          <div class="score-item">
+            <label for="impulseScore">🛑 Maîtrise de l'impulsion</label>
+            <select id="impulseScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+
+          <div class="score-item">
+            <label for="valuesScore">🧭 Cohérence avec mes valeurs</label>
+            <select id="valuesScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+
+          <div class="score-item">
+            <label for="selfRelationScore">❤️ Relation à moi-même</label>
+            <select id="selfRelationScore">
+              <option value="">— / 10</option>
+              <option value="1">1 / 10</option>
+              <option value="2">2 / 10</option>
+              <option value="3">3 / 10</option>
+              <option value="4">4 / 10</option>
+              <option value="5">5 / 10</option>
+              <option value="6">6 / 10</option>
+              <option value="7">7 / 10</option>
+              <option value="8">8 / 10</option>
+              <option value="9">9 / 10</option>
+              <option value="10">10 / 10</option>
+            </select>
+          </div>
+        </div>
+
+        <button
+          class="primary"
+          onclick="saveEntry()">
+          💾 Sauvegarder ma journée
+        </button>
+
+        <div id="saveStatus"></div>
+
+      </div>
+
+    </div>
+
+
+
+    <div id="unsavedChangesModal" class="unsaved-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="unsavedChangesTitle">
+      <div class="unsaved-modal">
+        <h3 id="unsavedChangesTitle">⚠️ Modifications non sauvegardées</h3>
+        <p>Vous avez modifié cette journée sans la sauvegarder. Que souhaitez-vous faire ?</p>
+        <div class="unsaved-modal-actions">
+          <button type="button" class="primary" id="unsavedSaveBtn">💾 Sauvegarder et continuer</button>
+          <button type="button" class="secondary" id="unsavedCancelBtn">↩️ Annuler les modifications</button>
+          <button type="button" class="stay-btn" id="unsavedStayBtn">✕ Rester sur cette journée</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- JOURNAL INTIME -->
+    <!-- ======================================================= -->
+
+    <div id="journalSection" class="hidden">
+
+      <div class="card">
+
+        <div class="journal-header">
+
+          <div>
+            <h2>📔 Mon journal intime</h2>
+
+            <p>
+              Un espace personnel pour écrire librement,
+              sans consigne imposée.
+            </p>
+          </div>
+
+          <button
+            class="primary"
+            onclick="newJournalEntry()">
+            ＋ Nouvelle entrée
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- Nouvelle entrée / modification -->
+
+      <div
+        id="journalEditor"
+        class="card hidden">
+
+        <h2 id="journalEditorTitle">
+          Nouvelle entrée
+        </h2>
+
+
+        <label>
+          Titre
+        </label>
+
+        <input
+          id="journalTitle"
+          type="text"
+          placeholder="Un titre... 😊"
+          onfocus="setEmojiField('journalTitle')">
+
+
+        <label>
+          Ajouter un emoji
+        </label>
+
+        <div class="emoji-buttons">
+
+          <button onclick="insertEmoji('😊')">😊</button>
+          <button onclick="insertEmoji('😌')">😌</button>
+          <button onclick="insertEmoji('🙂')">🙂</button>
+          <button onclick="insertEmoji('😔')">😔</button>
+          <button onclick="insertEmoji('😢')">😢</button>
+          <button onclick="insertEmoji('😡')">😡</button>
+          <button onclick="insertEmoji('❤️')">❤️</button>
+          <button onclick="insertEmoji('💔')">💔</button>
+          <button onclick="insertEmoji('🧘')">🧘</button>
+          <button onclick="insertEmoji('🌱')">🌱</button>
+          <button onclick="insertEmoji('🌅')">🌅</button>
+          <button onclick="insertEmoji('🙏')">🙏</button>
+          <button onclick="insertEmoji('💭')">💭</button>
+          <button onclick="insertEmoji('🔥')">🔥</button>
+          <button onclick="insertEmoji('✨')">✨</button>
+
+        </div>
+
+
+        <label>
+          Humeur
+        </label>
+
+        <select id="journalMood">
+
+          <option value="">
+            — Pas d'humeur renseignée —
+          </option>
+
+          <option value="😊 Heureux">
+            😊 Heureux
+          </option>
+
+          <option value="😌 Serein">
+            😌 Serein
+          </option>
+
+          <option value="🙂 Bien">
+            🙂 Bien
+          </option>
+
+          <option value="😐 Neutre">
+            😐 Neutre
+          </option>
+
+          <option value="😕 Mitigé">
+            😕 Mitigé
+          </option>
+
+          <option value="😔 Triste">
+            😔 Triste
+          </option>
+
+          <option value="😡 En colère">
+            😡 En colère
+          </option>
+
+          <option value="😰 Anxieux">
+            😰 Anxieux
+          </option>
+
+        </select>
+
+
+        <label>
+          Mon journal
+        </label>
+
+        <textarea
+          id="journalContent"
+          rows="14"
+          placeholder="Écris librement ce que tu veux..."
+          onfocus="setEmojiField('journalContent')">
+        </textarea>
+
+
+        <button
+          class="primary"
+          onclick="saveJournalEntry()">
+          💾 Enregistrer
+        </button>
+
+        <button
+          class="secondary"
+          onclick="cancelJournalEdit()">
+          Annuler
+        </button>
+
+        <div id="journalSaveStatus"></div>
+
+      </div>
+
+
+      <!-- Recherche -->
+
+      <div class="card">
+
+        <h2 class="section-title">
+          🔎 Rechercher dans mon journal
+        </h2>
+
+        <input
+          id="journalSearch"
+          type="search"
+          placeholder="Recherche par mot-clé..."
+          oninput="filterJournalEntries()">
+
+        <div id="journalEntries">
+          Chargement...
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+<script>
+
+  /* ============================================================
+     CONFIGURATION SUPABASE
+     ============================================================ */
+
+  const SUPABASE_URL =
+    "https://tjtmvxvtzuxetdwcjrvq.supabase.co";
+
+  const SUPABASE_KEY =
+    "sb_publishable_NPauAhlEI3TJKIUNSLywGQ_k6FGMs2a";
+
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+
+  /* ============================================================
+     VARIABLES
+     ============================================================ */
+
+  let currentDay = 1;
+
+  let currentJournalEntryId = null;
+
+  let allJournalEntries = [];
+  let allDailyEntries = [];
+  let scoreEvolutionChart = null;
+  let chartRange = 90;
+  let saveStatusTimer = null;
+  let isDirty = false;
+  let suppressDirty = false;
+  let pendingDay = null;
+
+
+
+
+  // V51 : base V45 conservée ; seul le correctif de restauration BDD est appliqué.
+  function installDirtyTracking() {
+    const root = document.getElementById("programSection");
+    if (!root || root.dataset.dirtyTrackingInstalled) return;
+    root.dataset.dirtyTrackingInstalled = "1";
+    root.addEventListener("input", markDirty, true);
+    root.addEventListener("change", markDirty, true);
+  }
+
+  function installUnsavedModalHandlers() {
+    const saveBtn = document.getElementById("unsavedSaveBtn");
+    const cancelBtn = document.getElementById("unsavedCancelBtn");
+    const stayBtn = document.getElementById("unsavedStayBtn");
+    if (saveBtn && !saveBtn.dataset.bound) {
+      saveBtn.dataset.bound = "1";
+      saveBtn.addEventListener("click", confirmSaveAndContinue);
+    }
+    if (cancelBtn && !cancelBtn.dataset.bound) {
+      cancelBtn.dataset.bound = "1";
+      cancelBtn.addEventListener("click", discardAndContinue);
+    }
+    if (stayBtn && !stayBtn.dataset.bound) {
+      stayBtn.dataset.bound = "1";
+      stayBtn.addEventListener("click", () => { pendingDay = null; closeUnsavedModal(); });
+    }
+  }
+
+  window.addEventListener("beforeunload", function(event) {
+    if (!isDirty) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
+  /* ============================================================
+     INSCRIPTION
+     ============================================================ */
+
+  async function signUp() {
+
+    const email =
+      document.getElementById("email").value.trim();
+
+    const password =
+      document.getElementById("password").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    if (!email || !password) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Indique ton e-mail et ton mot de passe.";
+
+      return;
+    }
+
+    const { error } =
+      await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Erreur : " + error.message;
+      return false;
+
+    } else {
+
+      status.className = "success";
+
+      status.textContent =
+        "Compte créé. Vérifie ton e-mail si nécessaire.";
+    }
+  }
+
+
+  /* ============================================================
+     CONNEXION
+     ============================================================ */
+
+  async function signIn() {
+
+    const email =
+      document.getElementById("email").value.trim();
+
+    const password =
+      document.getElementById("password").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+      return;
+    }
+
+    status.textContent = "";
+
+    await showApplication();
+  }
+
+
+  /* ============================================================
+     AFFICHER APPLICATION
+     ============================================================ */
+
+  async function showApplication() {
+
+    document.getElementById("login").classList.add("hidden");
+
+    document.getElementById("app").classList.remove("hidden");
+
+    populateDaySelector();
+    installDirtyTracking();
+    installUnsavedModalHandlers();
+
+    showSection("program");
+
+    await loadDay(currentDay);
+
+    await loadJournalEntries();
+    await loadScoreHistory();
+  }
+
+
+  /* ============================================================
+     NAVIGATION SECTIONS
+     ============================================================ */
+
+  function showSection(section) {
+
+    const program =
+      document.getElementById("programSection");
+
+    const journal =
+      document.getElementById("journalSection");
+
+    const programButton =
+      document.getElementById("programNavButton");
+
+    const journalButton =
+      document.getElementById("journalNavButton");
+
+    if (section === "program") {
+
+      program.classList.remove("hidden");
+      journal.classList.add("hidden");
+
+      programButton.classList.add("nav-active");
+      journalButton.classList.remove("nav-active");
+
+    } else {
+
+      program.classList.add("hidden");
+      journal.classList.remove("hidden");
+
+      programButton.classList.remove("nav-active");
+      journalButton.classList.add("nav-active");
+
+      loadJournalEntries();
+    }
+  }
+
+
+  /* ============================================================
+     SELECTEUR DES 91 JOURS
+     ============================================================ */
+
+  function populateDaySelector() {
+
+    const selector =
+      document.getElementById("daySelector");
+
+    selector.innerHTML = "";
+
+    for (let i = 1; i <= 91; i++) {
+
+      const option =
+        document.createElement("option");
+
+      option.value = i;
+
+      option.textContent =
+        "Jour " + i;
+
+      selector.appendChild(option);
+    }
+
+    selector.value = currentDay;
+  }
+
+
+  function markDirty() {
+    if (!suppressDirty) isDirty = true;
+  }
+
+  function setDirtyState(dirty) {
+    isDirty = !!dirty;
+    const saveButton = document.querySelector('button[onclick="saveEntry()"]');
+    if (saveButton) saveButton.classList.toggle('unsaved-state', isDirty);
+  }
+
+  function syncDaySelector(day) {
+    const selector = document.getElementById("daySelector");
+    if (selector) selector.value = day;
+  }
+
+  async function requestDayChange(targetDay) {
+    targetDay = Number(targetDay);
+    if (!Number.isInteger(targetDay) || targetDay < 1 || targetDay > 91) return;
+    if (targetDay === currentDay) return;
+    if (!isDirty) {
+      await loadDay(targetDay);
+      return;
+    }
+    pendingDay = targetDay;
+    openUnsavedModal();
+  }
+
+  function openUnsavedModal() {
+    document.getElementById("unsavedChangesModal")?.classList.remove("hidden");
+  }
+
+  function closeUnsavedModal() {
+    document.getElementById("unsavedChangesModal")?.classList.add("hidden");
+  }
+
+  async function continuePendingDay() {
+    const target = pendingDay;
+    pendingDay = null;
+    closeUnsavedModal();
+    if (target != null) await loadDay(target);
+  }
+
+  async function confirmSaveAndContinue() {
+    const ok = await saveEntry();
+    if (ok) await continuePendingDay();
+  }
+
+  async function discardAndContinue() {
+    const target = pendingDay;
+    pendingDay = null;
+    closeUnsavedModal();
+    suppressDirty = true;
+    try {
+      if (target != null) await loadDay(target);
+    } finally {
+      suppressDirty = false;
+      setDirtyState(false);
+    }
+  }
+
+  function goToSelectedDay() {
+    const selector = document.getElementById("daySelector");
+    requestDayChange(parseInt(selector.value, 10));
+    syncDaySelector(currentDay);
+  }
+
+  function previousDay() {
+    if (currentDay <= 1) return;
+    requestDayChange(currentDay - 1);
+    syncDaySelector(currentDay);
+  }
+
+  function nextDay() {
+    if (currentDay >= 91) return;
+    requestDayChange(currentDay + 1);
+    syncDaySelector(currentDay);
+  }
+
+
+  /* ============================================================
+     CHARGER UN JOUR
+     ============================================================ */
+
+  async function loadDay(dayNumber) {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("program_days")
+        .select("*")
+        .eq("day_number", dayNumber)
+        .single();
+
+    if (error) {
+
+      document.getElementById("exerciseTitle").textContent =
+        "Erreur";
+
+      document.getElementById("exerciseContent").textContent =
+        error.message;
+
+      return;
+    }
+
+
+    document.getElementById("dayTitle").textContent =
+      "Jour " + data.day_number;
+
+
+    document.getElementById("weekLabel").textContent =
+      "Semaine " + data.week_number;
+
+
+    document.getElementById("exerciseTitle").textContent =
+      getMainTitle(data.title);
+
+    document.getElementById("exerciseIcon").textContent =
+      getExerciseIcon(data.title);
+
+    document.getElementById("exerciseSubtitle").textContent =
+      getSubtitle(data.title);
+
+    document.getElementById("exerciseContent").innerHTML =
+      formatExerciseContent(data.content);
+
+    renderInteractiveExercise(data.content);
+
+    const isDay1 = Number(dayNumber) === 1;
+    document.getElementById("programSection").classList.toggle("day1-hide-generic-response", isDay1);
+
+
+    document.getElementById("meditationDuration").textContent =
+      data.meditation_duration;
+
+
+    document.getElementById("meditation").innerHTML =
+      formatText(data.meditation);
+
+
+    const percent =
+      Math.round((dayNumber / 91) * 100);
+
+    document.getElementById("progressBar").style.width =
+      percent + "%";
+
+
+    document.getElementById("progressText").textContent =
+      "Jour " + dayNumber + " sur 91 — " + percent + "%";
+
+
+    await loadExistingEntry(dayNumber);
+    currentDay = Number(dayNumber);
+    syncDaySelector(currentDay);
+    setDirtyState(false);
+    renderScoreEvolutionChart();
+  }
+
+
+  /* ============================================================
+     JOURNAL DU PROGRAMME
+     ============================================================ */
+
+  function restoreWeeklyScores(text) {
+    const raw = String(text || "");
+    const ids = ['weeklySilence','weeklyRumination','weeklyImpulsivity','weeklyValidation','weeklyJudgment','weeklyEnergy'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+      const m = raw.match(new RegExp(id + "\\s*:\\s*(\\d+)\\s*/\\s*10", "i"));
+      if (el && m) el.value = m[1];
+    });
+  }
+
+  async function loadExistingEntry(dayNumber) {
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("daily_entries")
+        .select("*")
+        .eq("user_id", (await supabaseClient.auth.getUser()).data.user?.id)
+        .eq("day_number", dayNumber)
+        .maybeSingle();
+
+
+    if (error || !data) {
+
+      clearProgramJournal();
+
+      return;
+    }
+
+
+    document.getElementById("meditationNotes").value =
+      data.meditation_notes || "";
+
+    const rawExerciseResponse = data.exercise_response || "";
+    const hasStructuredBlocks = /(?:^|\n)(?:PRATIQUE DU JOUR|TRACE ÉCRITE|TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE|DÉCISION SANS VALIDATION|BILAN DE SEMAINE — SCORES)\n/i.test(rawExerciseResponse);
+    document.getElementById("exerciseResponse").value = hasStructuredBlocks ? "" : rawExerciseResponse;
+
+    restoreWeeklyScores(data.exercise_response || "");
+    restoreControlTable(data.exercise_response || "");
+    restoreInlineResponses(data);
+
+    document.getElementById("action").value =
+      data.action || "";
+
+    document.getElementById("learning").value =
+      data.learning || "";
+
+    document.getElementById("eveningIntegration").value =
+      data.evening_integration || "";
+
+    document.getElementById("reaction").value =
+      data.reaction || "";
+
+    document.getElementById("presenceScore").value =
+      data.presence ?? "";
+
+    document.getElementById("impulseScore").value =
+      data.impulse_control ?? "";
+
+    document.getElementById("valuesScore").value =
+      data.values_coherence ?? "";
+
+    document.getElementById("selfRelationScore").value =
+      data.self_relation ?? "";
+  }
+
+
+
+  function restoreInlineResponses(data) {
+    const raw = String(data?.exercise_response || "");
+    const getBlock = (name, nextNames) => {
+      const re = new RegExp("(?:^|\\n)" + name + "\\n([\\s\\S]*?)(?=\\n(?:" + nextNames.join("|") + ")\\n|$)", "i");
+      const m = raw.match(re);
+      return m ? m[1].trim() : "";
+    };
+    const p = document.getElementById("practiceResponse");
+    const t = document.getElementById("traceResponse");
+    const a = document.getElementById("actionResponseInline");
+    const e = document.getElementById("eveningResponseInline");
+    if (p) p.value = getBlock("PRATIQUE DU JOUR", ["TRACE ÉCRITE","TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE","DÉCISION SANS VALIDATION","BILAN DE SEMAINE — SCORES"]);
+    if (t) t.value = getBlock("TRACE ÉCRITE", ["TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE","DÉCISION SANS VALIDATION","BILAN DE SEMAINE — SCORES"]);
+    if (a) a.value = data?.action || "";
+    if (e) e.value = data?.evening_integration || "";
+  }
+
+  function buildExerciseResponse() {
+    const practice = document.getElementById("practiceResponse")?.value.trim() || "";
+    const trace = document.getElementById("traceResponse")?.value.trim() || "";
+    const base = document.getElementById("exerciseResponse")?.value.trim() || "";
+    const table = collectControlTable();
+    const decision = document.getElementById("controlDecisionResponse")?.value.trim() || "";
+    const weeklyScores = collectWeeklyScores();
+
+    let parts = [];
+    if (practice) parts.push("PRATIQUE DU JOUR\n" + practice);
+    if (trace) parts.push("TRACE ÉCRITE\n" + trace);
+    if (base && !practice && !trace) parts.push(base);
+    // Le tableau est sauvegardé dans un format JSON exact : le nombre de lignes
+    // et leur contenu sont ainsi restaurés à l'identique après rechargement.
+    if (document.getElementById("controlTableBody")) {
+      const tableRows = [...document.querySelectorAll("#controlTableBody tr")].map(row =>
+        [...row.querySelectorAll("textarea")].map(t => t.value)
+      );
+      parts.push("TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE\n" +
+        "__CONTROL_TABLE_JSON__" + JSON.stringify(tableRows) + "\n__FIN_TABLEAU_CONTROLE__");
+    }
+    if (decision) parts.push("DÉCISION SANS VALIDATION\n" + decision);
+    if (weeklyScores) parts.push("BILAN DE SEMAINE — SCORES\n" + weeklyScores);
+    return parts.join("\n\n");
+  }
+
+  async function saveEntry() {
+
+    const {
+      data: {
+        user
+      }
+    } =
+      await supabaseClient.auth.getUser();
+
+
+    if (!user) {
+
+      alert("Tu dois être connecté.");
+
+      return false;
+    }
+
+
+    const entry = {
+
+      user_id: user.id,
+
+      day_number: currentDay,
+
+      meditation_notes:
+        document.getElementById("meditationNotes").value,
+
+      exercise_response:
+        buildExerciseResponse(),
+
+      action:
+        (document.getElementById("actionResponseInline")?.value || document.getElementById("action").value),
+
+      learning:
+        document.getElementById("learning").value,
+
+      evening_integration:
+        (document.getElementById("eveningResponseInline")?.value || document.getElementById("eveningIntegration").value),
+
+      reaction:
+        document.getElementById("reaction").value,
+
+      presence:
+        parseScore("presenceScore"),
+
+      impulse_control:
+        parseScore("impulseScore"),
+
+      values_coherence:
+        parseScore("valuesScore"),
+
+      self_relation:
+        parseScore("selfRelationScore")
+    };
+
+
+    // Sauvegarde explicite : on cherche d'abord l'entrée existante puis UPDATE,
+    // sinon INSERT. Cela évite qu'un upsert dépende d'une contrainte UNIQUE
+    // qui pourrait ne pas être présente sur la table Supabase.
+    let error = null;
+    const existing = await supabaseClient
+      .from("daily_entries")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("day_number", currentDay)
+      .maybeSingle();
+
+    if (existing.error) {
+      error = existing.error;
+    } else if (existing.data?.id) {
+      const result = await supabaseClient
+        .from("daily_entries")
+        .update(entry)
+        .eq("id", existing.data.id)
+        .eq("user_id", user.id)
+        .select("id")
+        .single();
+      error = result.error;
+      if (!error && !result.data) error = new Error("Aucune ligne modifiée après UPDATE.");
+    } else {
+      const result = await supabaseClient
+        .from("daily_entries")
+        .insert(entry)
+        .select("id")
+        .single();
+      error = result.error;
+      if (!error && !result.data) error = new Error("Aucune ligne créée après INSERT.");
+    }
+
+
+    const status =
+      document.getElementById("saveStatus");
+
+
+    if (error) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+    } else {
+
+      // Le DOM est déjà l'état courant. Ne reconstruis pas le tableau après l'UPDATE :
+      // cela évite toute réinjection d'un état précédent pendant une suppression.
+      restoreWeeklyScores(entry.exercise_response);
+      restoreInlineResponses(entry);
+      await loadScoreHistory();
+
+      status.className = "success";
+      status.textContent = "✅ Journée sauvegardée dans le cloud.";
+      if (saveStatusTimer) clearTimeout(saveStatusTimer);
+      saveStatusTimer = setTimeout(() => {
+        status.textContent = "";
+        status.className = "hidden";
+        saveStatusTimer = null;
+      }, 5000);
+      setDirtyState(false);
+      return true;
+    }
+  }
+
+
+  function clearProgramJournal() {
+
+    document.getElementById("meditationNotes").value = "";
+
+    document.getElementById("exerciseResponse").value = "";
+
+    document.getElementById("action").value = "";
+
+    document.getElementById("learning").value = "";
+
+    document.getElementById("eveningIntegration").value = "";
+
+    document.getElementById("reaction").value = "";
+
+    document.getElementById("presenceScore").value = "";
+    document.getElementById("impulseScore").value = "";
+    document.getElementById("valuesScore").value = "";
+    document.getElementById("selfRelationScore").value = "";
+    ["practiceResponse","traceResponse","actionResponseInline","eveningResponseInline"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+
+    const body = document.getElementById("controlTableBody");
+    if (body) {
+      body.innerHTML = "";
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
+
+    document.getElementById("saveStatus").textContent = "";
+  }
+
+
+  /* ============================================================
+     JOURNAL INTIME
+     ============================================================ */
+
+  async function loadJournalEntries() {
+
+    const container =
+      document.getElementById("journalEntries");
+
+    container.innerHTML =
+      "Chargement...";
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("journal_entries")
+        .select("*")
+        .order("entry_date", {
+          ascending: false
+        });
+
+
+    if (error) {
+
+      container.innerHTML =
+        '<div class="error">Erreur : ' +
+        escapeHtml(error.message) +
+        '</div>';
+
+      return;
+    }
+
+
+    allJournalEntries =
+      data || [];
+
+
+    filterJournalEntries();
+  }
+
+
+  function newJournalEntry() {
+
+    currentJournalEntryId = null;
+
+    document.getElementById("journalEditorTitle").textContent =
+      "Nouvelle entrée";
+
+    document.getElementById("journalTitle").value = "";
+
+    document.getElementById("journalContent").value = "";
+
+    document.getElementById("journalMood").value = "";
+
+    document.getElementById("journalSaveStatus").textContent = "";
+
+    document.getElementById("journalEditor")
+      .classList.remove("hidden");
+
+    document.getElementById("journalTitle").focus();
+  }
+
+
+  function editJournalEntry(id) {
+
+    const entry =
+      allJournalEntries.find(
+        item => item.id === id
+      );
+
+
+    if (!entry) return;
+
+
+    currentJournalEntryId =
+      entry.id;
+
+
+    document.getElementById("journalEditorTitle").textContent =
+      "Modifier mon entrée";
+
+
+    document.getElementById("journalTitle").value =
+      entry.title || "";
+
+
+    document.getElementById("journalContent").value =
+      entry.content || "";
+
+
+    document.getElementById("journalMood").value =
+      entry.mood || "";
+
+
+    document.getElementById("journalSaveStatus").textContent =
+      "";
+
+
+    document.getElementById("journalEditor")
+      .classList.remove("hidden");
+
+
+    document.getElementById("journalTitle").focus();
+  }
+
+
+  async function saveJournalEntry() {
+
+    const {
+      data: {
+        user
+      }
+    } =
+      await supabaseClient.auth.getUser();
+
+
+    if (!user) {
+
+      alert("Tu dois être connecté.");
+
+      return;
+    }
+
+
+    const title =
+      document.getElementById("journalTitle")
+        .value.trim();
+
+
+    const content =
+      document.getElementById("journalContent")
+        .value.trim();
+
+
+    const mood =
+      document.getElementById("journalMood")
+        .value;
+
+
+    const status =
+      document.getElementById("journalSaveStatus");
+
+
+    if (!content) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Écris quelque chose dans ton journal.";
+
+      return;
+    }
+
+
+    let error;
+
+
+    if (currentJournalEntryId) {
+
+      const result =
+        await supabaseClient
+          .from("journal_entries")
+          .update({
+            title: title || null,
+            content: content,
+            mood: mood || null
+          })
+          .eq("id", currentJournalEntryId);
+
+      error = result.error;
+
+    } else {
+
+      const result =
+        await supabaseClient
+          .from("journal_entries")
+          .insert({
+            user_id: user.id,
+            entry_date: new Date().toISOString(),
+            title: title || null,
+            content: content,
+            mood: mood || null
+          });
+
+      error = result.error;
+    }
+
+
+    if (error) {
+
+      status.className = "error";
+
+      status.textContent =
+        "Erreur : " + error.message;
+
+      return;
+    }
+
+
+    status.className = "success";
+
+    status.textContent =
+      "✅ Entrée enregistrée dans ton journal.";
+
+
+    currentJournalEntryId = null;
+
+
+    await loadJournalEntries();
+
+
+    setTimeout(() => {
+
+      document.getElementById("journalEditor")
+        .classList.add("hidden");
+
+    }, 500);
+  }
+
+
+  function cancelJournalEdit() {
+
+    currentJournalEntryId = null;
+
+    document.getElementById("journalEditor")
+      .classList.add("hidden");
+  }
+
+
+  async function deleteJournalEntry(id) {
+
+    const confirmed =
+      confirm(
+        "Supprimer définitivement cette entrée ?"
+      );
+
+
+    if (!confirmed) return;
+
+
+    const {
+      error
+    } =
+      await supabaseClient
+        .from("journal_entries")
+        .delete()
+        .eq("id", id);
+
+
+    if (error) {
+
+      alert(
+        "Erreur : " + error.message
+      );
+
+      return;
+    }
+
+
+    await loadJournalEntries();
+  }
+
+
+  /* ============================================================
+     RECHERCHE JOURNAL
+     ============================================================ */
+
+  function filterJournalEntries() {
+
+    const search =
+      document.getElementById("journalSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    let entries =
+      allJournalEntries;
+
+
+    if (search) {
+
+      entries =
+        allJournalEntries.filter(entry => {
+
+          const title =
+            (entry.title || "")
+              .toLowerCase();
+
+          const content =
+            (entry.content || "")
+              .toLowerCase();
+
+          const mood =
+            (entry.mood || "")
+              .toLowerCase();
+
+
+          return (
+            title.includes(search) ||
+            content.includes(search) ||
+            mood.includes(search)
+          );
+        });
+    }
+
+
+    displayJournalEntries(entries);
+  }
+
+
+  function displayJournalEntries(entries) {
+
+    const container =
+      document.getElementById("journalEntries");
+
+
+    if (!entries.length) {
+
+      container.innerHTML =
+        '<div class="empty">' +
+        'Aucune entrée trouvée.' +
+        '</div>';
+
+      return;
+    }
+
+
+    container.innerHTML =
+      entries.map(entry => {
+
+        const date =
+          new Date(entry.entry_date)
+            .toLocaleString(
+              "fr-FR",
+              {
+                dateStyle: "long",
+                timeStyle: "short"
+              }
+            );
+
+
+        const title =
+          entry.title ||
+          "Sans titre";
+
+
+        const mood =
+          entry.mood
+            ? '<div class="mood">' +
+              escapeHtml(entry.mood) +
+              '</div>'
+            : "";
+
+
+        return `
+          <div class="journal-entry">
+
+            <div class="journal-entry-title">
+              ${escapeHtml(title)}
+            </div>
+
+            <div class="journal-entry-date">
+              ${escapeHtml(date)}
+            </div>
+
+            ${mood}
+
+            <div class="journal-entry-content">
+              ${escapeHtml(entry.content)}
+            </div>
+
+            <button
+              class="secondary"
+              onclick="editJournalEntry('${entry.id}')">
+              ✏️ Modifier
+            </button>
+
+            <button
+              class="danger"
+              onclick="deleteJournalEntry('${entry.id}')">
+              🗑️ Supprimer
+            </button>
+
+          </div>
+        `;
+
+      }).join("");
+  }
+
+
+  /* ============================================================
+     EMOJIS
+     ============================================================ */
+
+  let activeEmojiField = "journalTitle";
+
+  function setEmojiField(id) {
+    activeEmojiField = id;
+  }
+
+  function insertEmoji(emoji) {
+
+    const field =
+      document.getElementById(activeEmojiField) ||
+      document.getElementById("journalTitle");
+
+    const start =
+      typeof field.selectionStart === "number"
+        ? field.selectionStart
+        : field.value.length;
+
+    const end =
+      typeof field.selectionEnd === "number"
+        ? field.selectionEnd
+        : field.value.length;
+
+    const text = field.value;
+
+    field.value =
+      text.substring(0, start) +
+      emoji +
+      text.substring(end);
+
+    field.focus();
+
+    field.selectionStart =
+      field.selectionEnd =
+        start + emoji.length;
+  }
+
+
+  function getMainTitle(title) {
+    return String(title || "").split(" — ")[0].trim();
+  }
+
+  function getSubtitle(title) {
+    const parts = String(title || "").split(" — ");
+    return parts.length > 1 ? parts.slice(1).join(" — ").trim() : "";
+  }
+
+  function getExerciseIcon(title) {
+    const t = String(title || "").toLowerCase();
+
+    if (t.includes("souverain") || t.includes("contrôle")) return "🏛️";
+    if (t.includes("désir") || t.includes("attachement")) return "🔥";
+    if (t.includes("jugement")) return "⚖️";
+    if (t.includes("persona")) return "🎭";
+    if (t.includes("ombre")) return "🌑";
+    if (t.includes("anima") || t.includes("animus")) return "🪞";
+    if (t.includes("complex")) return "🧩";
+    if (t.includes("caractère")) return "🛡️";
+    if (t.includes("sens") || t.includes("self")) return "🧭";
+    if (t.includes("relation")) return "❤️";
+    if (t.includes("intégration")) return "☯️";
+    if (t.includes("autonomie")) return "🌱";
+
+    return "🧭";
+  }
+
+  function formatExerciseContent(text) {
+    const raw = String(text || "").replace(/\r/g, "").trim();
+    if (!raw) return "";
+
+    const lower = raw.toLowerCase();
+
+    // Jour 1 : le tableau est un composant interactif spécifique.
+    if (
+      lower.includes("faites trois colonnes") ||
+      (
+        lower.includes("sous mon contrôle") &&
+        lower.includes("influence partielle") &&
+        lower.includes("hors de mon contrôle")
+      )
+    ) {
+      return `
+        <div class="exercise-section">
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">🧭 PRATIQUE DU JOUR</div>
+          <p class="exercise-text">Classe jusqu'à <strong>15 préoccupations réelles</strong> dans le tableau ci-dessous. Pour chaque préoccupation qui dépend de toi, identifie une action concrète.</p>
+          
+        </div>
+      `;
+    }
+
+    /*
+      V19 — Le texte importé depuis le PDF est issu d'une mise en page
+      en colonnes : les titres PRATIQUE DU JOUR / ACTE DE TERRAIN sont
+      suivis du contenu des deux colonnes, puis de "Trace écrite".
+
+      Le stockage SQL ne conserve malheureusement pas les colonnes.
+      On reconstruit donc ici la structure logique attendue :
+        PRATIQUE DU JOUR = texte de l'exercice
+        TRACE ÉCRITE      = observation
+        ACTE DE TERRAIN   = action concrète
+      puis SOIR — INTÉGRATION.
+    */
+
+    const normalized = raw.replace(/\r/g, "");
+    const eveningMatch = normalized.search(/\n\s*SOIR\s*[—-]\s*INT[ÉE]GRATION\s*\n/i);
+    const beforeEvening = eveningMatch >= 0 ? normalized.slice(0, eveningMatch) : normalized;
+    const eveningPart = eveningMatch >= 0 ? normalized.slice(eveningMatch) : "";
+
+    const practiceMatch = beforeEvening.match(/PRATIQUE\s+DU\s+JOUR/i);
+    const actMatch = beforeEvening.match(/ACTE\s+DE\s+TERRAIN/i);
+
+    let body = beforeEvening;
+    if (actMatch) body = beforeEvening.slice(actMatch.index + actMatch[0].length);
+    else if (practiceMatch) body = beforeEvening.slice(practiceMatch.index + practiceMatch[0].length);
+
+    body = body.trim();
+
+    // Le séparateur "Trace écrite :" permet de retrouver la fin de la pratique.
+    const traceMatch = body.match(/\bTrace\s+écrite\s*:\s*/i);
+    let practiceText = body;
+    let traceText = "";
+    let actText = "";
+
+    if (traceMatch) {
+      practiceText = body.slice(0, traceMatch.index).trim();
+      const afterTrace = body.slice(traceMatch.index + traceMatch[0].length).trim();
+
+      // Dans l'import issu du PDF, l'acte de terrain suit la phrase de trace écrite.
+      // On utilise le dernier segment de phrase comme acte lorsque plusieurs phrases existent.
+      const sentences = afterTrace.split(/(?<=[.!?])\s+/).filter(Boolean);
+      if (sentences.length > 1) {
+        traceText = sentences[0].trim();
+        actText = sentences.slice(1).join(" ").trim();
+      } else {
+        traceText = afterTrace;
+      }
+    }
+
+    let output = "";
+
+    if (practiceText) {
+      output += `
+        <div class="exercise-section">
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">🧭 PRATIQUE DU JOUR</div>
+          <p class="exercise-text">${escapeHtml(practiceText)}</p>
+          
+        </div>
+      `;
+    }
+
+    if (traceText) {
+      output += `
+        <div class="exercise-section exercise-trace-section">
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('exerciseResponse')" title="Aller à la zone de réponse">✍️ TRACE ÉCRITE</div>
+          <p class="exercise-text">${escapeHtml(traceText)}</p>
+          <div class="inline-response"><label for="traceResponse">📝 Ma trace écrite</label><textarea id="traceResponse" placeholder="Note ce que tu as réellement observé..."></textarea></div>
+        </div>
+      `;
+    }
+
+    if (actText) {
+      output += `
+        <div class="exercise-section">
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('action')" title="Aller à la zone Action">🎯 ACTE DE TERRAIN</div>
+          <p class="exercise-text">${escapeHtml(actText)}</p>
+          <div class="inline-response"><label for="actionResponseInline">🎯 Ce que j'ai fait</label><textarea id="actionResponseInline" placeholder="Quelle action as-tu réellement réalisée ?"></textarea></div>
+        </div>
+      `;
+    }
+
+    // Si la structure n'a pas pu être reconstruite, on conserve le texte plutôt que de le perdre.
+    if (!output) {
+      const lines = normalized.split("\n").map(x => x.trim()).filter(Boolean);
+      output = lines.map(line => `<p class="exercise-text">${escapeHtml(line)}</p>`).join("");
+    }
+
+    // Soir — intégration. Le Jour 7 contient un bloc SCORE spécifique
+    // au bilan de semaine : on l'affiche comme de vrais scores interactifs.
+    if (eveningPart) {
+      let eveningBody = eveningPart
+        .replace(/^\s*SOIR\s*[—-]\s*INT[ÉE]GRATION\s*/i, "")
+        .replace(/^\s*SCORE\s*/i, "")
+        .trim();
+
+      const weeklyMarker = eveningBody.search(/\bBilan de Semaine\s*1\b/i);
+      let eveningQuestion = weeklyMarker >= 0 ? eveningBody.slice(0, weeklyMarker).trim() : eveningBody;
+
+      output += `
+        <div class="exercise-section">
+          <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('eveningIntegration')" title="Aller à la zone d'intégration">🌙 SOIR — INTÉGRATION</div>
+          ${eveningQuestion ? `<p class="exercise-text">${escapeHtml(eveningQuestion)}</p>` : ""}
+          <div class="inline-response"><label for="eveningResponseInline">🌙 Mon intégration</label><textarea id="eveningResponseInline" placeholder="Qu'est-ce que tu retiens de cette journée ?"></textarea></div>
+        </div>
+      `;
+
+      if (weeklyMarker >= 0) {
+        output += `
+          <div class="exercise-section">
+            <div class="exercise-section-title clickable-section-title" onclick="scrollToResponse('weeklyScores')" title="Aller aux scores du bilan">📊 SCORE — BILAN DE SEMAINE</div>
+            <p class="exercise-text">Indique ton niveau de 1 à 10 pour chaque indicateur :</p>
+            <div class="weekly-score-grid" id="weeklyScores">
+              ${weeklyScoreField('weeklySilence', 'Tolérance au silence')}
+              ${weeklyScoreField('weeklyRumination', 'Rumination')}
+              ${weeklyScoreField('weeklyImpulsivity', 'Impulsivité')}
+              ${weeklyScoreField('weeklyValidation', 'Autonomie / validation')}
+              ${weeklyScoreField('weeklyJudgment', 'Clarté du jugement')}
+              ${weeklyScoreField('weeklyEnergy', 'Énergie / engagement')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    return output;
+  }
+
+
+  function scrollToResponse(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => {
+      if (typeof target.focus === "function") target.focus({ preventScroll: true });
+    }, 450);
+  }
+
+  function weeklyScoreField(id, label) {
+    const options = ['<option value="">— / 10</option>'];
+    for (let i = 0; i <= 10; i++) {
+      if (i === 0) continue;
+      options.push(`<option value="${i}">${i} / 10</option>`);
+    }
+    return `<div class="weekly-score-item"><label for="${id}">${escapeHtml(label)}</label><select id="${id}" data-weekly-score="${id}">${options.join("")}</select></div>`;
+  }
+
+  function collectWeeklyScores() {
+    const ids = ['weeklySilence','weeklyRumination','weeklyImpulsivity','weeklyValidation','weeklyJudgment','weeklyEnergy'];
+    return ids.map(id => {
+      const el = document.getElementById(id);
+      return el && el.value ? `${id}: ${el.value}/10` : '';
+    }).filter(Boolean).join("\n");
+  }
+
+  function renderInteractiveExercise(text) {
+    const container = document.getElementById("interactiveExercise");
+    const lower = String(text || "").toLowerCase();
+
+    container.innerHTML = "";
+
+    if (
+      lower.includes("faites trois colonnes") ||
+      (
+        lower.includes("sous mon contrôle") &&
+        lower.includes("influence partielle") &&
+        lower.includes("hors de mon contrôle")
+      )
+    ) {
+      container.innerHTML = `
+        <div class="exercise-section">
+          <div class="exercise-section-title">📋 Mes préoccupations</div>
+          <p class="exercise-text">Tu peux renseigner jusqu'à <strong>15 préoccupations</strong>. Tu n'es pas obligé de remplir toutes les lignes.</p>
+
+          <div class="control-table-wrap">
+            <table class="control-table">
+              <thead>
+                <tr>
+                  <th>🟢 Sous mon contrôle</th>
+                  <th>🟡 Influence partielle</th>
+                  <th>🔴 Hors de mon contrôle</th>
+                  <th class="control-delete-col" aria-label="Supprimer">&nbsp;</th>
+                </tr>
+              </thead>
+              <tbody id="controlTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-actions">
+            <button class="secondary" type="button" onclick="addControlRow()">＋ Ajouter une ligne</button>
+          </div>
+
+          <div class="response-box">
+            <label for="controlActionResponse">🎯 Actions concrètes</label>
+            <textarea id="controlActionResponse" placeholder="Pour les préoccupations sous ton contrôle, quelles actions peux-tu réellement accomplir ?"></textarea>
+          </div>
+
+          <div class="response-box">
+            <label for="controlObservationResponse">✍️ Trace écrite</label>
+            <textarea id="controlObservationResponse" placeholder="Note ce que tu as observé, pas ce que tu aurais voulu observer."></textarea>
+          </div>
+
+          <div class="response-box">
+            <label for="controlDecisionResponse">🎯 Décision sans validation</label>
+            <textarea id="controlDecisionResponse" placeholder="Quelle petite décision as-tu prise sans demander d'avis ni rechercher de validation ?"></textarea>
+          </div>
+        </div>
+      `;
+
+      // Seulement 3 lignes de départ : l'utilisateur peut en ajouter jusqu'à 15.
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
+  }
+
+  function addControlRow(values = ["", "", ""]) {
+    const body = document.getElementById("controlTableBody");
+    if (!body || body.children.length >= 15) return;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><textarea placeholder="Préoccupation..." data-control-col="0"></textarea></td>
+      <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
+      <td><textarea placeholder="Préoccupation..." data-control-col="2"></textarea></td>
+      <td class="control-delete-cell">
+        <button type="button" class="control-delete-button" data-delete-control-row title="Supprimer cette ligne" aria-label="Supprimer cette ligne">🗑️</button>
+      </td>
+    `;
+    body.appendChild(row);
+
+    row.querySelectorAll("textarea").forEach((field, index) => {
+      field.value = values[index] || "";
+    });
+
+    // Gestionnaire DIRECT sur le bouton. Aucun handler global ne bloque le clic.
+    const deleteButton = row.querySelector("[data-delete-control-row]");
+    if (deleteButton) {
+      deleteButton.addEventListener("click", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteControlRow(this);
+      });
+    }
+  }
+
+  // Suppression d'une ligne : modification locale uniquement.
+  // La BDD n'est modifiée que lorsque l'utilisateur clique sur
+  // « Sauvegarder ma journée ».
+  function deleteControlRow(button) {
+    const row = button && button.closest ? button.closest("tr") : null;
+    if (!row || !row.parentElement) return false;
+    row.remove();
+    // Une suppression est une modification non sauvegardée.
+    setDirtyState(true);
+    return false;
+  }
+
+  window.deleteControlRow = deleteControlRow;
+
+  function removeControlRow() {
+    const body = document.getElementById("controlTableBody");
+    if (body && body.children.length > 0) {
+      body.removeChild(body.lastElementChild);
+    }
+  }
+
+  function collectControlTable() {
+    const body = document.getElementById("controlTableBody");
+    if (!body) return "";
+
+    // On conserve EXACTEMENT l'état visuel du tableau, y compris les lignes vides.
+    // Ainsi, supprimer des lignes puis sauvegarder ne peut plus restaurer l'ancien état.
+    return [...body.querySelectorAll("tr")].map((row, index) => {
+      const cells = [...row.querySelectorAll("textarea")].map(t => t.value.trim());
+      return `${index + 1}. Contrôle: ${cells[0] || ""} | Influence: ${cells[1] || ""} | Hors contrôle: ${cells[2] || ""}`;
+    }).join("\n");
+  }
+
+  function restoreControlTable(text) {
+    const body = document.getElementById("controlTableBody");
+    if (!body) return;
+
+    body.innerHTML = "";
+    const raw = String(text || "");
+    const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";
+    const jsonMarker = "__CONTROL_TABLE_JSON__";
+    const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
+
+    // La BDD peut contenir d'anciennes sauvegardes concaténées.
+    // Le dernier JSON est l'état le plus récent et doit être restauré.
+    const jsonPos = raw.lastIndexOf(jsonMarker);
+    if (jsonPos >= 0) {
+      const jsonEnd = raw.indexOf(endMarker, jsonPos);
+      const json = raw.slice(jsonPos + jsonMarker.length, jsonEnd >= 0 ? jsonEnd : raw.length).trim();
+      try {
+        const rows = JSON.parse(json);
+        if (Array.isArray(rows)) {
+          rows.slice(0, 15).forEach(values => {
+            if (Array.isArray(values)) addControlRow([values[0] || "", values[1] || "", values[2] || ""]);
+          });
+          return;
+        }
+      } catch (e) {
+        console.warn("Impossible de restaurer le dernier tableau JSON", e);
+      }
+    }
+
+    const start = raw.lastIndexOf(marker);
+    if (start < 0) {
+      for (let i = 0; i < 3; i++) addControlRow();
+      return;
+    }
+
+    let section = raw.slice(start + marker.length);
+    const endPos = section.indexOf(endMarker);
+    if (endPos >= 0) section = section.slice(0, endPos).trim();
+
+    const nextMarkers = [
+      "\nDÉCISION SANS VALIDATION\n",
+      "\nBILAN DE SEMAINE — SCORES\n"
+    ];
+    let legacySection = section;
+    if (endPos < 0) {
+      let end = legacySection.length;
+      nextMarkers.forEach(m => {
+        const idx = legacySection.indexOf(m);
+        if (idx >= 0 && idx < end) end = idx;
+      });
+      legacySection = legacySection.slice(0, end).trim();
+    }
+
+    const rows = legacySection ? legacySection.split("\n") : [];
+    rows.forEach(line => {
+      const m = line.match(/^\d+\.\s*Contrôle:\s*(.*?)\s*\|\s*Influence:\s*(.*?)\s*\|\s*Hors contrôle:\s*(.*)$/);
+      if (m) addControlRow([m[1], m[2], m[3]]);
+    });
+
+    if (!rows.length) {
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
+  }
+
+  function parseScore(id) {
+    const value = document.getElementById(id)?.value ?? "";
+    return value === "" ? null : parseInt(value, 10);
+  }
+
+
+  /* ============================================================
+     GRAPHIQUE ÉVOLUTION DES SCORES
+     ============================================================ */
+
+  function toggleScoreEvolution() {
+    const body = document.getElementById("scoreEvolutionBody");
+    const button = document.getElementById("scoreEvolutionToggle");
+    if (!body || !button) return;
+
+    const collapsed = body.classList.toggle("collapsed");
+    button.textContent = collapsed ? "▶" : "▼";
+    button.setAttribute("aria-expanded", String(!collapsed));
+
+    if (!collapsed && scoreEvolutionChart) {
+      setTimeout(() => scoreEvolutionChart.resize(), 50);
+    }
+  }
+
+  async function loadScoreHistory() {
+    const {
+      data: {
+        user
+      }
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) return;
+
+    const { data, error } = await supabaseClient
+      .from("daily_entries")
+      .select("day_number,presence,impulse_control,values_coherence,self_relation")
+      .eq("user_id", user.id)
+      .order("day_number", { ascending: true });
+
+    if (error) {
+      const status = document.getElementById("chartStatus");
+      if (status) status.textContent = "Impossible de charger les scores : " + error.message;
+      return;
+    }
+
+    dailyScoreHistory = data || [];
+    renderScoreEvolutionChart();
+  }
+
+  function setChartRange(range) {
+    chartRange = range;
+
+    [7, 30, 90].forEach(r => {
+      const button = document.getElementById("chart" + r + "Button");
+      if (button) button.classList.toggle("active", r === range);
+    });
+
+    renderScoreEvolutionChart();
+  }
+
+  function renderScoreEvolutionChart() {
+    const container = document.getElementById("scoreEvolutionChartContainer");
+    const status = document.getElementById("chartStatus");
+    if (!container) return;
+
+    const endDay = Number(currentDay) || 1;
+
+    // Le graphique est également visible au Jour 1.
+    // La période commence simplement à J1 lorsqu'il n'existe pas encore de jours précédents.
+    const startDay = Math.max(1, endDay - chartRange + 1);
+    const rows = (dailyScoreHistory || [])
+      .filter(row => {
+        const d = Number(row.day_number);
+        return Number.isFinite(d) && d >= startDay && d <= endDay;
+      })
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
+
+    const map = new Map(rows.map(row => [Number(row.day_number), row]));
+    const days = [];
+    for (let d = startDay; d <= endDay; d++) days.push(d);
+
+    const keys = [
+      ["presence", "Présence"],
+      ["impulse_control", "Maîtrise de l'impulsion"],
+      ["values_coherence", "Cohérence avec mes valeurs"],
+      ["self_relation", "Relation à moi-même"]
+    ];
+
+    const hasScores = rows.some(row =>
+      keys.some(([k]) => row[k] !== null && row[k] !== undefined && row[k] !== "")
+    );
+
+    if (!hasScores) {
+      container.innerHTML = '<div class="chart-empty">Aucun score enregistré sur cette période.</div>';
+      if (status) { status.textContent = ""; status.classList.add("hidden"); }
+      return;
+    }
+
+    // SVG autonome : aucun CDN, aucun canvas, aucun problème de hauteur.
+    const W = 900, H = 360, L = 58, R = 20, T = 20, B = 48;
+    const PW = W-L-R, PH = H-T-B;
+    const x = i => L + (days.length === 1 ? PW/2 : i * PW/(days.length-1));
+    const y = v => T + PH - (Number(v)/10)*PH;
+
+    const series = keys.map(([key,label]) => ({
+      key, label,
+      points: days.map((d,i) => {
+        const row = map.get(d);
+        const v = row && row[key] !== null && row[key] !== undefined && row[key] !== "" ? Number(row[key]) : null;
+        return v !== null && Number.isFinite(v) ? {x:x(i), y:y(v), v, d} : null;
+      })
+    }));
+
+    const lines = [];
+    for (let n=0;n<=10;n++) {
+      const yy=y(n);
+      lines.push(`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#ddd" stroke-width="1"/>`);
+      lines.push(`<text x="${L-10}" y="${yy+4}" text-anchor="end" font-size="11" fill="#666">${n}</text>`);
+    }
+
+    const xStep = days.length <= 10 ? 1 : Math.ceil(days.length/10);
+    days.forEach((d,i) => {
+      if (i % xStep === 0 || i === days.length-1) {
+        lines.push(`<text x="${x(i)}" y="${H-16}" text-anchor="middle" font-size="11" fill="#666">J${d}</text>`);
+      }
+    });
+
+    const palette = ["#222","#666","#999","#bbb"];
+
+    // Histogramme groupé : une barre par score et par jour.
+    const groupWidth = days.length ? PW / days.length : PW;
+    const barWidth = Math.max(2, Math.min(10, groupWidth / (series.length + 1)));
+    const bars = series.map((ser,si) => {
+      return ser.points.map((p,di) => {
+        if (!p) return '';
+        const baseX = L + di * groupWidth;
+        const bx = baseX + (groupWidth - barWidth * series.length) / 2 + si * barWidth;
+        const bh = (p.v / 10) * PH;
+        const by = T + PH - bh;
+        return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${Math.max(1.5, barWidth-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${palette[si]}" rx="1" data-day="${p.d}" data-score="${p.v}"/>`;
+      }).join('');
+    }).join('');
+
+    const legend = series.map((ser,si) =>
+      `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${palette[si]}"></span>${escapeHtml(ser.label)}</span>`
+    ).join("");
+
+    container.innerHTML = `
+      <div class="score-svg-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution des scores du Jour ${startDay} au Jour ${endDay}">
+          ${lines.join("")}
+          <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#999"/>
+          <line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#999"/>
+          ${bars}
+        </svg>
+      </div>
+      <div class="chart-legend">${legend}</div>
+    `;
+    if (status) { status.textContent = ""; status.classList.add("hidden"); }
+  }
+
+  /* ============================================================
+     FORMATAGE PROGRAMME
+     ============================================================ */
+
+
+  function formatText(text) {
+
+    if (!text) return "";
+
+    return escapeHtml(text)
+      .replace(/\n/g, "<br>");
+  }
+
+
+  /* ============================================================
+     SECURITE AFFICHAGE HTML
+     ============================================================ */
+
+  function escapeHtml(text) {
+
+    const div =
+      document.createElement("div");
+
+    div.textContent =
+      text == null ? "" : String(text);
+
+    return div.innerHTML;
+  }
+
+
+  /* ============================================================
+     DECONNEXION
+     ============================================================ */
+
+  async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    document.getElementById("app")
+      .classList.add("hidden");
+
+    document.getElementById("login")
+      .classList.remove("hidden");
+
+    document.getElementById("journalEditor")
+      .classList.add("hidden");
+  }
+
+
+  /* ============================================================
+     VERIFICATION SESSION
+     ============================================================ */
+
+  async function checkSession() {
+
+    const {
+      data: {
+        session
+      }
+    } =
+      await supabaseClient.auth.getSession();
+
+
+    if (session) {
+
+      await showApplication();
+    }
+  }
+
+
+  /* ============================================================
+     DEMARRAGE
+     ============================================================ */
+
+  checkSession();
+
+</script>
+
+</body>
+</html>
