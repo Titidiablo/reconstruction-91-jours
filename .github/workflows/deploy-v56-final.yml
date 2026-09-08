@@ -100,7 +100,7 @@ jobs:
               'id="chart45Button"', 'id="chart60Button"', 'id="chart75Button"', 'id="chart90Button"',
               '[7, 15, 30, 45, 60, 75, 90].forEach',
               'const startDay = 1;', 'const endDay = Math.min(chartRange, 91);',
-              'return Number.isFinite(value) ? Math.max(0, Math.min(10, value)) : 0;'
+              'Number.isFinite(value) ? Math.max(0, Math.min(10, value)) : 0'
           ]
           for item in required:
               if item not in s:
