@@ -1,4 +1,4 @@
-name: Deploy V77
+name: Deploy V79
 
 on:
   push:
@@ -36,26 +36,26 @@ jobs:
         run: python3 scripts/patch_v70_restore_structure.py
       - name: Apply V71 remove 91 day grid
         run: python3 scripts/patch_v71_remove_day_grid.py
-      - name: Apply V77 Programme dashboard block removal
+      - name: Apply V79 Programme dashboard visibility fix
         run: python3 scripts/patch_v75_dashboard_today_isolation.py
 
-      - name: Set displayed version V77
+      - name: Set displayed version V79
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76'):
-              s = s.replace(f'>{old}</div>', '>V77</div>')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78'):
+              s = s.replace(f'>{old}</div>', '>V79</div>')
           s = s.replace('🗓️ Mon parcours', '')
           s = s.replace('🗓️ Les 91 jours', '')
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Validate V77
+      - name: Validate V79
         run: |
-          grep -q '>V77</div>' index.html
-          grep -q 'id="v76-dashboard-today-isolation"' index.html
+          grep -q '>V79</div>' index.html
+          grep -q 'id="v78-dashboard-today-isolation"' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Mon tableau de bord' index.html
           grep -q 'Analyse de mon évolution' index.html
@@ -63,19 +63,19 @@ jobs:
           grep -q '💾 Sauvegarder' index.html
           ! grep -q 'id="v72-dashboard-no-today-duplicates"' index.html
           ! grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
-          test "$(grep -o '>V77</div>' index.html | wc -l)" -eq 1
+          test "$(grep -o '>V79</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V77
+      - name: Commit V79
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V77 déjà présent"
+            echo "V79 déjà présent"
             exit 0
           fi
-          git commit -m "V77 - remove dashboard block from Programme"
+          git commit -m "V79 - fix Programme dashboard visibility"
           git pull --rebase origin main
           git push origin HEAD:main
 
-# V77 deployment trigger - 2026-09-08T00:00:00Z
+# V79 deployment trigger - 2026-09-08T00:00:00Z
