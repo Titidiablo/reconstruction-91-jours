@@ -18,7 +18,31 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Prepare V62
-        run: python3 scripts/deploy_v62.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('index.html')
+          h = p.read_text(encoding='utf-8')
+          # Remove any in-page button whose visible text is the redundant daily save action.
+          h = re.sub(r'<button\\b[^>]*>[^<]*Sauvegarder ma journée[^<]*</button>', '', h, flags=re.IGNORECASE)
+          # Increment V61 -> V62 exactly once.
+          if '>V62</div>' not in h:
+              if '>V61</div>' not in h:
+                  raise SystemExit('V61 badge not found')
+              h = h.replace('>V61</div>', '>V62</div>', 1)
+          marker = '<script id="v62-save-button-cleanup">'
+          if marker not in h:
+              marker_html = '<script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>\\n'
+              if '</body>' in h:
+                  h = h.replace('</body>', marker_html + '</body>', 1)
+              elif '</html>' in h:
+                  h = h.replace('</html>', marker_html + '</html>', 1)
+              else:
+                  h += '\\n' + marker_html
+          p.write_text(h, encoding='utf-8')
+          print('V62 preparation complete')
+          PY
 
       - name: Validate V62
         run: |
