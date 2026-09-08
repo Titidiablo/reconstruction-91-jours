@@ -801,7 +801,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V69</div>
+  <div class="app-version-v18">V70</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3197,7 +3197,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if($('v64Dashboard'))return;
     const app=$('app'),top=app?.querySelector('.topbar');if(!top)return;
     const sec=document.createElement('section');sec.id='v64Dashboard';sec.className='hidden v64-dashboard';
-    sec.innerHTML=`<div class="v64-hero"><div class="v64-kicker">Ton parcours · 91 jours</div><h2 id="v64TodayTitle">Aujourd’hui</h2><p id="v64TodayText">Un pas concret, puis un autre.</p><div class="v64-progress-row"><span id="v64ProgressLabel">Progression du parcours</span><span id="v64ProgressValue">0 %</span></div><div class="v64-progress"><span id="v64ProgressBar"></span></div><div class="v64-actions"><button class="primary" type="button" id="v64Continue">▶ Continuer ma journée</button></div></div><div class="v64-dashboard-grid"><div class="v64-stat"><small>Jours réalisés</small><strong id="v64Done">0/91</strong><span>journées sauvegardées</span></div><div class="v64-stat"><small>Score du jour</small><strong id="v64TodayScore">—</strong><span id="v64TodayScoreNote">pas encore évalué</span></div><div class="v64-stat"><small>Série</small><strong id="v64Streak">0</strong><span>jours consécutifs</span></div><div class="v64-stat"><small>Dernier jour</small><strong id="v64LastDay">—</strong><span>du parcours</span></div></div><div class="v64-days-card"><div class="v64-days-head"><h3>🗓️ Mon parcours</h3></div><div id="v64MiniDays" class="v64-days-grid"></div></div>`;
+    sec.innerHTML=`<div class="v64-hero"><div class="v64-kicker">Ton parcours · 91 jours</div><h2 id="v64TodayTitle">Aujourd’hui</h2><p id="v64TodayText">Un pas concret, puis un autre.</p><div class="v64-progress-row"><span id="v64ProgressLabel">Progression du parcours</span><span id="v64ProgressValue">0 %</span></div><div class="v64-progress"><span id="v64ProgressBar"></span></div><div class="v64-actions"><button class="primary" type="button" id="v64Continue">▶ Continuer ma journée</button></div></div><div class="v64-dashboard-grid"><div class="v64-stat"><small>Jours réalisés</small><strong id="v64Done">0/91</strong><span>journées sauvegardées</span></div><div class="v64-stat"><small>Score du jour</small><strong id="v64TodayScore">—</strong><span id="v64TodayScoreNote">pas encore évalué</span></div><div class="v64-stat"><small>Série</small><strong id="v64Streak">0</strong><span>jours consécutifs</span></div><div class="v64-stat"><small>Dernier jour</small><strong id="v64LastDay">—</strong><span>du parcours</span></div></div><div class="v64-days-card"><div class="v64-days-head"><h3>🗓️ Les 91 jours</h3></div><div id="v64MiniDays" class="v64-days-grid"></div></div>`;
     top.insertAdjacentElement('afterend',sec);
     $('v64Continue').onclick=()=>{showSection('program');loadDay(currentDay)};
   }
@@ -3302,42 +3302,59 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 })();
 </script>
 
-
-<style id="v69-dashboard-cleanup">
-/* V69 — Tableau de bord = grille du parcours uniquement */
-#v64Dashboard .v64-hero,
-#v64Dashboard .v64-dashboard-grid { display:none !important; }
-#v64Dashboard .v64-days-card { display:block !important; margin-top:0; }
+<style id="v70-restore-structure">
+/* V70 — Aujourd'hui = cockpit ; Tableau de bord = suivi + grille ; Programme = programme. */
+#v64Dashboard .v64-days-card { display:none !important; }
+#v61Dashboard .v70-days-card { display:block !important; margin-top:20px; }
+#v61Dashboard .v70-days-grid { display:grid; grid-template-columns:repeat(13,minmax(34px,1fr)); gap:6px; margin-top:14px; }
+.v70-days-card h3 { margin:0; }
+@media(max-width:800px){#v61Dashboard .v70-days-grid{grid-template-columns:repeat(7,minmax(34px,1fr));}}
 </style>
-<script id="v69-dashboard-cleanup">
+<script id="v70-restore-structure">
 (function(){
-  function clean(){
-    const dashboard=document.getElementById('v64Dashboard');
-    if(!dashboard) return;
-    dashboard.querySelector('.v64-hero')?.remove();
-    dashboard.querySelector('.v64-dashboard-grid')?.remove();
-    const grid=document.getElementById('v64MiniDays');
-    if(!grid) return;
-    grid.querySelectorAll('.v64-day-btn').forEach(btn=>{
-      if(btn.dataset.v69Bound) return;
-      btn.dataset.v69Bound='1';
+  function buildDashboardGrid(){
+    const dashboard=document.getElementById('v61Dashboard');
+    const source=document.querySelector('#v64Dashboard .v64-days-card');
+    if(!dashboard || !source) return;
+    let card=dashboard.querySelector('.v70-days-card');
+    if(!card){
+      card=document.createElement('div');
+      card.className='card v70-days-card';
+      card.innerHTML='<div class="v64-days-head"><h3>🗓️ Les 91 jours</h3></div><div id="v70DaysGrid" class="v70-days-grid"></div>';
+      dashboard.appendChild(card);
+    }
+    const target=document.getElementById('v70DaysGrid');
+    if(!target) return;
+    target.innerHTML='';
+    source.querySelectorAll('.v64-day-btn').forEach(original=>{
+      const btn=original.cloneNode(true);
       btn.onclick=function(e){
         e.preventDefault();
-        e.stopImmediatePropagation();
+        e.stopPropagation();
         const match=String(btn.textContent||'').match(/J(\d+)/i);
         const day=match ? Number(match[1]) : NaN;
-        if(!Number.isInteger(day) || day < 1 || day > 91) return;
-        if(typeof closeDays==='function') closeDays();
-        if(typeof showSection==='function') showSection('program');
-        if(typeof requestDayChange==='function') requestDayChange(day);
+        if(!Number.isInteger(day) || day<1 || day>91) return;
+        const go=typeof requestDayChange==='function' ? requestDayChange(day) : Promise.resolve();
+        Promise.resolve(go).then(()=>{ if(typeof showSection==='function') showSection('program'); });
       };
+      target.appendChild(btn);
     });
+    source.remove();
   }
-  function install(){ clean(); }
+
+  function cleanProgram(){
+    document.querySelectorAll('#programSection .v64-stepper').forEach(el=>el.remove());
+    document.querySelectorAll('#programSection .v64-days-card, #programSection .v70-days-card').forEach(el=>el.remove());
+  }
+
+  function install(){
+    buildDashboardGrid();
+    cleanProgram();
+  }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
   else install();
-  window.addEventListener('load',()=>setTimeout(install,500));
-  new MutationObserver(install).observe(document.body,{childList:true,subtree:true});
+  window.addEventListener('load',()=>setTimeout(install,700));
+  new MutationObserver(()=>setTimeout(install,0)).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 
