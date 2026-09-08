@@ -68,6 +68,8 @@ jobs:
         run: python3 scripts/patch_v95_bilan_piliers.py
       - name: Apply V96 detailed Mes repères
         run: python3 scripts/patch_v96_reperes_detail.py
+      - name: Apply V96 mobile score layout
+        run: python3 scripts/patch_v96_mobile_score_layout.py
 
       - name: Set displayed version V96
         run: |
@@ -98,6 +100,7 @@ jobs:
           grep -q 'id="v94-evolution-scores"' index.html
           grep -q 'id="v95-bilan-piliers"' index.html
           grep -q 'id="v96-reperes-detail"' index.html
+          grep -q 'id="v96-mobile-score-layout"' index.html
           grep -q 'id="meditation"' index.html
           grep -q 'meditationMediaSelect' index.html
           grep -q 'MEDIA_MEDITATION_ID' index.html
@@ -122,8 +125,8 @@ jobs:
             echo "V96 déjà présent"
             exit 0
           fi
-          git commit -m "V96 - detail Mes reperes"
+          git commit -m "V96 - fix mobile score layout"
           git pull --rebase origin main
           git push origin HEAD:main
 
-# V96 deployment trigger - 2026-09-08T13:45:00Z
+# V96 mobile layout trigger - 2026-09-08T13:50:00Z
