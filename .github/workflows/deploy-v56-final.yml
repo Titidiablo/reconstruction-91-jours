@@ -1,4 +1,4 @@
-name: Deploy V59 final
+name: Deploy V60 final
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
-      - name: Apply V59
+      - name: Apply V60
         uses: actions/github-script@v7
         with:
           script: |
@@ -21,76 +21,107 @@ jobs:
             const current = await github.rest.repos.getContent({owner, repo, path, ref: 'main'});
             let html = Buffer.from(current.data.content, 'base64').toString('utf8');
 
-            if (html.includes('>V59</div>') && html.includes('id="evolutionSection"') && html.includes('id="evolutionNavButton"')) {
-              core.info('V59 already installed.');
+            if (html.includes('>V60</div>') && html.includes('id="scoreEvolutionSummary"') && html.includes('renderScoreEvolutionSummary')) {
+              core.info('V60 already installed.');
               return;
             }
-            if (!html.includes('>V58</div>')) throw new Error('V58 badge not found');
-            html = html.replace('>V58</div>', '>V59</div>', 1);
+            if (!html.includes('>V59</div>')) throw new Error('V59 badge not found');
 
-            const nav = `        <button\n          id="journalNavButton"\n          class="secondary"\n          onclick="showSection('journal')">\n          📔 Mon journal intime\n        </button>`;
-            const navAdd = nav + `\n\n        <button\n          id="evolutionNavButton"\n          class="secondary"\n          onclick="showSection('evolution')">\n          📈 Évolution des scores\n        </button>`;
-            if (!html.includes('id="evolutionNavButton"')) {
-              if (!html.includes(nav)) throw new Error('Journal navigation button not found');
-              html = html.replace(nav, navAdd, 1);
+            // Version
+            html = html.replace('>V59</div>', '>V60</div>', 1);
+
+            // Add the compact summary under the chart once.
+            const chartStatus = '        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>';
+            const summary = `        <div id="scoreEvolutionSummary" class="score-evolution-summary" aria-live="polite">\n          <div class="score-summary-item">\n            <span class="score-summary-label">Progression depuis J1</span>\n            <strong id="scoreSummaryProgression">—</strong>\n          </div>\n          <div class="score-summary-item">\n            <span class="score-summary-label">Dimension la plus forte</span>\n            <strong id="scoreSummaryStrongest">—</strong>\n          </div>\n          <div class="score-summary-item">\n            <span class="score-summary-label">Dimension à travailler</span>\n            <strong id="scoreSummaryWeakest">—</strong>\n          </div>\n          <p id="scoreSummaryContext" class="score-summary-context">Les indicateurs portent sur la période affichée.</p>\n        </div>`;
+            if (!html.includes('id="scoreEvolutionSummary"')) {
+              if (!html.includes(chartStatus)) throw new Error('Chart status marker not found');
+              html = html.replace(chartStatus, chartStatus + '\n' + summary, 1);
             }
 
-            const chartStart = html.indexOf('      <!-- Évolution des scores -->');
-            const chartEnd = html.indexOf('      <!-- Contenu du jour -->', chartStart);
-            if (chartStart < 0 || chartEnd < 0) throw new Error('Program chart block not found');
-            html = html.slice(0, chartStart) + html.slice(chartEnd);
-
-            const evolution = `    <!-- ======================================================= -->\n    <!-- ÉVOLUTION DES SCORES -->\n    <!-- ======================================================= -->\n\n    <div id="evolutionSection" class="hidden">\n\n      <div class="card">\n        <h2 class="section-title">📈 Évolution de mes scores</h2>\n        <p>Visualise ma progression au fil des 91 jours.</p>\n      </div>\n\n      <div class="card score-chart-card">\n        <div class="score-chart-toolbar">\n          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>\n          <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>\n          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>\n          <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>\n          <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>\n          <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>\n          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>\n        </div>\n        <div class="score-chart-wrap">\n          <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>\n        </div>\n        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>\n      </div>\n\n    </div>\n\n`;
-            const journalMarker = '    <!-- ======================================================= -->\n    <!-- JOURNAL INTIME -->';
-            if (!html.includes('id="evolutionSection"')) {
-              if (!html.includes(journalMarker)) throw new Error('Journal section marker not found');
-              html = html.replace(journalMarker, evolution + journalMarker, 1);
+            // Add summary styles in a dedicated style tag.
+            if (!html.includes('id="v60-evolution-summary"')) {
+              const style = `\n<style id="v60-evolution-summary">\n.score-evolution-summary {\n  display:grid;\n  grid-template-columns:repeat(3, minmax(0, 1fr));\n  gap:10px;\n  margin-top:14px;\n}\n.score-summary-item {\n  background:#f7f5f1;\n  border:1px solid #ddd9d1;\n  border-radius:10px;\n  padding:12px;\n  min-width:0;\n}\n.score-summary-label {\n  display:block;\n  color:#777;\n  font-size:12px;\n  margin-bottom:4px;\n}\n.score-summary-item strong {\n  display:block;\n  font-size:16px;\n  line-height:1.3;\n}\n.score-summary-context {\n  grid-column:1 / -1;\n  margin:0;\n  color:#777;\n  font-size:12px;\n}\n@media (max-width:700px) {\n  .score-evolution-summary { grid-template-columns:1fr; }\n  .score-summary-context { grid-column:auto; }\n}\n</style>\n`;
+              const headMarker = '</head>';
+              if (!html.includes(headMarker)) throw new Error('HEAD marker not found');
+              html = html.replace(headMarker, style + headMarker, 1);
             }
 
-            const start = html.indexOf('  function showSection(section) {');
-            const end = html.indexOf('\n  /* ============================================================\n     SELECTEUR', start);
-            if (start < 0 || end < 0) throw new Error('showSection boundaries not found');
-            const newShow = `  function showSection(section) {\n\n    const program = document.getElementById("programSection");\n    const journal = document.getElementById("journalSection");\n    const evolution = document.getElementById("evolutionSection");\n\n    const programButton = document.getElementById("programNavButton");\n    const journalButton = document.getElementById("journalNavButton");\n    const evolutionButton = document.getElementById("evolutionNavButton");\n\n    [program, journal, evolution].forEach(el => { if (el) el.classList.add("hidden"); });\n    [programButton, journalButton, evolutionButton].forEach(btn => { if (btn) btn.classList.remove("nav-active"); });\n\n    if (section === "journal") {\n      journal.classList.remove("hidden");\n      journalButton.classList.add("nav-active");\n      loadJournalEntries();\n      return;\n    }\n\n    if (section === "evolution") {\n      evolution.classList.remove("hidden");\n      evolutionButton.classList.add("nav-active");\n      renderScoreEvolutionChart();\n      return;\n    }\n\n    program.classList.remove("hidden");\n    programButton.classList.add("nav-active");\n  }\n`;
-            html = html.slice(0, start) + newShow + html.slice(end);
+            // The existing V59 chart is already the intended 4-dimension line chart,
+            // with a separate average curve and visual gaps for missing days.
+            // V60 adds the readable summary below it.
+            if (!html.includes('function renderScoreEvolutionChart()')) throw new Error('Score evolution renderer not found');
+            if (!html.includes('function setChartRange(range)')) throw new Error('Chart range function not found');
 
-            const oldToggle = /  function toggleScoreEvolution\(\) \{[\s\S]*?\n  \}\n\n/;
-            html = html.replace(oldToggle, '', 1);
+            const summaryFunction = `\n  function renderScoreEvolutionSummary() {\n    const progressEl = document.getElementById("scoreSummaryProgression");\n    const strongestEl = document.getElementById("scoreSummaryStrongest");\n    const weakestEl = document.getElementById("scoreSummaryWeakest");\n    const contextEl = document.getElementById("scoreSummaryContext");\n    if (!progressEl || !strongestEl || !weakestEl) return;\n\n    const endDay = Math.min(chartRange, 91);\n    const rows = (dailyScoreHistory || [])\n      .filter(row => {\n        const d = Number(row.day_number);\n        return Number.isFinite(d) && d >= 1 && d <= endDay;\n      })\n      .sort((a, b) => Number(a.day_number) - Number(b.day_number));\n\n    const dimensions = [\n      ["presence", "Présence"],\n      ["impulse_control", "Maîtrise de l'impulsion"],\n      ["values_coherence", "Cohérence avec mes valeurs"],\n      ["self_relation", "Relation à moi-même"]\n    ];\n\n    const validScore = value => {\n      const n = Number(value);\n      return Number.isFinite(n) && n >= 1 && n <= 10 ? n : null;\n    };\n\n    const averageRow = row => {\n      const values = dimensions.map(([key]) => validScore(row?.[key])).filter(v => v !== null);\n      return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;\n    };\n\n    const scoredRows = rows.filter(row => averageRow(row) !== null);\n    if (!scoredRows.length) {\n      progressEl.textContent = "—";\n      strongestEl.textContent = "—";\n      weakestEl.textContent = "—";\n      if (contextEl) contextEl.textContent = "Aucun score enregistré sur la période affichée.";\n      return;\n    }\n\n    const first = averageRow(scoredRows[0]);\n    const last = averageRow(scoredRows[scoredRows.length - 1]);\n    const delta = last - first;\n    progressEl.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)} point${Math.abs(delta) >= 2 ? "s" : ""}`;\n\n    const dimensionAverages = dimensions.map(([key, label]) => {\n      const values = rows.map(row => validScore(row?.[key])).filter(v => v !== null);\n      return { label, average: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null };\n    }).filter(item => item.average !== null);\n\n    dimensionAverages.sort((a, b) => b.average - a.average);\n    strongestEl.textContent = dimensionAverages[0] ? `${dimensionAverages[0].label} · ${dimensionAverages[0].average.toFixed(1)}/10` : "—";\n    weakestEl.textContent = dimensionAverages.length ? `${dimensionAverages[dimensionAverages.length - 1].label} · ${dimensionAverages[dimensionAverages.length - 1].average.toFixed(1)}/10` : "—";\n\n    if (contextEl) {\n      const firstDay = Number(scoredRows[0].day_number);\n      const lastDay = Number(scoredRows[scoredRows.length - 1].day_number);\n      contextEl.textContent = `Comparaison du premier score enregistré (J${firstDay}) au dernier (J${lastDay}). Les deux autres indicateurs sont calculés sur la période affichée.`;\n    }\n  }\n`;
+            if (!html.includes('function renderScoreEvolutionSummary()')) {
+              const insertion = '\n  }\n\n  function setChartRange(range)';
+              if (!html.includes(insertion)) throw new Error('Chart function boundary not found');
+              html = html.replace(insertion, summaryFunction + insertion, 1);
+            }
+
+            // Call the summary every time the graph is rendered.
+            if (!html.includes('renderScoreEvolutionSummary();')) {
+              const insertion = '\n  }\n\n  function setChartRange(range)';
+              if (!html.includes(insertion)) throw new Error('Chart function boundary not found for summary call');
+              html = html.replace(insertion, '\n    renderScoreEvolutionSummary();' + insertion, 1);
+            }
+
+            // Hardening marker: the current V59 build already serializes the control table
+            // from the live DOM. Keep that mechanism and refuse the update if it regresses.
+            const serializationChecks = [
+              'function collectControlTable()',
+              'EXACTEMENT l\'état visuel du tableau',
+              '__CONTROL_TABLE_JSON__',
+              '__FIN_TABLEAU_CONTROLE__'
+            ];
+            for (const item of serializationChecks) if (!html.includes(item)) throw new Error('Control-table serialization check failed: ' + item);
 
             const checks = [
-              '>V59</div>',
-              'id="evolutionNavButton"',
-              'id="evolutionSection"',
-              'if (section === "evolution")',
-              'id="scoreEvolutionChartContainer"',
-              'const averageColor = "#f59e0b"',
-              'chart-legend-dashed'
+              '>V60</div>',
+              'id="scoreEvolutionSummary"',
+              'id="scoreSummaryProgression"',
+              'id="scoreSummaryStrongest"',
+              'id="scoreSummaryWeakest"',
+              'function renderScoreEvolutionSummary()',
+              'renderScoreEvolutionSummary();',
+              'const keys = [',
+              '"Moyenne générale"'
             ];
-            for (const item of checks) if (!html.includes(item)) throw new Error('Missing V59 content: ' + item);
-            const p0 = html.indexOf('<div id="programSection">');
-            const e0 = html.indexOf('<div id="evolutionSection"');
-            if (p0 < 0 || e0 < 0 || e0 <= p0) throw new Error('Program/Evolution sections invalid');
-            const programPart = html.slice(p0, e0);
-            if (programPart.includes('scoreEvolutionChartContainer') || programPart.includes('<!-- Évolution des scores -->')) throw new Error('Chart still in Program');
-            if ((html.match(/id="scoreEvolutionChartContainer"/g)||[]).length !== 1) throw new Error('Chart container count invalid');
+            for (const item of checks) if (!html.includes(item)) throw new Error('Missing V60 content: ' + item);
+
+            const countSummary = (html.match(/id="scoreEvolutionSummary"/g) || []).length;
+            if (countSummary !== 1) throw new Error('Summary container count invalid');
+            const countFunction = (html.match(/function renderScoreEvolutionSummary\(\)/g) || []).length;
+            if (countFunction !== 1) throw new Error('Summary function count invalid');
 
             await github.rest.repos.createOrUpdateFileContents({
               owner, repo, path,
-              message: 'V59 - dedicated score evolution page',
+              message: 'V60 - score evolution summary',
               content: Buffer.from(html, 'utf8').toString('base64'),
               sha: current.data.sha,
               branch: 'main'
             });
-            core.info('V59 committed.');
+            core.info('V60 committed.');
 
-      - name: Verify V59
+      - name: Verify V60
         uses: actions/github-script@v7
         with:
           script: |
             const current = await github.rest.repos.getContent({owner: context.repo.owner, repo: context.repo.repo, path: 'index.html', ref: 'main'});
             const html = Buffer.from(current.data.content, 'base64').toString('utf8');
-            const checks = ['>V59</div>','id="evolutionNavButton"','id="evolutionSection"','if (section === "evolution")','id="scoreEvolutionChartContainer"','const averageColor = "#f59e0b"','chart-legend-dashed'];
+            const checks = [
+              '>V60</div>',
+              'id="scoreEvolutionSummary"',
+              'id="scoreSummaryProgression"',
+              'id="scoreSummaryStrongest"',
+              'id="scoreSummaryWeakest"',
+              'function renderScoreEvolutionSummary()',
+              'renderScoreEvolutionSummary();',
+              'function collectControlTable()',
+              '__CONTROL_TABLE_JSON__',
+              '__FIN_TABLEAU_CONTROLE__'
+            ];
             for (const item of checks) if (!html.includes(item)) throw new Error('Verification failed: ' + item);
-            const p0 = html.indexOf('<div id="programSection">');
-            const e0 = html.indexOf('<div id="evolutionSection"');
-            if (html.slice(p0,e0).includes('scoreEvolutionChartContainer')) throw new Error('Chart remains in Program');
-            core.info('V59 verified.');
+            if ((html.match(/id="scoreEvolutionSummary"/g)||[]).length !== 1) throw new Error('Summary count invalid');
+            if ((html.match(/function renderScoreEvolutionSummary\(\)/g)||[]).length !== 1) throw new Error('Summary function count invalid');
+            core.info('V60 verified.');
