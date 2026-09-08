@@ -1,0 +1,53 @@
+name: Deploy V54
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch index.html
+        shell: python
+        run: |
+          from pathlib import Path
+          import subprocess
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          msg = subprocess.check_output(['git','log','-1','--pretty=%B'], text=True).strip()
+          if 'Update index.html V54' in msg:
+              print('V54 commit detected; nothing to patch.')
+              raise SystemExit(0)
+          old = '↩️ Annuler les modifications'
+          new = '↩️ Annuler et continuer'
+          if old not in s:
+              raise SystemExit('Expected V53 button text not found')
+          s = s.replace(old, new, 1)
+          import re
+          m = re.search(r'>V5[23]</div>', s)
+          if not m:
+              raise SystemExit('V53 badge not found')
+          s = s[:m.start()] + '>V54</div>' + s[m.end():]
+          if s.count(new) != 1:
+              raise SystemExit('V54 button text validation failed')
+          if '>V54</div>' not in s:
+              raise SystemExit('V54 badge validation failed')
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          grep -q '>V54</div>' index.html
+          grep -q '↩️ Annuler et continuer' index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Update index.html V54'
+          git push
