@@ -6,14 +6,17 @@ html = path.read_text(encoding="utf-8")
 
 # V62: remove the redundant in-page save button; the floating save button
 # remains the single save action and is already restricted to the program tab.
-old_button = '<button class="primary" onclick="saveEntry()">💾 Sauvegarder ma journée</button>'
-if html.count(old_button) != 1:
-    raise SystemExit(f'Expected exactly one daily save button, found {html.count(old_button)}')
-html = html.replace(old_button, '', 1)
+pattern = r'<button\b[^>]*onclick=["\']saveEntry\(\)["\'][^>]*>\s*💾\s*Sauvegarder ma journée\s*</button>'
+count = len(re.findall(pattern, html, flags=re.IGNORECASE))
+if count > 1:
+    raise SystemExit(f'Expected at most one daily save button, found {count}')
+if count == 1:
+    html = re.sub(pattern, '', html, count=1, flags=re.IGNORECASE)
 
-if '>V61</div>' not in html:
-    raise SystemExit('V61 badge not found')
-html = html.replace('>V61</div>', '>V62</div>', 1)
+if '>V61</div>' not in html and '>V62</div>' not in html:
+    raise SystemExit('V61/V62 badge not found')
+if '>V61</div>' in html:
+    html = html.replace('>V61</div>', '>V62</div>', 1)
 
 marker = '<script id="v62-save-button-cleanup">'
 if marker not in html:
@@ -43,7 +46,7 @@ checks = [
 for check in checks:
     if check not in html:
         raise SystemExit(f'Missing V62 content: {check}')
-if 'Sauvegarder ma journée' in html:
+if re.search(r'Sauvegarder ma journée', html, flags=re.IGNORECASE):
     raise SystemExit('Redundant daily save button text still present')
 if html.count('>V62</div>') != 1:
     raise SystemExit('V62 badge count invalid')
