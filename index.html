@@ -737,6 +737,56 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
+
+<style id="v65-navigation-fix">
+/* V65 — Mon parcours est la navigation principale des 91 jours. */
+.v64-days-card .v64-days-head { justify-content: flex-start; }
+.v64-days-card .v64-days-head h3 { flex: 1; }
+.v64-day-btn { cursor: pointer; }
+.v64-day-btn:active { transform: translateY(1px); }
+</style>
+
+<style id="v66-today-program-fix">
+/* V66 — Programme : conserver la navigation actuelle, retirer les éléments UX parasites. */
+.v64-stepper { display: none !important; }
+.v64-save-main {
+  position: static !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  margin: 20px 0 !important;
+}
+</style>
+<script id="v66-today-program-fix">
+(function(){
+  function cleanupProgram(){
+    // Le stepper V64 (Comprendre / Pratiquer / Méditer / Écrire / Évaluer)
+    // n'est pas une étape de navigation : il encombre le contenu du Programme.
+    document.querySelectorAll('.v64-stepper').forEach(el => el.remove());
+
+    // Il ne doit rester qu'un seul bouton de sauvegarde : celui du bandeau V64.
+    document.querySelectorAll('button[onclick="saveEntry()"], button[onclick*=\"saveEntry()\"]').forEach(btn => {
+      if (!btn.closest('.v64-save-main')) btn.remove();
+    });
+
+    // Le bouton de sauvegarde reste dans le flux de la page, juste avant la navigation.
+    const program = document.getElementById('programSection');
+    const save = document.querySelector('.v64-save-main');
+    if (program && save && save.parentElement !== program) program.appendChild(save);
+  }
+
+  function observe(){
+    cleanupProgram();
+    const root = document.getElementById('programSection');
+    if (!root || root.dataset.v66Observed) return;
+    root.dataset.v66Observed = '1';
+    new MutationObserver(cleanupProgram).observe(root, {childList:true, subtree:true});
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observe);
+  else observe();
+  window.addEventListener('load', observe);
+})();
+</script>
 </head>
 
 <body>
@@ -3269,14 +3319,14 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
           <input id="mediaAudioTitle" type="text" placeholder="Titre de la méditation"><label for="mediaAudioCategory">Catégorie</label><select id="mediaAudioCategory"><option value="Méditation">Méditation</option><option value="Développement personnel">Développement personnel</option><option value="Formation">Formation</option><option value="Coaching">Coaching</option><option value="YouTube">YouTube</option><option value="Autre">Autre</option></select>
           <textarea id="mediaAudioDescription" placeholder="Description (facultative)"></textarea>
           <input id="mediaAudioFile" type="file" accept="audio/mpeg,.mp3">
-          <button class="primary" type="button" id="mediaAudioUpload">⬆️ Ajouter le MP3</button><div id="mediaAudioStatus" class="media-status" aria-live="polite"></div>
+          <button class="primary" type="button" id="mediaAudioUpload">⬆️ Ajouter le MP3</button><div id="mediaAudioStatus" class="media-status" aria-live="polite"></div><div id="mediaAudioStatus" class="media-status" aria-live="polite"></div>
         </div>
         <div class="media-form-card">
           <h3>🧠 Ajouter une vidéo</h3>
           <input id="mediaVideoTitle" type="text" placeholder="Titre de la vidéo"><label for="mediaVideoCategory">Catégorie</label><select id="mediaVideoCategory"><option value="Développement personnel">Développement personnel</option><option value="Méditation">Méditation</option><option value="Formation">Formation</option><option value="Coaching">Coaching</option><option value="YouTube">YouTube</option><option value="Autre">Autre</option></select>
           <textarea id="mediaVideoDescription" placeholder="Description (facultative)"></textarea>
           <input id="mediaVideoFile" type="file" accept="video/mp4,.mp4">
-          <button class="primary" type="button" id="mediaVideoUpload">⬆️ Ajouter le MP4</button><div id="mediaVideoStatus" class="media-status" aria-live="polite"></div>
+          <button class="primary" type="button" id="mediaVideoUpload">⬆️ Ajouter le MP4</button><div id="mediaVideoStatus" class="media-status" aria-live="polite"></div><div id="mediaVideoStatus" class="media-status" aria-live="polite"></div>
         </div>
       </div>
       <div class="media-form-card" style="margin-top:16px;">
@@ -3485,17 +3535,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </script>
 
 
-<style id="v85-media-program">
-.media-form-card label { display:block; font-weight:bold; margin-top:4px; margin-bottom:4px; }
-.meditation-media-picker { margin:12px 0 16px; padding:14px 16px; background:#f7f5f1; border:1px solid #ddd9d1; border-radius:10px; }
-.meditation-media-picker label { display:block; font-weight:bold; margin-bottom:6px; }
-.meditation-media-picker select { margin:0; }
-.meditation-media-player { margin-top:10px; }
-.meditation-media-player audio { width:100%; max-width:760px; }
-.meditation-media-help { color:#777; font-size:13px; margin:6px 0 0; }
-</style>
-
-
 <script id="v85-media-program-script">
 (function(){
   const MARKER_RE=/\[\[MEDIA_MEDITATION_ID:([^\]]+)\]\]/;
@@ -3636,8 +3675,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </script>
 
 
-<style id="v87-media-filename-title">
-</style>
 <script id="v87-media-filename-title-script">
 (function(){
   function $(id){ return document.getElementById(id); }
@@ -3673,15 +3710,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </script>
 
 
-<style id="v88-meditation-picker-position">
-/* Le sélecteur audio reste visuellement dans le bloc Méditation, sous son texte explicatif. */
-.meditation-media-picker { margin-top:12px; margin-bottom:16px; }
-</style>
-
-
-<style id="v89-meditation-picker-exact-position">
-#meditation + .meditation-media-picker { margin-top:12px; margin-bottom:16px; }
-</style>
 <script id="v89-meditation-picker-exact-position-script">
 (function(){
   function movePicker(){
@@ -3764,29 +3792,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   window.addEventListener('load',()=>setTimeout(init,500));
 })();
 </script>
-
-
-<style id="v92-zen-design">
-:root{
-  --zen-bg:#f5f1e8;--zen-surface:#fffdf8;--zen-soft:#f1eee4;
-  --zen-sage:#7b8b69;--zen-sage-dark:#5f704f;--zen-brown:#4b4034;
-  --zen-muted:#7d7468;--zen-line:#ded7ca;
-  --zen-shadow:0 5px 22px rgba(75,64,52,.08);
-}
-html,body{background:var(--zen-bg)!important;color:var(--zen-brown)!important}
-body{line-height:1.65}
-h1,h2,h3,.day-number,.exercise-heading h2{font-family:Georgia,'Times New Roman',serif;color:var(--zen-brown)}
-h1{letter-spacing:.03em}.subtitle{color:var(--zen-muted)!important;font-family:Georgia,'Times New Roman',serif;font-style:italic}
-.card{background:var(--zen-surface)!important;border:1px solid rgba(222,215,202,.7);box-shadow:var(--zen-shadow)!important;border-radius:18px!important}
-.nav-buttons{gap:7px!important}.nav-buttons button{background:#ebe7dd!important;color:var(--zen-brown)!important;border:1px solid #d8d0c2!important;border-radius:12px!important;box-shadow:none!important;font-weight:500!important;transition:all .18s ease!important}.nav-buttons button:hover{background:#e2ddcf!important;transform:translateY(-1px)}
-.nav-buttons button.nav-active{background:var(--zen-sage)!important;color:white!important;border:2px solid var(--zen-sage-dark)!important;box-shadow:0 4px 12px rgba(95,112,79,.22)!important;font-weight:bold!important;transform:translateY(-1px)}
-.nav-buttons button.nav-active::before{content:'✓ '!important}
-button.primary{background:var(--zen-sage-dark)!important;color:white!important;border-radius:11px!important}button.secondary{background:#ebe7dd!important;color:var(--zen-brown)!important;border:1px solid #d8d0c2!important;border-radius:11px!important}button.danger{background:#f2e8df!important;color:#8b563b!important;border-radius:11px!important}
-input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!important;border:1px solid #d8d0c2!important;border-radius:11px!important}input:focus,textarea:focus,select:focus{outline:none;border-color:var(--zen-sage)!important;box-shadow:0 0 0 3px rgba(123,139,105,.13)!important}
-.exercise-card{border-top:5px solid var(--zen-sage)!important;background:var(--zen-surface)!important}.exercise-section{background:var(--zen-soft)!important;border-color:var(--zen-line)!important;border-radius:14px!important}.exercise-section-title{color:var(--zen-sage-dark)!important}.week-label,.success{color:var(--zen-muted)!important}.progress-container{background:#dfdbd1!important}.progress-bar{background:var(--zen-sage)!important}
-#meditation{background:linear-gradient(135deg,#f4f0e5,#eef1e7)!important;border-radius:16px;padding:20px!important;border:1px solid var(--zen-line)}.meditation-media-picker{background:#f7f4ec!important;border:1px solid var(--zen-line)!important;border-radius:14px!important;box-shadow:none!important}
-@media(max-width:700px){body{padding:14px}.card{border-radius:15px!important;padding:20px!important}.nav-buttons{gap:5px!important}.nav-buttons button{padding:9px 12px!important}}
-</style>
 
 
 <style id="v93-zen-images">
@@ -4038,32 +4043,6 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
 </script>
 
 
-<style id="v96-mobile-score-layout">
-#v94Reflection,#v94Reflection *{box-sizing:border-box}
-#v94Reflection{width:100%;min-width:0;overflow:hidden}
-#v94Reflection .v95-pillars{width:100%;min-width:0}
-#v94Reflection .v95-pillar,#v94Reflection .v95-encouragement{min-width:0;height:auto;overflow:visible}
-#v94Reflection .v95-pillar-head{min-width:0;flex-wrap:wrap;align-items:flex-start}
-#v94Reflection .v95-pillar-title,#v94Reflection .v95-pillar-score,#v94Reflection .v95-pillar-text,#v94Reflection .v95-pillar-path,#v94Reflection p,#v94Reflection strong{overflow-wrap:anywhere;word-break:normal}
-@media(max-width:700px){
-#v94Reflection{overflow:visible}
-#v94Reflection .v95-pillars{display:flex;flex-direction:column;gap:14px;margin:16px 0}
-#v94Reflection .v95-pillar{width:100%;display:block;padding:14px}
-#v94Reflection .v95-pillar-head{display:flex;justify-content:space-between;gap:6px 10px;margin-bottom:8px}
-#v94Reflection .v95-pillar-title{flex:1 1 150px;min-width:0;line-height:1.35}
-#v94Reflection .v95-pillar-score{flex:0 1 auto;white-space:normal;line-height:1.3}
-#v94Reflection .v95-pillar-text,#v94Reflection .v95-pillar-path{width:100%;display:block}
-#v94Reflection .v95-encouragement{width:100%;padding:15px;margin-top:16px}
-#v94Reflection .v95-encouragement .main{font-size:18px;line-height:1.4}
-#v94Reflection .v95-encouragement .sub{font-size:14px;line-height:1.55}
-}
-@media(max-width:380px){
-#v94Reflection .v95-pillar-head{display:block}
-#v94Reflection .v95-pillar-score{display:block;margin-top:5px}
-}
-</style>
-
-
 <style id="v97-evolution-mobile-no-overlap">
 /* V97 — remise à plat du flux mobile de toute la section Évolution. */
 #evolutionSection{width:100% !important;min-width:0 !important;overflow:visible !important}
@@ -4237,7 +4216,7 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
 </script>
 
 
-<!-- DISPLAY_VERSION -->V103<!-- /DISPLAY_VERSION -->
+<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->
 
 
 
@@ -4304,6 +4283,1212 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
   else setTimeout(initial,250);
   window.addEventListener('load',()=>setTimeout(initial,500));
   setInterval(bind,500);
+})();
+</script>
+
+
+<script id="v67-program-active-fix">
+(function(){
+  function syncProgramActive(section){
+    const today=document.getElementById('todayNavButton');
+    if(!today) return;
+    if(section==='program') today.classList.remove('nav-active');
+  }
+  function install(){
+    if(typeof window.showSection!=='function' || window.showSection.__v67Wrapped) return;
+    const previous=window.showSection;
+    function wrapped(section){
+      const result=previous.apply(this,arguments);
+      setTimeout(()=>syncProgramActive(section),0);
+      return result;
+    }
+    wrapped.__v67Wrapped=true;
+    window.showSection=wrapped;
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,800));
+})();
+</script>
+
+
+<style id="v68-dashboard-program-fix">
+/* V68 — Aujourd'hui = cockpit ; Programme = travail du jour */
+#v64Dashboard .v64-days-card { display:block !important; }
+#v64Dashboard .v64-actions #v64OpenDays,
+#v64Dashboard .v64-days-head #v64CompactDays { display:none !important; }
+#v64Dashboard .v64-days-card { margin-top:18px; }
+</style>
+<script id="v68-dashboard-program-fix">
+(function(){
+  function bind(){
+    const grid=document.getElementById('v64MiniDays');
+    if(!grid || grid.dataset.v68Bound) return;
+    grid.dataset.v68Bound='1';
+    grid.addEventListener('click',function(e){
+      const btn=e.target.closest('.v64-day-btn');
+      if(!btn) return;
+      e.preventDefault();
+      const match=String(btn.textContent||'').match(/J(\d+)/i);
+      if(!match) return;
+      const day=Number(match[1]);
+      if(!Number.isInteger(day)) return;
+      if(typeof closeDays==='function') closeDays();
+      if(typeof showSection==='function') showSection('program');
+      if(typeof requestDayChange==='function') requestDayChange(day);
+    });
+  }
+  function install(){ bind(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,500));
+  new MutationObserver(install).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="v70-restore-structure">
+/* V70 — Aujourd'hui = cockpit ; Tableau de bord = suivi + grille ; Programme = programme. */
+#v64Dashboard .v64-days-card { display:none !important; }
+#v61Dashboard .v70-days-card { display:block !important; margin-top:20px; }
+#v61Dashboard .v70-days-grid { display:grid; grid-template-columns:repeat(13,minmax(34px,1fr)); gap:6px; margin-top:14px; }
+.v70-days-card h3 { margin:0; }
+@media(max-width:800px){#v61Dashboard .v70-days-grid{grid-template-columns:repeat(7,minmax(34px,1fr));}}
+</style>
+<script id="v70-restore-structure">
+(function(){
+  function buildDashboardGrid(){
+    const dashboard=document.getElementById('v61Dashboard');
+    const source=document.querySelector('#v64Dashboard .v64-days-card');
+    if(!dashboard || !source) return;
+    let card=dashboard.querySelector('.v70-days-card');
+    if(!card){
+      card=document.createElement('div');
+      card.className='card v70-days-card';
+      card.innerHTML='<div class="v64-days-head"><h3>🗓️ Les 91 jours</h3></div><div id="v70DaysGrid" class="v70-days-grid"></div>';
+      dashboard.appendChild(card);
+    }
+    const target=document.getElementById('v70DaysGrid');
+    if(!target) return;
+    target.innerHTML='';
+    source.querySelectorAll('.v64-day-btn').forEach(original=>{
+      const btn=original.cloneNode(true);
+      btn.onclick=function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        const match=String(btn.textContent||'').match(/J(\d+)/i);
+        const day=match ? Number(match[1]) : NaN;
+        if(!Number.isInteger(day) || day<1 || day>91) return;
+        const go=typeof requestDayChange==='function' ? requestDayChange(day) : Promise.resolve();
+        Promise.resolve(go).then(()=>{ if(typeof showSection==='function') showSection('program'); });
+      };
+      target.appendChild(btn);
+    });
+    source.remove();
+  }
+
+  function cleanProgram(){
+    document.querySelectorAll('#programSection .v64-stepper').forEach(el=>el.remove());
+    document.querySelectorAll('#programSection .v64-days-card, #programSection .v70-days-card').forEach(el=>el.remove());
+  }
+
+  function install(){
+    buildDashboardGrid();
+    cleanProgram();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,700));
+  new MutationObserver(()=>setTimeout(install,0)).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+
+<style id="v71-remove-day-grid">
+/* V71 — aucune grille des 91 jours dans l'interface */
+#v64Dashboard .v64-days-card,
+#v61Dashboard .v70-days-card,
+#v64DayModal,
+#v64OpenDays,
+#v64CompactDays,
+#daysNavButton { display:none !important; }
+</style>
+<script id="v71-remove-day-grid">
+(function(){
+  function removeDayGrid(){
+    document.querySelectorAll('.v64-days-card, .v70-days-card, #v64DayModal, #v64OpenDays, #v64CompactDays, #daysNavButton, .v64-day-modal').forEach(el=>el.remove());
+    document.querySelectorAll('.v64-day-btn').forEach(el=>el.remove());
+  }
+  function install(){ removeDayGrid(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,500));
+  new MutationObserver(install).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+
+<style id="v80-dashboard-navigation-fix">
+/* V80 — séparation stricte sans observer de classes : évite toute boucle qui bloque les clics. */
+#v61Dashboard.v80-dashboard-visible { display:block !important; }
+#v64Dashboard.v80-today-visible { display:block !important; }
+#v61Dashboard.v80-dashboard-hidden,
+#v64Dashboard.v80-today-hidden { display:none !important; }
+</style>
+<script id="v80-dashboard-navigation-fix">
+(function(){
+  function hide(el){
+    if(!el) return;
+    el.classList.add('hidden','v80-dashboard-hidden');
+    el.classList.remove('v80-dashboard-visible','v80-today-visible');
+  }
+  function show(el, today){
+    if(!el) return;
+    el.classList.remove('hidden','v80-dashboard-hidden','v80-today-hidden');
+    el.classList.add(today ? 'v80-today-visible' : 'v80-dashboard-visible');
+  }
+  function sync(){
+    const program=document.getElementById('programSection');
+    const today=document.getElementById('v64Dashboard');
+    const dashboard=document.getElementById('v61Dashboard');
+    const todayBtn=document.getElementById('todayNavButton');
+    const dashboardBtn=document.getElementById('dashboardNavButton');
+    if(!today || !dashboard) return;
+
+    if(program && !program.classList.contains('hidden')){
+      hide(today);
+      hide(dashboard);
+      return;
+    }
+    if(todayBtn?.classList.contains('nav-active')){
+      hide(dashboard);
+      show(today, true);
+      return;
+    }
+    if(dashboardBtn?.classList.contains('nav-active')){
+      hide(today);
+      show(dashboard, false);
+      return;
+    }
+    hide(today);
+    hide(dashboard);
+  }
+  function install(){
+    sync();
+    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
+      if(btn.dataset.v80Bound) return;
+      btn.dataset.v80Bound='1';
+      btn.addEventListener('click',()=>setTimeout(sync,0));
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,700));
+  new MutationObserver(()=>setTimeout(install,0)).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+
+<style id="v81-media-menu">
+.media-library { margin-top: 10px; }
+.media-intro { color:#666; margin-top:-8px; }
+.media-upload-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.media-form-card { background:#f7f5f1; border:1px solid #ddd9d1; border-radius:12px; padding:18px; }
+.media-form-card h3 { margin-top:0; }
+.media-resource-list { display:grid; gap:14px; margin-top:18px; }
+.media-resource { border:1px solid #ddd9d1; border-radius:12px; padding:16px; background:#fff; }
+.media-resource-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.media-resource-title { font-size:18px; font-weight:bold; margin:0; }
+.media-resource-meta { color:#777; font-size:13px; margin:3px 0 10px; }
+.media-resource audio, .media-resource video { width:100%; max-width:760px; margin-top:8px; border-radius:8px; }
+.media-resource iframe { width:100%; min-height:315px; border:0; border-radius:8px; margin-top:8px; }
+.media-resource-description { white-space:pre-wrap; margin:8px 0; }
+.media-resource-actions { margin-top:10px; }
+.media-empty { color:#777; text-align:center; padding:28px 10px; }
+.media-status { min-height:22px; margin-top:8px; }
+.media-status.success { color:#26733d; }
+.media-status.error { color:#a00; }
+.media-delete { background:#eee; color:#a00; }
+@media (max-width:700px) { .media-upload-grid { grid-template-columns:1fr; } }
+</style>
+<script id="v81-media-menu">
+(function(){
+  const BUCKET = 'personal-resources';
+  const MAX_AUDIO = 200 * 1024 * 1024;
+  const MAX_VIDEO = 500 * 1024 * 1024;
+
+  function $(id){ return document.getElementById(id); }
+  function esc(value){
+    return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function youtubeId(url){
+    try {
+      const u = new URL(url);
+      if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('/')[0];
+      if (u.hostname === 'youtube.com' || u.hostname === 'www.youtube.com' || u.hostname.endsWith('.youtube.com')) {
+        if (u.pathname === '/watch') return u.searchParams.get('v');
+        const m = u.pathname.match(/^\/(embed|shorts)\/([^/?]+)/);
+        return m ? m[2] : null;
+      }
+    } catch(e) {}
+    return null;
+  }
+  function isYoutube(url){ return !!youtubeId(url); }
+  function setStatus(text, ok){
+    const el=$('mediaStatus');
+    if(!el) return;
+    el.textContent=text || '';
+    el.className='media-status ' + (text ? (ok ? 'success' : 'error') : '');
+  }
+  function getClient(){ return typeof getSupabaseClient === 'function' ? getSupabaseClient() : null; }
+
+  function buildSection(){
+    if ($('mediaSection')) return;
+    const sec=document.createElement('section');
+    sec.id='mediaSection';
+    sec.className='card hidden media-library';
+    sec.innerHTML=`
+      <h2 class="section-title">🎧 Média</h2>
+      <p class="media-intro">Tes supports personnels pour la méditation et le développement personnel.</p>
+      <div class="media-upload-grid">
+        <div class="media-form-card">
+          <h3>🧘 Ajouter une méditation audio</h3>
+          <input id="mediaAudioTitle" type="text" placeholder="Titre de la méditation">
+          <textarea id="mediaAudioDescription" placeholder="Description (facultative)"></textarea>
+          <input id="mediaAudioFile" type="file" accept="audio/mpeg,.mp3">
+          <button class="primary" type="button" id="mediaAudioUpload">⬆️ Ajouter le MP3</button><div id="mediaAudioStatus" class="media-status" aria-live="polite"></div>
+        </div>
+        <div class="media-form-card">
+          <h3>🧠 Ajouter une vidéo</h3>
+          <input id="mediaVideoTitle" type="text" placeholder="Titre de la vidéo">
+          <textarea id="mediaVideoDescription" placeholder="Description (facultative)"></textarea>
+          <input id="mediaVideoFile" type="file" accept="video/mp4,.mp4">
+          <button class="primary" type="button" id="mediaVideoUpload">⬆️ Ajouter le MP4</button><div id="mediaVideoStatus" class="media-status" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="media-form-card" style="margin-top:16px;">
+        <h3>▶️ Ajouter une ressource YouTube</h3>
+        <input id="mediaYoutubeTitle" type="text" placeholder="Titre">
+        <textarea id="mediaYoutubeDescription" placeholder="Description (facultative)"></textarea>
+        <input id="mediaYoutubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..."><br>
+        <button class="primary" type="button" id="mediaYoutubeAdd">＋ Ajouter le lien YouTube</button>
+      </div>
+      <div id="mediaStatus" class="media-status" aria-live="polite"></div>
+      <h3 style="margin-top:26px;">📚 Mes médias</h3>
+      <div id="mediaResourceList" class="media-resource-list"><div class="media-empty">Chargement…</div></div>
+    `;
+    document.body.appendChild(sec);
+    $('mediaAudioUpload').addEventListener('click',()=>uploadFileResource('audio'));
+    $('mediaVideoUpload').addEventListener('click',()=>uploadFileResource('video'));
+    $('mediaYoutubeAdd').addEventListener('click',addYoutubeResource);
+  }
+
+  function installNav(){
+    const nav=document.querySelector('.nav-buttons');
+    if(!nav || $('mediaNavButton')) return false;
+    const btn=document.createElement('button');
+    btn.id='mediaNavButton';
+    btn.type='button';
+    btn.textContent='🎧 Média';
+    nav.appendChild(btn);
+    btn.addEventListener('click', showMedia);
+    return true;
+  }
+
+  function hideMainSections(){
+    ['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources','mediaSection'].forEach(id=>{
+      const el=$(id); if(el) el.classList.add('hidden');
+    });
+    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+  }
+
+  function showMedia(){
+    buildSection();
+    hideMainSections();
+    const sec=$('mediaSection');
+    if(sec) sec.classList.remove('hidden');
+    $('mediaNavButton')?.classList.add('nav-active');
+    loadMediaResources();
+  }
+
+  function bindExistingNav(){
+    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
+      if(btn.dataset.v81MediaBound || btn.id==='mediaNavButton') return;
+      btn.dataset.v81MediaBound='1';
+      btn.addEventListener('click',()=>{
+        if(btn.id!=='mediaNavButton') setTimeout(()=>{ $('mediaSection')?.classList.add('hidden'); },0);
+      });
+    });
+  }
+
+  async function currentUser(){
+    const client=getClient();
+    if(!client) throw new Error('Supabase n\'est pas disponible.');
+    const {data,error}=await client.auth.getUser();
+    if(error) throw error;
+    if(!data?.user) throw new Error('Tu dois être connecté pour gérer tes médias.');
+    return {client,user:data.user};
+  }
+
+  async function uploadFileResource(type){
+    const titleEl=$(type==='audio'?'mediaAudioTitle':'mediaVideoTitle');
+    const descEl=$(type==='audio'?'mediaAudioDescription':'mediaVideoDescription');
+    const fileEl=$(type==='audio'?'mediaAudioFile':'mediaVideoFile');
+    const file=fileEl?.files?.[0];
+    const title=titleEl?.value.trim();
+    if(!title || !file){ setStatus('Titre et fichier obligatoires.',false); return; }
+    const mime=type==='audio'?'audio/mpeg':'video/mp4';
+    const max=type==='audio'?MAX_AUDIO:MAX_VIDEO;
+    if(file.type && file.type!==mime){ setStatus(type==='audio'?'Choisis un fichier MP3.':'Choisis un fichier MP4.',false); return; }
+    if(file.size>max){ setStatus(type==='audio'?'MP3 trop volumineux (200 Mo max).':'MP4 trop volumineux (500 Mo max).',false); return; }
+    try{
+      setStatus('Téléversement en cours…',true);
+      const {client,user}=await currentUser();
+      const safeName=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,'-');
+      const path=`${user.id}/${type}/${Date.now()}-${safeName}`;
+      const {error:uploadError}=await client.storage.from(BUCKET).upload(path,file,{contentType:mime,upsert:false});
+      if(uploadError) throw uploadError;
+      const {error:dbError}=await client.from('personal_resources').insert({
+        user_id:user.id,
+        title,
+        description:descEl?.value.trim() || null,
+        category:type==='audio'?'Méditation':'Développement personnel',
+        media_type:type,
+        storage_path:path
+      });
+      if(dbError) throw dbError;
+      titleEl.value=''; descEl.value=''; fileEl.value='';
+      setStatus('Média ajouté.',true);
+      await loadMediaResources();
+    }catch(e){ console.error(e); setStatus('Impossible d’ajouter le média : '+(e.message||e),false); }
+  }
+
+  async function addYoutubeResource(){
+    const title=$('mediaYoutubeTitle')?.value.trim();
+    const description=$('mediaYoutubeDescription')?.value.trim();
+    const url=$('mediaYoutubeUrl')?.value.trim();
+    if(!title || !url){ setStatus('Titre et lien YouTube obligatoires.',false); return; }
+    if(!isYoutube(url)){ setStatus('Le lien doit être un lien YouTube valide.',false); return; }
+    try{
+      const {client,user}=await currentUser();
+      const {error}=await client.from('personal_resources').insert({user_id:user.id,title,description:description||null,category:'Développement personnel',media_type:'youtube',url});
+      if(error) throw error;
+      $('mediaYoutubeTitle').value=''; $('mediaYoutubeDescription').value=''; $('mediaYoutubeUrl').value='';
+      setStatus('Lien YouTube ajouté.',true);
+      await loadMediaResources();
+    }catch(e){ console.error(e); setStatus('Impossible d’ajouter le lien : '+(e.message||e),false); }
+  }
+
+  async function loadMediaResources(){
+    const list=$('mediaResourceList');
+    if(!list) return;
+    try{
+      const {client}=await currentUser();
+      const {data,error}=await client.from('personal_resources').select('*').order('created_at',{ascending:false});
+      if(error) throw error;
+      if(!data?.length){ list.innerHTML='<div class="media-empty">Aucun média pour le moment.</div>'; return; }
+      const signed={};
+      for(const r of data){
+        if(r.storage_path){
+          const out=await client.storage.from(BUCKET).createSignedUrl(r.storage_path,3600);
+          if(!out.error && out.data?.signedUrl) signed[r.id]=out.data.signedUrl;
+        }
+      }
+      list.innerHTML=data.map(r=>renderResource(r,signed[r.id]||'')).join('');
+      list.querySelectorAll('[data-media-delete]').forEach(btn=>btn.addEventListener('click',()=>deleteResource(btn.dataset.mediaDelete)));
+    }catch(e){ console.error(e); list.innerHTML='<div class="media-empty">Impossible de charger les médias. Vérifie la connexion et la session.</div>'; }
+  }
+
+  function renderResource(r,signedUrl){
+    const desc=r.description?`<div class="media-resource-description">${esc(r.description)}</div>`:'';
+    let body='';
+    if(r.media_type==='audio' && signedUrl) body=`<audio controls preload="metadata" src="${esc(signedUrl)}"></audio>`;
+    else if(r.media_type==='video' && signedUrl) body=`<video controls preload="metadata" src="${esc(signedUrl)}"></video>`;
+    else if(r.media_type==='youtube'){
+      const id=youtubeId(r.url||'');
+      body=id?`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(id)}" title="${esc(r.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`:`<a href="${esc(r.url||'#')}" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube</a>`;
+    } else if(r.url) body=`<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Ouvrir la ressource</a>`;
+    return `<article class="media-resource"><div class="media-resource-head"><div><h4 class="media-resource-title">${esc(r.title)}</h4><div class="media-resource-meta">${esc(r.category)} · ${esc(r.media_type)}</div></div><button type="button" class="media-delete" data-media-delete="${esc(r.id)}">🗑️ Supprimer</button></div>${desc}${body}<div class="media-resource-actions"></div></article>`;
+  }
+
+  async function deleteResource(id){
+    if(!id || !confirm('Supprimer cette ressource ?')) return;
+    try{
+      const {client}=await currentUser();
+      const {data,error}=await client.from('personal_resources').select('id,storage_path').eq('id',id).single();
+      if(error) throw error;
+      if(data?.storage_path) await client.storage.from(BUCKET).remove([data.storage_path]);
+      const {error:deleteError}=await client.from('personal_resources').delete().eq('id',id);
+      if(deleteError) throw deleteError;
+      setStatus('Ressource supprimée.',true);
+      await loadMediaResources();
+    }catch(e){ console.error(e); setStatus('Impossible de supprimer la ressource : '+(e.message||e),false); }
+  }
+
+  function init(){
+    buildSection();
+    installNav();
+    bindExistingNav();
+    window.setTimeout(()=>{ installNav(); bindExistingNav(); },500);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+
+
+<style id="v85-media-program">
+.media-form-card label { display:block; font-weight:bold; margin-top:4px; margin-bottom:4px; }
+.meditation-media-picker { margin:12px 0 16px; padding:14px 16px; background:#f7f5f1; border:1px solid #ddd9d1; border-radius:10px; }
+.meditation-media-picker label { display:block; font-weight:bold; margin-bottom:6px; }
+.meditation-media-picker select { margin:0; }
+.meditation-media-player { margin-top:10px; }
+.meditation-media-player audio { width:100%; max-width:760px; }
+.meditation-media-help { color:#777; font-size:13px; margin:6px 0 0; }
+</style>
+
+
+<script id="v85-media-program">
+(function(){
+  const MARKER_RE=/\[\[MEDIA_MEDITATION_ID:([^\]]+)\]\]/;
+  let pickerTimer=null;
+  function $(id){ return document.getElementById(id); }
+  function esc(v){ return String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function getClient(){ return typeof getSupabaseClient==='function' ? getSupabaseClient() : null; }
+
+  function programmeHasMeditation(){
+    const roots=[$('programSection'),$('exerciseContent'),$('interactiveExercise')].filter(Boolean);
+    const text=roots.map(r=>r.innerText||r.textContent||'').join(' ').toLowerCase();
+    return text.includes('méditation') || text.includes('meditation');
+  }
+  function removePicker(){ document.querySelectorAll('.meditation-media-picker').forEach(el=>el.remove()); }
+  function insertPicker(){
+    if(!programmeHasMeditation()) { removePicker(); return; }
+    if($('meditationMediaPicker')) return;
+    const host=$('exerciseContent') || $('interactiveExercise') || $('programSection');
+    if(!host) return;
+    const picker=document.createElement('div');
+    picker.className='meditation-media-picker';
+    picker.id='meditationMediaPicker';
+    picker.innerHTML=`<label for="meditationMediaSelect">🎧 Choisir l’audio de méditation</label><select id="meditationMediaSelect"><option value="">— Aucun audio sélectionné —</option></select><p class="meditation-media-help">Les MP3 classés « Méditation » dans 🎧 Média apparaissent ici.</p><div id="meditationMediaPlayer" class="meditation-media-player"></div>`;
+    const sections=Array.from(host.querySelectorAll('.exercise-section'));
+    const meditationSection=sections.find(section=>{
+      const text=(section.innerText||section.textContent||'').toLowerCase();
+      return text.includes('méditation') || text.includes('meditation');
+    });
+    if(meditationSection){
+      const explanatoryText=meditationSection.querySelector('.exercise-text');
+      if(explanatoryText){
+        explanatoryText.insertAdjacentElement('afterend',picker);
+      } else {
+        meditationSection.appendChild(picker);
+      }
+    } else if(host === $('programSection')) {
+      host.prepend(picker);
+    } else {
+      host.parentNode.insertBefore(picker,host);
+    }
+    $('meditationMediaSelect').addEventListener('change',()=>applySelection(true));
+    loadMeditationChoices();
+  }
+  async function loadMeditationChoices(){
+    const select=$('meditationMediaSelect');
+    if(!select) return;
+    try{
+      const client=getClient();
+      if(!client) return;
+      const {data:{user}}=await client.auth.getUser();
+      if(!user) return;
+      const {data,error}=await client.from('personal_resources').select('id,title,description,storage_path,category,media_type,created_at').eq('category','Méditation').eq('media_type','audio').order('created_at',{ascending:false});
+      if(error) throw error;
+      const saved=findSavedMediaId();
+      select.innerHTML='<option value="">— Aucun audio sélectionné —</option>' + (data||[]).map(r=>`<option value="${esc(r.id)}">${esc(r.title)}</option>`).join('');
+      if(saved && (data||[]).some(r=>String(r.id)===String(saved))) select.value=saved;
+      await applySelection(false);
+    }catch(e){
+      console.error('V85 meditation media',e);
+      select.innerHTML='<option value="">Impossible de charger les méditations</option>';
+    }
+  }
+  function findSavedMediaId(){
+    if(window.__v85SavedMeditationId) return window.__v85SavedMeditationId;
+    const raw=String(window.__v85CurrentEntry?.exercise_response || '');
+    const m=raw.match(MARKER_RE);
+    return m ? m[1] : '';
+  }
+  async function applySelection(markDirty){
+    const select=$('meditationMediaSelect');
+    const player=$('meditationMediaPlayer');
+    if(!select || !player) return;
+    const id=select.value;
+    player.innerHTML='';
+    if(!id) return;
+    try{
+      const client=getClient();
+      const {data,error}=await client.from('personal_resources').select('id,title,storage_path,category,media_type').eq('id',id).single();
+      if(error) throw error;
+      if(data?.storage_path){
+        const out=await client.storage.from('personal-resources').createSignedUrl(data.storage_path,3600);
+        if(out.error) throw out.error;
+        player.innerHTML=`<audio controls preload="metadata" src="${esc(out.data.signedUrl)}"></audio>`;
+      }
+      if(markDirty && typeof window.markDirty==='function') window.markDirty();
+    }catch(e){
+      console.error('V85 meditation player',e);
+      player.textContent='Impossible de charger cet audio.';
+    }
+  }
+
+  function wrapSave(){
+    if(typeof window.buildExerciseResponse!=='function' || window.buildExerciseResponse.__v85) return;
+    const original=window.buildExerciseResponse;
+    function wrapped(){
+      let value=original.apply(this,arguments);
+      const id=$('meditationMediaSelect')?.value || '';
+      value=String(value||'').replace(/\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
+      if(id) value += `\n[[MEDIA_MEDITATION_ID:${id}]]`;
+      return value;
+    }
+    wrapped.__v85=true;
+    window.buildExerciseResponse=wrapped;
+  }
+  function wrapLoad(){
+    if(typeof window.loadExistingEntry!=='function' || window.loadExistingEntry.__v85) return;
+    const original=window.loadExistingEntry;
+    async function wrapped(entry){
+      const raw=entry?.exercise_response;
+      const saved=String(raw||'').match(MARKER_RE);
+      window.__v85SavedMeditationId=saved ? saved[1] : '';
+      window.__v85CurrentEntry=entry ? {...entry} : null;
+      if(window.__v85CurrentEntry && typeof raw==='string') window.__v85CurrentEntry.exercise_response=raw.replace(/\n?\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
+      const cleanEntry=window.__v85CurrentEntry;
+      const result=await original.call(this,cleanEntry,...Array.prototype.slice.call(arguments,1));
+      window.setTimeout(insertPicker,50);
+      return result;
+    }
+    wrapped.__v85=true;
+    window.loadExistingEntry=wrapped;
+  }
+  function watch(){
+    wrapSave();
+    wrapLoad();
+    clearTimeout(pickerTimer);
+    pickerTimer=setTimeout(()=>{
+      if($('programSection') && !$('programSection').classList.contains('hidden')) insertPicker();
+      else if($('meditationMediaPicker')) removePicker();
+    },100);
+  }
+  function init(){
+    watch();
+    setInterval(watch,700);
+    window.addEventListener('load',()=>setTimeout(watch,500));
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+
+<style id="v87-media-filename-title">
+</style>
+<script id="v87-media-filename-title">
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function filenameWithoutExtension(name){
+    return String(name || '').replace(/\\.(mp3|mp4)$/i,'');
+  }
+  function bind(){
+    const audioFile=$('mediaAudioFile');
+    const audioTitle=$('mediaAudioTitle');
+    const videoFile=$('mediaVideoFile');
+    const videoTitle=$('mediaVideoTitle');
+    if(audioFile && audioTitle && !audioFile.dataset.v87Bound){
+      audioFile.dataset.v87Bound='1';
+      audioFile.addEventListener('change',()=>{
+        const file=audioFile.files?.[0];
+        if(file) audioTitle.value=filenameWithoutExtension(file.name);
+      });
+    }
+    if(videoFile && videoTitle && !videoFile.dataset.v87Bound){
+      videoFile.dataset.v87Bound='1';
+      videoFile.addEventListener('change',()=>{
+        const file=videoFile.files?.[0];
+        if(file) videoTitle.value=filenameWithoutExtension(file.name);
+      });
+    }
+  }
+  function init(){
+    bind();
+    setInterval(bind,700);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+
+<style id="v88-meditation-picker-position">
+/* Le sélecteur audio reste visuellement dans le bloc Méditation, sous son texte explicatif. */
+.meditation-media-picker { margin-top:12px; margin-bottom:16px; }
+</style>
+
+
+<style id="v89-meditation-picker-exact-position">
+#meditation + .meditation-media-picker { margin-top:12px; margin-bottom:16px; }
+</style>
+<script id="v89-meditation-picker-exact-position">
+(function(){
+  function movePicker(){
+    const picker=document.getElementById('meditationMediaPicker');
+    const meditation=document.getElementById('meditation');
+    if(!picker || !meditation) return;
+    if(meditation.nextElementSibling !== picker){
+      meditation.insertAdjacentElement('afterend', picker);
+    }
+  }
+  function init(){
+    movePicker();
+    setInterval(movePicker,700);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+
+<style id="v90-button-selection-fix">
+.nav-buttons button.nav-active { background:#222 !important; color:white !important; }
+</style>
+<script id="v90-button-selection-fix">
+(function(){
+  function clear(){ document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>b.classList.remove('nav-active')); }
+  function select(btn){
+    if(!btn || !btn.closest('.nav-buttons')) return;
+    document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>{if(b!==btn)b.classList.remove('nav-active');});
+    btn.classList.add('nav-active');
+  }
+  function install(){
+    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
+      if(btn.dataset.v90Bound)return;
+      btn.dataset.v90Bound='1';
+      btn.addEventListener('click',function(){select(this);},true);
+      btn.addEventListener('click',()=>setTimeout(sync,0));
+    });
+  }
+  function sync(){
+    install();
+    const program=document.getElementById('programSection');
+    const today=document.getElementById('todayNavButton');
+    const dash=document.getElementById('dashboardNavButton');
+    if(program && !program.classList.contains('hidden')){
+      clear();
+      const b=[...document.querySelectorAll('.nav-buttons button')].find(x=>/Programme/i.test(x.textContent||''));
+      if(b)b.classList.add('nav-active');
+    } else if(today && today.classList.contains('nav-active')){
+      clear(); today.classList.add('nav-active');
+    } else if(dash && dash.classList.contains('nav-active')){
+      clear(); dash.classList.add('nav-active');
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync);else sync();
+  window.addEventListener('load',()=>setTimeout(sync,500));
+  setInterval(install,1000);
+})();
+</script>
+
+
+<style id="v91-default-today-button">
+/* V91 — à l'arrivée sur l'application, Aujourd'hui est le bouton sélectionné par défaut. */
+</style>
+<script id="v91-default-today-button">
+(function(){
+  function setOnly(btn){
+    if(!btn) return;
+    document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>b.classList.remove('nav-active'));
+    btn.classList.add('nav-active');
+  }
+  function initDefault(){
+    const today=document.getElementById('todayNavButton');
+    const program=document.getElementById('programSection');
+    const dashboard=document.getElementById('v61Dashboard');
+    if(!today) return;
+    /* Ne force Aujourd'hui que lors de l'arrivée initiale, quand aucune autre section n'est active. */
+    const active=document.querySelector('.nav-buttons button.nav-active');
+    const programVisible=program && !program.classList.contains('hidden');
+    const dashboardVisible=dashboard && !dashboard.classList.contains('hidden');
+    if(!active && !programVisible && !dashboardVisible) setOnly(today);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(initDefault,50));
+  else setTimeout(initDefault,50);
+  window.addEventListener('load',()=>setTimeout(initDefault,300));
+  setTimeout(initDefault,1000);
+})();
+</script>
+
+
+<style id="v92-zen-design">
+:root{
+  --zen-bg:#f5f1e8;--zen-surface:#fffdf8;--zen-soft:#f1eee4;
+  --zen-sage:#7b8b69;--zen-sage-dark:#5f704f;--zen-brown:#4b4034;
+  --zen-muted:#7d7468;--zen-line:#ded7ca;
+  --zen-shadow:0 5px 22px rgba(75,64,52,.08);
+}
+html,body{background:var(--zen-bg)!important;color:var(--zen-brown)!important}
+body{line-height:1.65}
+h1,h2,h3,.day-number,.exercise-heading h2{font-family:Georgia,'Times New Roman',serif;color:var(--zen-brown)}
+h1{letter-spacing:.03em}.subtitle{color:var(--zen-muted)!important;font-family:Georgia,'Times New Roman',serif;font-style:italic}
+.card{background:var(--zen-surface)!important;border:1px solid rgba(222,215,202,.7);box-shadow:var(--zen-shadow)!important;border-radius:18px!important}
+.nav-buttons{gap:7px!important}.nav-buttons button{background:#ebe7dd!important;color:var(--zen-brown)!important;border:1px solid #d8d0c2!important;border-radius:12px!important;box-shadow:none!important;font-weight:500!important;transition:all .18s ease!important}.nav-buttons button:hover{background:#e2ddcf!important;transform:translateY(-1px)}
+.nav-buttons button.nav-active{background:var(--zen-sage)!important;color:white!important;border:2px solid var(--zen-sage-dark)!important;box-shadow:0 4px 12px rgba(95,112,79,.22)!important;font-weight:bold!important;transform:translateY(-1px)}
+.nav-buttons button.nav-active::before{content:'✓ '!important}
+button.primary{background:var(--zen-sage-dark)!important;color:white!important;border-radius:11px!important}button.secondary{background:#ebe7dd!important;color:var(--zen-brown)!important;border:1px solid #d8d0c2!important;border-radius:11px!important}button.danger{background:#f2e8df!important;color:#8b563b!important;border-radius:11px!important}
+input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!important;border:1px solid #d8d0c2!important;border-radius:11px!important}input:focus,textarea:focus,select:focus{outline:none;border-color:var(--zen-sage)!important;box-shadow:0 0 0 3px rgba(123,139,105,.13)!important}
+.exercise-card{border-top:5px solid var(--zen-sage)!important;background:var(--zen-surface)!important}.exercise-section{background:var(--zen-soft)!important;border-color:var(--zen-line)!important;border-radius:14px!important}.exercise-section-title{color:var(--zen-sage-dark)!important}.week-label,.success{color:var(--zen-muted)!important}.progress-container{background:#dfdbd1!important}.progress-bar{background:var(--zen-sage)!important}
+#meditation{background:linear-gradient(135deg,#f4f0e5,#eef1e7)!important;border-radius:16px;padding:20px!important;border:1px solid var(--zen-line)}.meditation-media-picker{background:#f7f4ec!important;border:1px solid var(--zen-line)!important;border-radius:14px!important;box-shadow:none!important}
+@media(max-width:700px){body{padding:14px}.card{border-radius:15px!important;padding:20px!important}.nav-buttons{gap:5px!important}.nav-buttons button{padding:9px 12px!important}}
+</style>
+
+
+<style id="v93-zen-images">
+/* V93 — touches visuelles zen discrètes, sans modifier la structure fonctionnelle. */
+.zen-image-banner{
+  position:relative;
+  min-height:170px;
+  margin:0 0 20px;
+  border-radius:20px;
+  overflow:hidden;
+  background-image:linear-gradient(90deg,rgba(53,48,39,.38),rgba(53,48,39,.08)),url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1600&q=82');
+  background-size:cover;
+  background-position:center 58%;
+  display:flex;
+  align-items:flex-end;
+  padding:24px 28px;
+  box-shadow:0 7px 24px rgba(75,64,52,.10);
+  color:#fffdf8;
+}
+.zen-image-banner h2{margin:0;color:#fffdf8 !important;font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:1.2;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.zen-image-banner p{margin:5px 0 0;color:#fffdf8;font-style:italic;opacity:.96}
+
+#meditation{position:relative;overflow:hidden}
+#meditation::after{
+  content:"";
+  position:absolute;
+  right:-20px;
+  bottom:-35px;
+  width:190px;
+  height:150px;
+  border-radius:50%;
+  background-image:linear-gradient(135deg,rgba(244,240,229,.15),rgba(244,240,229,.82)),url('https://images.unsplash.com/photo-1545389336-cf090694435e?auto=format&fit=crop&w=700&q=80');
+  background-size:cover;
+  background-position:center;
+  opacity:.20;
+  pointer-events:none;
+}
+
+.zen-motivation-image{
+  min-height:125px;
+  margin:18px 0 4px;
+  border-radius:16px;
+  background-image:linear-gradient(90deg,rgba(54,48,40,.25),rgba(54,48,40,.03)),url('https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=80');
+  background-size:cover;
+  background-position:center 62%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  color:#fffdf8;
+  text-align:center;
+  box-shadow:0 4px 18px rgba(75,64,52,.08);
+}
+.zen-motivation-image span{
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:20px;
+  font-style:italic;
+  text-shadow:0 1px 7px rgba(0,0,0,.30);
+}
+
+.zen-journal-image{
+  float:right;
+  width:210px;
+  height:82px;
+  margin:0 0 10px 18px;
+  border-radius:14px;
+  background-image:url('https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=700&q=80');
+  background-size:cover;
+  background-position:center;
+  opacity:.82;
+}
+
+@media(max-width:700px){
+  .zen-image-banner{min-height:145px;padding:20px;border-radius:16px}
+  .zen-image-banner h2{font-size:23px}
+  .zen-journal-image{float:none;width:100%;height:105px;margin:12px 0}
+  .zen-motivation-image{min-height:110px}
+}
+</style>
+<script id="v93-zen-images">
+(function(){
+  function addImageTouches(){
+    const program=document.getElementById('programSection');
+    if(!program || program.classList.contains('hidden')) return;
+    if(!document.getElementById('zenImageBanner')){
+      const banner=document.createElement('div');
+      banner.id='zenImageBanner';
+      banner.className='zen-image-banner';
+      banner.innerHTML='<div><h2>Un moment pour soi</h2><p>Respire. Recentre-toi. Avance.</p></div>';
+      const first=program.querySelector('.card');
+      if(first) first.parentNode.insertBefore(banner,first);
+    }
+    const journal=program.querySelector('.journal-entry');
+    if(journal && !journal.querySelector('.zen-journal-image')){
+      const img=document.createElement('div');
+      img.className='zen-journal-image';
+      journal.prepend(img);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',addImageTouches); else addImageTouches();
+  setInterval(addImageTouches,1000);
+})();
+</script>
+
+
+<style id="v94-evolution-scores">
+.v94-evolution-intro{background:linear-gradient(135deg,#fffdf8,#f3f0e9);border:1px solid #ddd8cf}.v94-kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#777;font-weight:700}.v94-evolution-intro h2{margin:4px 0 6px;font-family:Georgia,serif;font-size:29px}.v94-evolution-intro p{margin:0;color:#666}.v94-score-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}.v94-score-card{border:1px solid #ddd8cf;border-radius:14px;background:#fff;padding:14px}.v94-score-card .label{font-size:13px;font-weight:700;line-height:1.25}.v94-score-card .value{font-size:25px;font-weight:800;margin-top:5px}.v94-score-card .delta{font-size:12px;color:#26733d;margin-top:3px;font-weight:700}.v94-average{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-top:14px;padding:14px 16px;border-radius:13px;background:#f7f5f1;border:1px solid #ddd8cf}.v94-average strong{font-size:24px}.v94-average span{color:#666;font-size:13px}.v94-head{margin:0 0 10px;font-size:20px}.v94-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.v94-analysis{padding:18px;border-radius:14px;border:1px solid #ddd8cf;background:#fff}.v94-analysis h3{margin:0 0 7px;font-size:17px}.v94-analysis p{margin:0;color:#555;line-height:1.55}.v94-positive{background:#f5faf6;border-color:#d7e8db}.v94-focus{background:#faf8f2;border-color:#e6deca}.v94-bars{display:grid;gap:11px}.v94-bar{display:grid;grid-template-columns:minmax(145px,1fr) 42px;gap:8px;align-items:center}.v94-bar-track{height:10px;background:#e8e5df;border-radius:999px;overflow:hidden;margin-top:5px}.v94-bar-fill{height:100%;background:#555;border-radius:999px}.v94-bar-label{font-size:13px;font-weight:700}.v94-periods{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.v94-period{padding:13px;border:1px solid #ddd8cf;border-radius:12px;background:#faf9f6;text-align:center}.v94-period strong{display:block;font-size:20px}.v94-period span{font-size:12px;color:#777}.v94-records{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.v94-record{padding:14px;border:1px solid #ddd8cf;border-radius:12px;background:#fff}.v94-record strong{display:block;font-size:18px;margin-top:3px}.v94-record span{font-size:12px;color:#777}.v94-balance{margin-top:12px;padding:13px 15px;border-radius:12px;background:#f7f5f1;color:#555;line-height:1.5}.v94-reflection{background:linear-gradient(135deg,#fffdf8,#f5f2eb);border:1px solid #ddd8cf}.v94-reflection h2{font-family:Georgia,serif;margin-top:0}.v94-reflection p{font-size:16px;line-height:1.65;color:#4e4a43}.v94-question{margin-top:15px;padding:14px;border-left:4px solid #777;background:#fff;font-style:italic;color:#555;border-radius:0 10px 10px 0}.v94-muted{color:#777;font-size:13px}@media(max-width:800px){.v94-score-cards{grid-template-columns:1fr 1fr}.v94-grid{grid-template-columns:1fr}.v94-periods{grid-template-columns:1fr 1fr}.v94-records{grid-template-columns:1fr}}@media(max-width:520px){.v94-score-cards{grid-template-columns:1fr}.v94-average{align-items:flex-start;flex-direction:column}.v94-bar{grid-template-columns:minmax(120px,1fr) 38px}}
+</style>
+<script id="v94-evolution-scores">
+(function(){
+  const D=[['presence','🧘 Pleine conscience'],['impulse_control','🔥 Maîtrise des impulsions'],['values_coherence','🧭 Cohérence avec mes valeurs'],['self_relation','❤️ Relation à moi-même']];
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
+  const avg=(rows,k)=>{const a=rows.map(r=>n(r[k])).filter(x=>x!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  const rowAvg=r=>{const a=D.map(d=>n(r[d[0]])).filter(x=>x!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  const sg=x=>x===null?'—':(x>0?'+':'')+x.toFixed(1);
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function prepare(){const s=document.getElementById('evolutionSection');if(!s||s.dataset.v94)return;s.dataset.v94='1';s.innerHTML=`
+    <div class="card v94-evolution-intro"><div class="v94-kicker">Observer · comprendre · avancer</div><h2>📈 Évolution de mes scores</h2><p>Mes scores sont des repères pour observer mon chemin, pas des notes pour me juger.</p><div id="v94Cards" class="v94-score-cards"></div><div id="v94Average" class="v94-average"></div></div>
+    <div class="card score-chart-card"><h2 class="v94-head">📊 Voir mon évolution</h2><p class="v94-muted">Les courbes montrent les variations jour après jour. Une variation fait partie du chemin : l’important est la tendance dans le temps.</p><div class="score-chart-toolbar"><button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button><button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button><button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button><button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button><button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button><button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button><button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button></div><div class="score-chart-wrap"><div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div></div><div id="chartStatus" class="empty hidden"></div></div>
+    <div class="card"><h2 class="v94-head">🧠 Ce que mes scores racontent</h2><div id="v94Analysis" class="v94-grid"></div></div>
+    <div class="card"><h2 class="v94-head">⚖️ Mon équilibre actuel</h2><div id="v94Bars" class="v94-bars"></div><div id="v94Balance" class="v94-balance"></div></div>
+    <div class="card"><h2 class="v94-head">🌱 Mes tendances récentes</h2><div id="v94Periods" class="v94-periods"></div></div>
+    <div class="card"><h2 class="v94-head">🏆 Mes repères</h2><div id="v94Records" class="v94-records"></div></div>
+    <div class="card v94-reflection"><h2>🪞 Mon bilan</h2><div id="v94Reflection"></div></div>`;}
+  function render(){prepare();const rows=(typeof dailyScoreHistory!=='undefined'?dailyScoreHistory:[]).filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));if(!document.getElementById('v94Cards'))return;if(!rows.length){document.getElementById('v94Cards').innerHTML='<div class="v94-muted" style="grid-column:1/-1">Tes premiers scores apparaîtront ici au fil des journées.</div>';document.getElementById('v94Average').innerHTML='<strong>—</strong><span>Commence à renseigner tes scores : ton évolution se construira progressivement.</span>';return}const first=rows[0],recent=rows.slice(-7),last=rows[rows.length-1],firstA=rowAvg(first),lastA=rowAvg(last);document.getElementById('v94Cards').innerHTML=D.map(d=>{const v=avg(recent,d[0])??avg(rows,d[0]),b=n(first[d[0]]),delta=v!==null&&b!==null?v-b:null;return `<div class="v94-score-card"><div class="label">${d[1]}</div><div class="value">${v===null?'—':v.toFixed(1)} <small>/10</small></div><div class="delta">${delta===null?'En construction':(delta>0?'↑ ':'')+sg(delta)+' depuis le début'}</div></div>`}).join('');document.getElementById('v94Average').innerHTML=`<div><span>Moyenne des 7 dernières journées</span><br><strong>${lastA===null?'—':lastA.toFixed(1)+' / 10'}</strong></div><span>${firstA!==null&&lastA!==null?'Évolution depuis J'+first.day_number+' : <strong>'+sg(lastA-firstA)+'</strong>':'Continue à avancer à ton rythme.'}</span>`;
+    const prev=rows.slice(-14,-7),tr=D.map(d=>({d,cur:avg(recent,d[0]),prev:avg(prev,d[0])})).filter(x=>x.cur!==null),best=[...tr].sort((a,b)=>(b.cur-(b.prev??b.cur))-(a.cur-(a.prev??a.cur)))[0],low=[...tr].sort((a,b)=>a.cur-b.cur)[0],strongest=D.map(d=>({d,delta:(avg(recent,d[0])??0)-(n(first[d[0]])??avg(recent,d[0])??0)})).sort((a,b)=>b.delta-a.delta)[0];
+    document.getElementById('v94Analysis').innerHTML=`<div class="v94-analysis v94-positive"><h3>💪 Ce qui évolue le plus</h3><p>${strongest?`<strong>${esc(strongest.d[1])}</strong> montre actuellement la progression la plus marquée depuis le début (${sg(strongest.delta)}). C’est un beau repère de ce que tu es en train de construire.`:'Tes premières données se constituent. Chaque journée enrichira cette lecture.'}</p></div><div class="v94-analysis v94-focus"><h3>🌱 Une dimension à explorer</h3><p>${low?`<strong>${esc(low.d[1])}</strong> évolue à son propre rythme (${low.cur.toFixed(1)}/10 sur les 7 dernières journées). C’est simplement une piste intéressante pour observer ce qui t’aide à progresser.`:'Tes données sont encore trop récentes pour dégager une tendance.'}</p></div><div class="v94-analysis"><h3>🌊 Ma dynamique récente</h3><p>${best&&best.prev!==null&&best.cur-best.prev>0.2?`Les derniers jours montrent une évolution encourageante, notamment sur <strong>${esc(best.d[1])}</strong> (${sg(best.cur-best.prev)} par rapport aux 7 jours précédents). Continue à observer ce qui fonctionne pour toi.`:best&&best.prev!==null&&best.cur-best.prev<-0.2?`Les derniers jours apportent de nouvelles informations sur ton parcours. <strong>${esc(best.d[1])}</strong> varie en ce moment : prends cette évolution comme une occasion d’observer ce qui t’aide, sans te juger.`:'Tes scores récents sont globalement stables. C’est un bon moment pour consolider ce que tu as déjà construit.'}</p></div><div class="v94-analysis"><h3>🧭 Ma direction</h3><p>${lastA!==null&&firstA!==null&&lastA>firstA?`Ta moyenne actuelle est supérieure à celle de ton premier jour. <strong>Tu avances.</strong> Le parcours se construit dans la répétition des petits pas, pas dans la recherche de la perfection.`:'Ton parcours se dessine progressivement. Laisse les données s’accumuler et observe simplement ce qu’elles viennent t’apprendre.'}</p></div>`;
+    const vals=D.map(d=>({d,v:avg(recent,d[0])})).filter(x=>x.v!==null),min=Math.min(...vals.map(x=>x.v)),max=Math.max(...vals.map(x=>x.v));document.getElementById('v94Bars').innerHTML=vals.map(x=>`<div class="v94-bar"><div><div class="v94-bar-label">${esc(x.d[1])}</div><div class="v94-bar-track"><div class="v94-bar-fill" style="width:${x.v*10}%"></div></div></div><strong>${x.v.toFixed(1)}</strong></div>`).join('');document.getElementById('v94Balance').innerHTML=vals.length===4?`Tes quatre dimensions se situent actuellement entre <strong>${min.toFixed(1)}</strong> et <strong>${max.toFixed(1)}</strong>. ${max-min<2?'Ton équilibre est relativement harmonieux.':'Ces nuances donnent des indications intéressantes sur ton chemin : observe-les avec curiosité.'}`:'Les dimensions se rempliront progressivement.';
+    const chunks=[rows.slice(0,Math.min(7,rows.length)),rows.slice(0,Math.min(14,rows.length)),recent,rows],names=['Début du parcours','Premiers repères','7 derniers jours','Ensemble des journées'];document.getElementById('v94Periods').innerHTML=chunks.map((r,i)=>{const a=r.map(rowAvg).filter(x=>x!==null),v=a.length?a.reduce((x,y)=>x+y,0)/a.length:null;return `<div class="v94-period"><strong>${v===null?'—':v.toFixed(1)+'/10'}</strong><span>${names[i]}</span></div>`}).join('');const bestDay=rows.map(r=>({r,v:rowAvg(r)})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v)[0];document.getElementById('v94Records').innerHTML=`<div class="v94-record">🏆 Meilleur score global<strong>${bestDay?bestDay.v.toFixed(1)+'/10':'—'}</strong><span>${bestDay?'Jour '+bestDay.r.day_number:'À venir'}</span></div><div class="v94-record">📈 Évolution globale<strong>${firstA!==null&&lastA!==null?sg(lastA-firstA):'—'}</strong><span>entre le début et maintenant</span></div><div class="v94-record">🌱 Journées renseignées<strong>${rows.length}</strong><span>sur 91</span></div>`;const dir=firstA!==null&&lastA!==null?lastA-firstA:0;document.getElementById('v94Reflection').innerHTML=`<p><strong>${dir>0.3?'Tu avances, et tes données commencent à raconter une vraie évolution.':dir<-0.3?'Ton parcours continue de se construire. Les variations actuelles sont simplement de nouvelles informations à observer.':'Ton parcours se construit progressivement. Chaque journée apporte un repère supplémentaire.'}</strong></p><p>${overallText(rows)}</p><div class="v94-question">🌿 Si je poursuis dans cet esprit pendant les prochaines semaines, qu’est-ce que j’aimerais voir évoluer concrètement dans ma vie ?</div>`;if(typeof renderScoreEvolutionChart==='function')renderScoreEvolutionChart();}
+  function overallText(rows){const a=rows.map(rowAvg).filter(x=>x!==null);if(!a.length)return'Chaque nouvelle journée permettra de rendre cette lecture plus précise.';return`Sur l’ensemble des journées renseignées, ma moyenne est de <strong>${(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1)}/10</strong>. Ce chiffre n’est pas une note : c’est une photographie de mon chemin à cet instant.`}
+  function hook(){render()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(hook,100));else setTimeout(hook,100);window.addEventListener('load',()=>setTimeout(hook,900));
+  const oldShow=window.showSection;if(typeof oldShow==='function')window.showSection=function(section){const r=oldShow.apply(this,arguments);if(section==='evolution')setTimeout(render,100);return r};
+})();
+</script>
+
+
+<style id="v95-bilan-piliers">
+.v95-pillars{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.v95-pillar{padding:15px 16px;border:1px solid #ddd8cf;border-radius:14px;background:#fff}
+.v95-pillar-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.v95-pillar-title{font-weight:800;font-size:15px}
+.v95-pillar-score{font-weight:800;font-size:18px;white-space:nowrap}
+.v95-pillar-text{margin:0;color:#555;line-height:1.55;font-size:14px}
+.v95-pillar-path{margin-top:7px;color:#777;font-size:12px;font-style:italic}
+.v95-encouragement{margin-top:18px;padding:18px;border-radius:14px;background:linear-gradient(135deg,#f7f5f1,#fffdf8);border:1px solid #ddd8cf;text-align:center}
+.v95-encouragement p{margin:0;color:#4e4a43;line-height:1.65}
+.v95-encouragement .main{font-family:Georgia,serif;font-size:19px;font-weight:700}
+.v95-encouragement .sub{margin-top:7px;font-size:14px}
+@media(max-width:700px){.v95-pillars{grid-template-columns:1fr}}
+</style>
+<script id="v95-bilan-piliers">
+(function(){
+  const D=[
+    ['presence','🧘 Pleine conscience'],
+    ['impulse_control','🔥 Maîtrise des impulsions'],
+    ['values_coherence','🧭 Cohérence avec mes valeurs'],
+    ['self_relation','❤️ Relation à moi-même']
+  ];
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
+  const avg=(rows,k)=>{const a=rows.map(r=>n(r[k])).filter(x=>x!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  const overall=r=>{const a=D.map(d=>n(r[d[0]])).filter(x=>x!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  function phrase(label,cur,base){
+    if(cur===null) return 'Pas encore assez de données pour tirer une conclusion. Les prochaines journées permettront de voir plus clairement ce qui évolue.';
+    const delta=base!==null?cur-base:null;
+    if(delta!==null && delta>=0.7) return 'Cette dimension évolue bien. Les efforts commencent à produire des repères concrets : continue à entretenir ce que tu es en train de construire.';
+    if(delta!==null && delta>=0.2) return 'La progression est encourageante. Le changement est en train de s’installer, même s’il demande encore de la régularité.';
+    if(delta!==null && delta<=-0.7) return 'Il reste encore du chemin sur cette dimension. Ce n’est pas un recul définitif : c’est une information qui peut t’aider à ajuster ta pratique et à persévérer.';
+    if(delta!==null && delta<=-0.2) return 'Cette dimension demande encore de l’attention. Les variations font partie du parcours : accroche-toi et continue à observer ce qui t’aide réellement.';
+    return 'Cette dimension est encore en construction. Rien n’est figé : la répétition des petits pas peut faire évoluer durablement les choses.';
+  }
+  function path(label,cur,base){
+    if(cur===null)return 'À construire au fil des prochaines journées.';
+    const delta=base!==null?cur-base:null;
+    if(delta!==null&&delta>=0.2)return 'À poursuivre : consolider les habitudes qui fonctionnent déjà.';
+    if(delta!==null&&delta<=-0.2)return 'À travailler : revenir aux exercices et observer les déclencheurs sans se juger.';
+    return 'À approfondir : transformer progressivement l’intention en habitudes concrètes.';
+  }
+  function render(){
+    const box=document.getElementById('v94Reflection');
+    const rows=(typeof dailyScoreHistory!=='undefined'?dailyScoreHistory:[]).filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));
+    if(!box||!rows.length)return;
+    const recent=rows.slice(-7);
+    const first=rows[0];
+    const key=rows.length+'|'+recent.map(r=>r.day_number+':'+D.map(d=>r[d[0]]??'').join(',')).join('|');
+    if(box.dataset.v95Key===key)return;
+    box.dataset.v95Key=key;
+    const cards=D.map(d=>{
+      const cur=avg(recent,d[0])??avg(rows,d[0]);
+      const base=n(first[d[0]]);
+      return `<div class="v95-pillar"><div class="v95-pillar-head"><div class="v95-pillar-title">${d[1]}</div><div class="v95-pillar-score">${cur===null?'—':cur.toFixed(1)}/10</div></div><p class="v95-pillar-text">${phrase(d[1],cur,base)}</p><div class="v95-pillar-path">${path(d[1],cur,base)}</div></div>`;
+    }).join('');
+    const total=recent.map(overall).filter(v=>v!==null);
+    const recentAvg=total.length?total.reduce((a,b)=>a+b,0)/total.length:null;
+    box.innerHTML=`<p><strong>Mon bilan, pilier par pilier</strong></p><p>Chaque pilier raconte une partie différente de ton chemin. Certains avancent plus vite que d’autres : l’objectif n’est pas d’être parfait, mais de continuer à devenir progressivement la personne que tu veux être.</p><div class="v95-pillars">${cards}</div><div class="v95-encouragement"><p class="main">🌿 Accroche-toi. Le chemin peut être long, mais chaque pas compte.</p><p class="sub">Le bonheur n’est pas une récompense qui attend à l’arrivée : il se construit aussi dans la manière dont tu avances. Continue, même lentement. Les petits changements répétés finissent par transformer une vie.</p>${recentAvg!==null?`<p class="sub"><strong>Repère actuel :</strong> ${recentAvg.toFixed(1)}/10 sur les 7 dernières journées. Ce n’est qu’une photographie d’aujourd’hui, pas une définition de qui tu es.</p>`:''}</div>`;
+  }
+  function init(){render();setInterval(render,700)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,250));else setTimeout(init,250);
+  window.addEventListener('load',()=>setTimeout(render,900));
+})();
+</script>
+
+
+<style id="v96-reperes-detail">
+.v96-record-details{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.v96-record-detail{padding:15px 16px;border:1px solid #ddd8cf;border-radius:14px;background:#fff}
+.v96-record-detail h3{margin:0 0 7px;font-size:16px}
+.v96-record-detail p{margin:0;color:#555;line-height:1.55;font-size:14px}
+.v96-record-detail .number{font-size:23px;font-weight:800;color:#333}
+.v96-record-detail .small{display:block;margin-top:3px;color:#777;font-size:12px}
+.v96-record-detail .meaning{margin-top:8px;padding-top:8px;border-top:1px solid #eee9e3}
+@media(max-width:700px){.v96-record-details{grid-template-columns:1fr}}
+</style>
+<script id="v96-reperes-detail">
+(function(){
+  const D=[
+    ['presence','🧘 Pleine conscience'],
+    ['impulse_control','🔥 Maîtrise des impulsions'],
+    ['values_coherence','🧭 Cohérence avec mes valeurs'],
+    ['self_relation','❤️ Relation à moi-même']
+  ];
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:null};
+  const avg=(rows,k)=>{const a=rows.map(r=>n(r[k])).filter(x=>x!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  const overall=r=>{const a=D.map(d=>n(r[d[0]])).filter(x=>x!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  function render(){
+    const box=document.getElementById('v94Records');
+    const rows=(typeof dailyScoreHistory!=='undefined'?dailyScoreHistory:[]).filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));
+    if(!box||!rows.length)return;
+    const scored=rows.map(r=>({r,v:overall(r)})).filter(x=>x.v!==null);
+    const best=scored.length?[...scored].sort((a,b)=>b.v-a.v)[0]:null;
+    const first=rows[0],recent=rows.slice(-7),prev=rows.slice(-14,-7);
+    const growth=D.map(d=>({d,delta:(avg(recent,d[0])??0)-(n(first[d[0]])??avg(recent,d[0])??0)})).sort((a,b)=>b.delta-a.delta);
+    const fastest=growth[0];
+    const bestPillar=D.map(d=>({d,v:avg(rows,d[0])})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v)[0];
+    const recentAvg=recent.map(overall).filter(x=>x!==null);const ra=recentAvg.length?recentAvg.reduce((a,b)=>a+b,0)/recentAvg.length:null;
+    const prevAvg=prev.map(overall).filter(x=>x!==null);const pa=prevAvg.length?prevAvg.reduce((a,b)=>a+b,0)/prevAvg.length:null;
+    const existing=document.getElementById('v96RecordsDetails');
+    if(existing){existing.innerHTML=build();return;}
+    const wrap=document.createElement('div');wrap.id='v96RecordsDetails';wrap.className='v96-record-details';wrap.innerHTML=build();box.parentNode.insertBefore(wrap,box.nextSibling);
+    function build(){return `
+      <div class="v96-record-detail"><h3>🏆 Ton meilleur repère</h3><p>${best?`Ton meilleur score global est de <span class="number">${best.v.toFixed(1)}/10</span> au <strong>Jour ${best.r.day_number}</strong>.`:'Ton meilleur repère apparaîtra lorsque plusieurs journées auront été renseignées.'}<span class="small">Ce moment peut devenir un repère : qu’est-ce qui t’a aidé ce jour-là ?</span></p></div>
+      <div class="v96-record-detail"><h3>📈 Ta plus belle progression</h3><p>${fastest?`<strong>${fastest.d[1]}</strong> est actuellement la dimension qui a le plus progressé depuis le début : <span class="number">${fastest.delta>=0?'+':''}${fastest.delta.toFixed(1)}</span>.`:'Les données se construisent progressivement.'}<span class="small">Ce que tu construis mérite d’être reconnu, même lorsque la progression est progressive.</span></p></div>
+      <div class="v96-record-detail"><h3>🌟 Ton pilier le plus solide</h3><p>${bestPillar?`Sur l’ensemble des journées renseignées, <strong>${bestPillar.d[1]}</strong> présente actuellement la moyenne la plus élevée : <span class="number">${bestPillar.v.toFixed(1)}/10</span>.`:'Ce repère apparaîtra avec davantage de données.'}<span class="small">C’est une ressource sur laquelle tu peux t’appuyer pour continuer ton chemin.</span></p></div>
+      <div class="v96-record-detail"><h3>🌱 Ton évolution récente</h3><p>${ra!==null&&pa!==null?`Ta moyenne des 7 dernières journées est de <span class="number">${ra.toFixed(1)}/10</span>, contre ${pa.toFixed(1)}/10 sur les 7 précédentes, soit <strong>${ra-pa>=0?'+':''}${(ra-pa).toFixed(1)}</strong>.`:'Les périodes se rempliront progressivement.'}<span class="small">Une période stable est elle aussi une étape : elle permet de consolider les changements.</span></p></div>`}
+  }
+  function init(){render();setInterval(render,900)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,300));else setTimeout(init,300);
+})();
+</script>
+
+
+<style id="v96-mobile-score-layout">
+#v94Reflection,#v94Reflection *{box-sizing:border-box}
+#v94Reflection{width:100%;min-width:0;overflow:hidden}
+#v94Reflection .v95-pillars{width:100%;min-width:0}
+#v94Reflection .v95-pillar,#v94Reflection .v95-encouragement{min-width:0;height:auto;overflow:visible}
+#v94Reflection .v95-pillar-head{min-width:0;flex-wrap:wrap;align-items:flex-start}
+#v94Reflection .v95-pillar-title,#v94Reflection .v95-pillar-score,#v94Reflection .v95-pillar-text,#v94Reflection .v95-pillar-path,#v94Reflection p,#v94Reflection strong{overflow-wrap:anywhere;word-break:normal}
+@media(max-width:700px){
+#v94Reflection{overflow:visible}
+#v94Reflection .v95-pillars{display:flex;flex-direction:column;gap:14px;margin:16px 0}
+#v94Reflection .v95-pillar{width:100%;display:block;padding:14px}
+#v94Reflection .v95-pillar-head{display:flex;justify-content:space-between;gap:6px 10px;margin-bottom:8px}
+#v94Reflection .v95-pillar-title{flex:1 1 150px;min-width:0;line-height:1.35}
+#v94Reflection .v95-pillar-score{flex:0 1 auto;white-space:normal;line-height:1.3}
+#v94Reflection .v95-pillar-text,#v94Reflection .v95-pillar-path{width:100%;display:block}
+#v94Reflection .v95-encouragement{width:100%;padding:15px;margin-top:16px}
+#v94Reflection .v95-encouragement .main{font-size:18px;line-height:1.4}
+#v94Reflection .v95-encouragement .sub{font-size:14px;line-height:1.55}
+}
+@media(max-width:380px){
+#v94Reflection .v95-pillar-head{display:block}
+#v94Reflection .v95-pillar-score{display:block;margin-top:5px}
+}
+</style>
+
+
+<style id="v97-evolution-mobile-no-overlap">
+/* V97 — remise à plat du flux mobile de toute la section Évolution. */
+#evolutionSection{display:block !important;width:100% !important;min-width:0 !important;overflow:visible !important}
+#evolutionSection>.card{position:relative !important;display:block !important;width:100% !important;min-width:0 !important;height:auto !important;min-height:0 !important;overflow:visible !important;clear:both !important;margin-bottom:16px !important}
+#evolutionSection .v94-score-cards,
+#evolutionSection .v94-grid,
+#evolutionSection .v94-periods,
+#evolutionSection .v94-records,
+#evolutionSection .v96-record-details{position:relative !important;width:100% !important;height:auto !important;min-height:0 !important;display:grid !important;clear:both !important}
+#evolutionSection .v94-analysis,
+#evolutionSection .v94-score-card,
+#evolutionSection .v94-period,
+#evolutionSection .v94-record,
+#evolutionSection .v96-record-detail{position:relative !important;float:none !important;display:block !important;width:auto !important;height:auto !important;min-height:0 !important;box-sizing:border-box !important;clear:none !important;overflow:visible !important}
+#evolutionSection .v94-score-card .label,
+#evolutionSection .v94-score-card .value,
+#evolutionSection .v94-score-card .delta,
+#evolutionSection .v94-analysis h3,
+#evolutionSection .v94-analysis p,
+#evolutionSection .v94-period span,
+#evolutionSection .v94-record strong,
+#evolutionSection .v94-record span,
+#evolutionSection .v96-record-detail h3,
+#evolutionSection .v96-record-detail p{position:static !important;overflow-wrap:anywhere !important;word-break:normal !important}
+@media(max-width:700px){
+#evolutionSection>.card{margin-left:0 !important;margin-right:0 !important;padding:14px !important}
+#evolutionSection .v94-score-cards{grid-template-columns:1fr !important;gap:12px !important}
+#evolutionSection .v94-grid{grid-template-columns:1fr !important;gap:12px !important}
+#evolutionSection .v94-periods{grid-template-columns:1fr !important;gap:12px !important}
+#evolutionSection .v94-records{grid-template-columns:1fr !important;gap:12px !important}
+#evolutionSection .v96-record-details{grid-template-columns:1fr !important;gap:12px !important;margin-top:12px !important}
+#evolutionSection .v94-score-card,
+#evolutionSection .v94-analysis,
+#evolutionSection .v94-period,
+#evolutionSection .v94-record,
+#evolutionSection .v96-record-detail{margin:0 !important;padding:14px !important}
+#evolutionSection .v94-score-card .label{line-height:1.4 !important}
+#evolutionSection .v94-score-card .value{line-height:1.25 !important;margin-top:6px !important}
+#evolutionSection .v94-score-card .delta{line-height:1.4 !important;margin-top:5px !important}
+#evolutionSection .v94-analysis h3{line-height:1.35 !important;margin-bottom:8px !important}
+#evolutionSection .v94-analysis p{line-height:1.55 !important}
+#evolutionSection .v94-record-detail h3{line-height:1.35 !important}
+#evolutionSection .score-chart-wrap{position:relative !important;width:100% !important;height:300px !important;min-height:300px !important;overflow:hidden !important}
+#evolutionSection #scoreEvolutionChartContainer{position:relative !important;width:100% !important;height:100% !important;min-height:0 !important;overflow:hidden !important}
+}
+@media(max-width:380px){
+#evolutionSection>.card{padding:12px !important}
+#evolutionSection .v94-score-card,
+#evolutionSection .v94-analysis,
+#evolutionSection .v94-period,
+#evolutionSection .v94-record,
+#evolutionSection .v96-record-detail{padding:12px !important}
+#evolutionSection .score-chart-wrap{height:260px !important;min-height:260px !important}
+}
+</style>
+
+
+<style id="v98-settings">
+.v98-settings-panel{max-width:900px;margin:0 auto}
+.v98-settings-intro{margin:0 0 18px;color:#666}
+.v98-settings-group{background:#fff;border:1px solid #ddd8cf;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.v98-settings-group h3{margin:0 0 5px;font-size:18px}
+.v98-settings-group>p{margin:0 0 14px;color:#666;font-size:14px}
+.v98-setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid #eee9e1}
+.v98-setting-row:first-of-type{border-top:0}
+.v98-setting-label{display:flex;align-items:center;gap:10px;font-weight:700}
+.v98-setting-help{display:block;font-size:12px;font-weight:400;color:#777;margin-top:2px}
+.v98-switch{position:relative;width:48px;height:28px;flex:0 0 48px}
+.v98-switch input{opacity:0;width:0;height:0;position:absolute}
+.v98-slider{position:absolute;inset:0;background:#d8d4cc;border-radius:30px;cursor:pointer;transition:.18s}
+.v98-slider:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.18s}
+.v98-switch input:checked+.v98-slider{background:#222}
+.v98-switch input:checked+.v98-slider:before{transform:translateX(20px)}
+.v98-disabled{opacity:.55}
+.v98-back{margin-bottom:14px}
+@media(max-width:600px){.v98-settings-group{padding:14px}.v98-setting-row{align-items:flex-start}.v98-setting-label{line-height:1.35}}
+</style>
+<script id="v98-settings">
+(function(){
+  const KEY='devenir-soi-settings-v1';
+  const defaults={meditation:true,breathing:true,sleep:true,development:true,motivation:true};
+  function getSettings(){
+    try{return {...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch(e){return {...defaults}}
+  }
+  function saveSettings(settings){localStorage.setItem(KEY,JSON.stringify(settings));}
+  window.getDevenirSoiSettings=getSettings;
+  window.showSettings=function(){
+    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources'];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden')});
+    const panel=document.getElementById('v98SettingsPanel');
+    if(!panel)return;
+    panel.classList.remove('hidden');
+    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+    const btn=document.getElementById('settingsNavButton');
+    if(btn)btn.classList.add('nav-active');
+    renderSettings();
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+  function renderSettings(){
+    const panel=document.getElementById('v98SettingsPanel'); if(!panel)return;
+    const st=getSettings();
+    panel.querySelectorAll('input[data-module]').forEach(input=>{input.checked=!!st[input.dataset.module]});
+  }
+  function toggleModule(key,value){const st=getSettings();st[key]=!!value;saveSettings(st);}
+  function install(){
+    if(!document.getElementById('settingsNavButton')){
+      const nav=document.querySelector('.nav-buttons');
+      if(nav){
+        const b=document.createElement('button');
+        b.id='settingsNavButton'; b.type='button'; b.textContent='⚙️ Paramètres';
+        b.addEventListener('click',window.showSettings);
+        nav.appendChild(b);
+      }
+    }
+    if(!document.getElementById('v98SettingsPanel')){
+      const panel=document.createElement('section');
+      panel.id='v98SettingsPanel'; panel.className='hidden v98-settings-panel';
+      panel.innerHTML=`
+        <div class="v98-back"><button type="button" class="secondary" id="v98BackToday">← Retour à Aujourd'hui</button></div>
+        <div class="card">
+          <h2>⚙️ Paramètres</h2>
+          <p class="v98-settings-intro">Personnalise ton expérience et choisis ce que tu veux retrouver sur ta page Aujourd'hui.</p>
+        </div>
+        <div class="v98-settings-group">
+          <h3>🧰 Mes modules</h3>
+          <p>Active ou désactive les modules complémentaires. Ton choix est mémorisé sur cet appareil.</p>
+          ${row('meditation','🧘','Méditation','Pratiques de présence et de pleine conscience')}
+          ${row('breathing','🌿','Respiration / relaxation','Calme, détente et retour à l'équilibre')}
+          ${row('sleep','😴','Sommeil','Routines et exercices pour mieux récupérer')}
+          ${row('development','🧠','Développement personnel','Réflexion, compréhension de soi et évolution')}
+          ${row('motivation','💪','Motivation','Passage à l'action, discipline et petits défis')}
+        </div>
+        <div class="v98-settings-group">
+          <h3>🎨 Apparence</h3>
+          <p>Les options d'apparence pourront être personnalisées ici.</p>
+          <div class="v98-setting-row v98-disabled"><span>Mode sombre / clair</span><span>À venir</span></div>
+        </div>
+        <div class="v98-settings-group">
+          <h3>🔔 Rappels</h3>
+          <p>Les rappels quotidiens pourront être configurés ici.</p>
+          <div class="v98-setting-row v98-disabled"><span>Rappels du parcours</span><span>À venir</span></div>
+        </div>
+        <div class="v98-settings-group">
+          <h3>📅 Mon parcours</h3>
+          <p>Gestion du jour courant et des options du parcours 91 jours.</p>
+          <div class="v98-setting-row v98-disabled"><span>Gestion avancée du parcours</span><span>À venir</span></div>
+        </div>
+        <div class="v98-settings-group">
+          <h3>💾 Mes données</h3>
+          <p>Les fonctions de sauvegarde et d'export seront regroupées ici.</p>
+          <div class="v98-setting-row v98-disabled"><span>Export / import</span><span>À venir</span></div>
+        </div>
+        <div class="v98-settings-group">
+          <h3>ℹ️ À propos</h3>
+          <p><strong>DEVENIR SOI</strong> — Parcours de transformation personnelle sur 91 jours.</p>
+        </div>`;
+      document.body.appendChild(panel);
+      panel.querySelectorAll('input[data-module]').forEach(input=>input.addEventListener('change',()=>toggleModule(input.dataset.module,input.checked)));
+      document.getElementById('v98BackToday')?.addEventListener('click',()=>{
+        panel.classList.add('hidden');
+        if(typeof window.showToday==='function') window.showToday();
+        else document.getElementById('todayNavButton')?.click();
+      });
+    }
+    renderSettings();
+  }
+  function row(key,emoji,title,help){return `<div class="v98-setting-row"><div class="v98-setting-label"><span>${emoji}</span><span>${title}<span class="v98-setting-help">${help}</span></span></div><label class="v98-switch"><input type="checkbox" data-module="${key}"><span class="v98-slider"></span></label></div>`}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+  window.addEventListener('load',()=>setTimeout(install,500));
 })();
 </script>
 
