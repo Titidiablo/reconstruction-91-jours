@@ -802,7 +802,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V89</div>
+  <div class="app-version-v18">V90</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3972,6 +3972,47 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     setInterval(movePicker,700);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+
+<style id="v90-button-selection-fix">
+.nav-buttons button.nav-active { background:#222 !important; color:white !important; }
+</style>
+<script id="v90-button-selection-fix">
+(function(){
+  function clear(){ document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>b.classList.remove('nav-active')); }
+  function select(btn){
+    if(!btn || !btn.closest('.nav-buttons')) return;
+    document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>{if(b!==btn)b.classList.remove('nav-active');});
+    btn.classList.add('nav-active');
+  }
+  function install(){
+    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
+      if(btn.dataset.v90Bound)return;
+      btn.dataset.v90Bound='1';
+      btn.addEventListener('click',function(){select(this);},true);
+      btn.addEventListener('click',()=>setTimeout(sync,0));
+    });
+  }
+  function sync(){
+    install();
+    const program=document.getElementById('programSection');
+    const today=document.getElementById('todayNavButton');
+    const dash=document.getElementById('dashboardNavButton');
+    if(program && !program.classList.contains('hidden')){
+      clear();
+      const b=[...document.querySelectorAll('.nav-buttons button')].find(x=>/Programme/i.test(x.textContent||''));
+      if(b)b.classList.add('nav-active');
+    } else if(today && today.classList.contains('nav-active')){
+      clear(); today.classList.add('nav-active');
+    } else if(dash && dash.classList.contains('nav-active')){
+      clear(); dash.classList.add('nav-active');
+    }
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync);else sync();
+  window.addEventListener('load',()=>setTimeout(sync,500));
+  setInterval(install,1000);
 })();
 </script>
 
