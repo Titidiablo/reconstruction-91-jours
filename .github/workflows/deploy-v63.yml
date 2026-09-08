@@ -91,9 +91,11 @@ jobs:
           PY
       - name: Validate V98
         run: |
-          grep -q 'id="v98-settings"' index.html
+          # V98 builds the settings button/panel dynamically in JavaScript.
+          # Validate the actual selectors/code rather than generated HTML ids.
           grep -q "settingsNavButton" index.html
           grep -q "v98SettingsPanel" index.html
+          grep -q "v98-settings" index.html
           grep -q 'Méditation' index.html
           grep -q 'Respiration / relaxation' index.html
           grep -q 'Sommeil' index.html
