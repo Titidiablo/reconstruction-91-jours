@@ -3,10 +3,14 @@ from pathlib import Path
 path = Path("index.html")
 html = path.read_text(encoding="utf-8")
 
+# The application was restored to V62. The deploy script must not depend on
+# a historical V59 badge that no longer exists in the source HTML.
+# V61 dashboard enhancements are injected only when their markers are absent.
+
 if ">V61</div>" not in html:
-    if ">V59</div>" not in html:
-        raise SystemExit("V59 badge not found")
-    html = html.replace(">V59</div>", ">V61</div>", 1)
+    # Accept the current V62 badge/version marker(s) without forcing an old
+    # version string. The dashboard content checks below are the real guard.
+    pass
 
 css = r'''<style id="v61-dashboard-style">
 .v61-dashboard{margin-top:0}
@@ -117,7 +121,6 @@ if 'id="v61-save-visibility"' not in html:
     html = html.replace('</body>', save_visibility + "\n</body>", 1)
 
 checks = [
-    ">V61</div>",
     'id="v61-dashboard-style"',
     'id="v61-dashboard-runtime"',
     'id="v61-save-visibility"',
@@ -131,8 +134,6 @@ checks = [
 for check in checks:
     if check not in html:
         raise SystemExit(f"Missing V61 content: {check}")
-if html.count(">V61</div>") != 1:
-    raise SystemExit("V61 badge count invalid")
 if html.count('id="v61-dashboard-runtime"') != 1:
     raise SystemExit("V61 runtime count invalid")
 if html.count('id="v61-save-visibility"') != 1:
