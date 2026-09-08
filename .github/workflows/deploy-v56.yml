@@ -1,4 +1,4 @@
-name: Deploy V56
+name: Deploy V60 stable
 
 on:
   push:
@@ -12,103 +12,89 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch index.html
+      - name: Apply V60
         shell: python
         run: |
           from pathlib import Path
-          import re, subprocess
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-          msg = subprocess.check_output(['git','log','-1','--pretty=%B'], text=True).strip()
-          if '>V56</div>' in s or 'Update index.html V56' in msg:
-              print('V56 already present; nothing to patch.')
-              raise SystemExit(0)
+          import re
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
 
-          # Version V55 -> V56.
-          s, n = re.subn(r'>V55</div>', '>V56</div>', s, count=1)
-          if n != 1:
-              raise SystemExit('V55 badge not found')
+          if '>V60</div>' not in s:
+              if '>V59</div>' not in s: raise SystemExit('V59 badge not found')
+              s=s.replace('>V59</div>','>V60</div>',1)
 
-          # Replace the existing score toolbar, whatever its current label text is.
-          toolbar_pattern = re.compile(r'(<div class="score-chart-toolbar">).*?(</div>\s*<div class="score-chart-wrap">)', re.S)
-          m = toolbar_pattern.search(s)
-          if not m:
-              raise SystemExit('Score chart toolbar not found')
-          toolbar = '''<div class="score-chart-toolbar">
-          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
-          <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
-          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
-          <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
-          <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
-          <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
-          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
-        '''
-          s = s[:m.start()] + toolbar + m.group(2) + s[m.end():]
+          marker='        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>'
+          summary='''        <div id="scoreEvolutionSummary" class="score-evolution-summary" aria-live="polite">
+          <div class="score-summary-item"><span class="score-summary-label">Progression depuis J1</span><strong id="scoreSummaryProgression">—</strong></div>
+          <div class="score-summary-item"><span class="score-summary-label">Dimension la plus forte</span><strong id="scoreSummaryStrongest">—</strong></div>
+          <div class="score-summary-item"><span class="score-summary-label">Dimension à travailler</span><strong id="scoreSummaryWeakest">—</strong></div>
+          <p id="scoreSummaryContext" class="score-summary-context">Les indicateurs portent sur la période affichée.</p>
+        </div>'''
+          if 'id="scoreEvolutionSummary"' not in s:
+              if marker not in s: raise SystemExit('chart marker not found')
+              s=s.replace(marker,marker+'\n'+summary,1)
 
-          # Make range button activation cumulative-friendly.
-          s, n = re.subn(
-              r'function setChartRange\(range\) \{.*?renderScoreEvolutionChart\(\);\s*\n\s*\}',
-              '''function setChartRange(range) {
-    chartRange = range;
+          if 'id="v60-evolution-summary"' not in s:
+              css='''<style id="v60-evolution-summary">
+.score-evolution-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.score-summary-item{background:#f7f5f1;border:1px solid #ddd9d1;border-radius:10px;padding:12px;min-width:0}
+.score-summary-label{display:block;color:#777;font-size:12px;margin-bottom:4px}
+.score-summary-item strong{display:block;font-size:16px;line-height:1.3}
+.score-summary-context{grid-column:1/-1;margin:0;color:#777;font-size:12px}
+@media (max-width:700px){.score-evolution-summary{grid-template-columns:1fr}.score-summary-context{grid-column:auto}}
+</style>\n'''
+              s=s.replace('</head>',css+'</head>',1)
 
-    [7, 15, 30, 45, 60, 75, 90].forEach(r => {
-      const button = document.getElementById("chart" + r + "Button");
-      if (button) button.classList.toggle("active", r === range);
-    });
+          if 'function renderScoreEvolutionSummary()' not in s:
+              js='''
+  function renderScoreEvolutionSummary() {
+    const progressEl=document.getElementById("scoreSummaryProgression");
+    const strongestEl=document.getElementById("scoreSummaryStrongest");
+    const weakestEl=document.getElementById("scoreSummaryWeakest");
+    const contextEl=document.getElementById("scoreSummaryContext");
+    if(!progressEl||!strongestEl||!weakestEl)return;
+    const endDay=Math.min(chartRange,91);
+    const rows=(dailyScoreHistory||[]).filter(r=>{const d=Number(r.day_number);return Number.isFinite(d)&&d>=1&&d<=endDay}).sort((a,b)=>Number(a.day_number)-Number(b.day_number));
+    const dims=[["presence","Présence"],["impulse_control","Maîtrise de l'impulsion"],["values_coherence","Cohérence avec mes valeurs"],["self_relation","Relation à moi-même"]];
+    const valid=v=>{const n=Number(v);return Number.isFinite(n)&&n>=1&&n<=10?n:null};
+    const avg=r=>{const v=dims.map(([k])=>valid(r?.[k])).filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null};
+    const scored=rows.filter(r=>avg(r)!==null);
+    if(!scored.length){progressEl.textContent="—";strongestEl.textContent="—";weakestEl.textContent="—";if(contextEl)contextEl.textContent="Aucun score enregistré sur la période affichée.";return}
+    const delta=avg(scored[scored.length-1])-avg(scored[0]);
+    progressEl.textContent=(delta>=0?"+":"")+delta.toFixed(1)+" point"+(Math.abs(delta)>=2?"s":"");
+    const avgs=dims.map(([k,label])=>{const v=rows.map(r=>valid(r?.[k])).filter(x=>x!==null);return {label:label,average:v.length?v.reduce((a,b)=>a+b,0)/v.length:null}}).filter(x=>x.average!==null).sort((a,b)=>b.average-a.average);
+    strongestEl.textContent=avgs[0]?avgs[0].label+" · "+avgs[0].average.toFixed(1)+"/10":"—";
+    weakestEl.textContent=avgs.length?avgs[avgs.length-1].label+" · "+avgs[avgs.length-1].average.toFixed(1)+"/10":"—";
+    if(contextEl)contextEl.textContent="Comparaison du premier score enregistré (J"+Number(scored[0].day_number)+") au dernier (J"+Number(scored[scored.length-1].day_number)+"). Les deux autres indicateurs sont calculés sur la période affichée.";
+  }
+'''
+              insert='\n  /* ============================================================\n     FORMATAGE PROGRAMME'
+              if insert not in s: raise SystemExit('insert marker not found')
+              s=s.replace(insert,js+insert,1)
 
-    renderScoreEvolutionChart();
-  }''',
-              s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit('setChartRange function not found')
+          if 'renderScoreEvolutionSummary();' not in s:
+              end='    if (status) { status.textContent = ""; status.classList.add("hidden"); }\n  }\n\n  /* ============================================================\n     FORMATAGE PROGRAMME'
+              if end not in s: raise SystemExit('chart end marker not found')
+              s=s.replace(end,'    if (status) { status.textContent = ""; status.classList.add("hidden"); }\n    renderScoreEvolutionSummary();\n  }\n\n  /* ============================================================\n     FORMATAGE PROGRAMME',1)
 
-          # Cumulative display: always the first N program days, never a sliding window.
-          s, n = re.subn(
-              r'const endDay = Number\(currentDay\) \|\| 1;.*?\.sort\(\(a,b\) => Number\(a\.day_number\) - Number\(b\.day_number\)\);',
-              '''const startDay = 1;
-    const endDay = Math.min(chartRange, 91);
-    const rows = (dailyScoreHistory || [])
-      .filter(row => {
-        const d = Number(row.day_number);
-        return Number.isFinite(d) && d >= startDay && d <= endDay;
-      })
-      .sort((a,b) => Number(a.day_number) - Number(b.day_number));''',
-              s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit('renderScoreEvolutionChart range block not found')
-
-          # Force every missing day to exist as 0-valued data points.
-          zero_marker = '/* V56 zeros: every missing score is displayed as 0 */'
-          if zero_marker not in s:
-              s = s.replace('</script>', zero_marker + '\n</script>', 1)
-
-          checks = [
-              '>V56</div>',
-              'id="chart7Button"', 'id="chart15Button"', 'id="chart30Button"',
-              'id="chart45Button"', 'id="chart60Button"', 'id="chart75Button"', 'id="chart90Button"',
-              '[7, 15, 30, 45, 60, 75, 90]',
-              'const startDay = 1;',
-              'const endDay = Math.min(chartRange, 91);',
-              'return Number.isFinite(value) ? Math.max(0, Math.min(10,value)) : 0;'
-          ]
-          for c in checks:
-              if c not in s:
-                  raise SystemExit('Missing V56 content: ' + c)
-          p.write_text(s, encoding='utf-8')
+          checks=['>V60</div>','id="scoreEvolutionSummary"','function renderScoreEvolutionSummary()','renderScoreEvolutionSummary();','function collectControlTable()','__CONTROL_TABLE_JSON__','__FIN_TABLEAU_CONTROLE__','const keys = [','const averageColor = "#f59e0b"','id="chart90Button"']
+          for x in checks:
+              if x not in s: raise SystemExit('Missing V60: '+x)
+          if s.count('id="scoreEvolutionSummary"')!=1: raise SystemExit('summary count')
+          if len(re.findall(r'function renderScoreEvolutionSummary\(\)',s))!=1: raise SystemExit('function count')
+          p.write_text(s,encoding='utf-8')
 
       - name: Validate and commit
-        shell: bash
         run: |
-          grep -q '>V56</div>' index.html
-          grep -q 'id="chart15Button"' index.html
-          grep -q 'id="chart45Button"' index.html
-          grep -q 'id="chart60Button"' index.html
-          grep -q 'id="chart75Button"' index.html
-          grep -q 'const startDay = 1;' index.html
-          grep -q 'const endDay = Math.min(chartRange, 91);' index.html
+          grep -q '>V60</div>' index.html
+          grep -q 'id="scoreEvolutionSummary"' index.html
+          grep -q 'function renderScoreEvolutionSummary()' index.html
+          grep -q 'renderScoreEvolutionSummary();' index.html
+          grep -q '__CONTROL_TABLE_JSON__' index.html
+          grep -q '__FIN_TABLEAU_CONTROLE__' index.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Update index.html V56'
+          git commit -m 'Update index.html V60'
           git push
