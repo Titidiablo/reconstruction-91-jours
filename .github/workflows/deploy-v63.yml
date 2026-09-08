@@ -1,4 +1,4 @@
-name: Deploy V84
+name: Deploy V85
 
 on:
   push:
@@ -46,27 +46,32 @@ jobs:
         run: python3 scripts/patch_v83_media_upload.py
       - name: Apply V84 media upload UI and fallback
         run: python3 scripts/patch_v84_media_upload_ui.py
+      - name: Apply V85 media categories and meditation picker
+        run: python3 scripts/patch_v85_media_program.py
 
-      - name: Set displayed version V84
+      - name: Set displayed version V85
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83'):
-              s = s.replace(f'>{old}</div>', '>V84</div>')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84'):
+              s = s.replace(f'>{old}</div>', '>V85</div>')
           s = s.replace('🗓️ Mon parcours', '')
           s = s.replace('🗓️ Les 91 jours', '')
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Validate V84
+      - name: Validate V85
         run: |
-          grep -q '>V84</div>' index.html
+          grep -q '>V85</div>' index.html
           grep -q 'id="v80-dashboard-navigation-fix"' index.html
           grep -q 'id="v81-media-menu"' index.html
+          grep -q 'id="v85-media-program"' index.html
           grep -q 'mediaAudioStatus' index.html
           grep -q 'mediaVideoStatus' index.html
+          grep -q 'meditationMediaSelect' index.html
+          grep -q 'MEDIA_MEDITATION_ID' index.html
           grep -q 'storage.supabase.co/storage/v1/upload/resumable' index.html
           grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
           grep -q 'DEVENIR SOI' index.html
@@ -76,19 +81,19 @@ jobs:
           grep -q '💾 Sauvegarder' index.html
           ! grep -q 'id="v72-dashboard-no-today-duplicates"' index.html
           ! grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
-          test "$(grep -o '>V84</div>' index.html | wc -l)" -eq 1
+          test "$(grep -o '>V85</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V84
+      - name: Commit V85
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V84 déjà présent"
+            echo "V85 déjà présent"
             exit 0
           fi
-          git commit -m "V84 - improve media upload feedback"
+          git commit -m "V85 - integrate meditation media into program"
           git pull --rebase origin main
           git push origin HEAD:main
 
-# V84 deployment trigger - 2026-09-08T12:30:00Z
+# V85 deployment trigger - 2026-09-08T13:00:00Z
