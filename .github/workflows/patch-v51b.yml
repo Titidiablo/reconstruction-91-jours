@@ -1,0 +1,54 @@
+name: Patch V51b
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, 'V51b - connexion')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Corriger connexion
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old='''    <button class="primary" onclick="signIn()">\n      Se connecter\n    </button>'''
+          new='''    <button id="signInBtn" type="button" class="primary">\n      Se connecter\n    </button>'''
+          if old not in s: raise SystemExit('bouton introuvable')
+          s=s.replace(old,new,1)
+          anchor='''  /* ============================================================\n     INSCRIPTION\n     ============================================================ */'''
+          listener='''  /* V51b : branchement explicite du bouton après chargement du DOM. */\n  const signInButton = document.getElementById("signInBtn");\n  if (signInButton) {\n    signInButton.addEventListener("click", function() {\n      signIn();\n    });\n  }\n\n\n'''
+          if 'V51b : branchement explicite' not in s:
+              if anchor not in s: raise SystemExit('ancre introuvable')
+              s=s.replace(anchor,listener+anchor,1)
+          oldcheck='''    const {\n      data: {\n        session\n      }\n    } =\n      await supabaseClient.auth.getSession();'''
+          newcheck='''    const {\n      data: {\n        session\n      }\n    } =\n      await getSupabaseClient().auth.getSession();'''
+          if oldcheck not in s: raise SystemExit('checkSession introuvable')
+          s=s.replace(oldcheck,newcheck,1)
+          s=s.replace('<div class="app-version-v18">V50</div>','<div class="app-version-v18">V51</div>')
+          s=s.replace('// V50 : correction de la connexion Supabase avec initialisation différée.','// V51 : connexion Supabase avec initialisation différée + vérification de session corrigée.')
+          if '<div class="app-version-v18">V51</div>' not in s: raise SystemExit('V51 absent')
+          if 'id="signInBtn" type="button"' not in s: raise SystemExit('bouton V51 absent')
+          if 'V51b : branchement explicite' not in s: raise SystemExit('listener absent')
+          if 'await getSupabaseClient().auth.getSession();' not in s: raise SystemExit('checkSession non corrigé')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validation JavaScript
+        run: |
+          node --input-type=module - <<'NODE'
+          const fs=require('fs'); const s=fs.readFileSync('index.html','utf8');
+          const m=s.match(/<script>([\s\S]*?)<\/script>/i); if(!m) throw new Error('script inline absent');
+          new Function(m[1]);
+          console.log('Validation OK');
+          NODE
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'V51b - connexion'
+          git push
