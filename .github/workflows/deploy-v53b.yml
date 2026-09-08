@@ -1,0 +1,92 @@
+name: Deploy V53 patch
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch index.html
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          import subprocess
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          msg = subprocess.check_output(['git','log','-1','--pretty=%B'], text=True).strip()
+          if 'Update index.html V53' in msg:
+              print('V53 commit detected; nothing to patch.')
+              raise SystemExit(0)
+          m = re.search(r'>V5[12]</div>', s)
+          if not m:
+              raise SystemExit('V51/V52 badge not found')
+          s = s[:m.start()] + '>V53</div>' + s[m.end():]
+          if '.unsaved-modal-backdrop {' not in s:
+              anchor = '#scoreEvolutionChartContainer { width:100%; min-height:360px; }'
+              css = '''
+
+/* V53 — message de modifications non sauvegardées en vraie boîte de dialogue */
+.unsaved-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.unsaved-modal-backdrop.hidden { display: none !important; }
+.unsaved-modal {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.30);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  text-align: left;
+  animation: unsavedModalIn 0.16s ease-out;
+}
+.unsaved-modal h3 { margin: 0 0 12px; font-size: 21px; }
+.unsaved-modal p { margin: 0 0 20px; color: #555; line-height: 1.5; }
+.unsaved-modal-actions { display: flex; flex-direction: column; gap: 9px; }
+.unsaved-modal-actions button { width: 100%; margin: 0; }
+.unsaved-modal-actions .stay-btn { background: #f0eee9; color: #222; border: 1px solid #d6d2ca; }
+.unsaved-modal-actions .stay-btn:hover { background: #e8e5df; }
+@keyframes unsavedModalIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+'''
+              if anchor not in s:
+                  raise SystemExit('CSS anchor not found')
+              s = s.replace(anchor, anchor + css, 1)
+          checks = ['>V53</div>','.unsaved-modal-backdrop {','position: fixed;','z-index: 99999;','id="unsavedChangesModal"','id="unsavedSaveBtn"','id="unsavedCancelBtn"','id="unsavedStayBtn"']
+          for c in checks:
+              if c not in s: raise SystemExit(f'Missing expected content: {c}')
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          grep -q '>V53</div>' index.html
+          grep -q 'position: fixed;' index.html
+          grep -q 'z-index: 99999;' index.html
+          grep -q 'id="unsavedStayBtn"' index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html; then
+            echo 'No index.html changes needed.'
+            exit 0
+          fi
+          git add index.html
+          git commit -m 'Update index.html V53'
+          git push
