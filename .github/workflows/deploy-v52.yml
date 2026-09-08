@@ -1,0 +1,44 @@
+name: Deploy V52
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, 'V52 - base V45 robuste')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const v45 = '60426c72c7ea5a612f8a958647b01b1b07923cba';
+            const { data: base } = await github.rest.repos.getContent({owner, repo, path:'index.html', ref:v45});
+            let s = Buffer.from(base.content, 'base64').toString('utf8');
+            s = s.replace('<div class="app-version-v18">V45</div>', '<div class="app-version-v18">V52</div>');
+            s = s.replace('/* V45 - protection contre les changements de jour avec modifications non sauvegardées */', '/* V52 - base V45 + initialisation Supabase robuste */');
+            s = s.replace('// V45 : toute modification de formulaire rend la journée "sale".', '// V52 : base V45 ; initialisation Supabase différée pour ne pas bloquer la page.');
+            s = s.replace(`  const supabaseClient =\n    window.supabase.createClient(\n      SUPABASE_URL,\n      SUPABASE_KEY\n    );`, `  let supabaseClient = null;\n\n  function getSupabaseClient() {\n    if (supabaseClient) return supabaseClient;\n    if (!window.supabase || typeof window.supabase.createClient !== "function") {\n      throw new Error("Supabase n'est pas chargé. Vérifie ta connexion Internet puis recharge la page.");\n    }\n    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);\n    return supabaseClient;\n  }`);
+            const si = s.indexOf('  async function signIn() {');
+            const se = s.indexOf('\n\n  /* ============================================================\n     AFFICHER APPLICATION', si);
+            if (si < 0 || se < 0) throw new Error('signIn introuvable');
+            s = s.slice(0,si) + `  async function signIn() {\n    const email = document.getElementById("email").value.trim();\n    const password = document.getElementById("password").value;\n    const status = document.getElementById("loginStatus");\n    status.className = "";\n    status.textContent = "Connexion en cours…";\n    if (!email || !password) {\n      status.className = "error";\n      status.textContent = "Indique ton e-mail et ton mot de passe.";\n      return;\n    }\n    try {\n      const { error } = await getSupabaseClient().auth.signInWithPassword({email, password});\n      if (error) {\n        status.className = "error";\n        status.textContent = "Erreur : " + error.message;\n        return;\n      }\n      status.textContent = "";\n      await showApplication();\n    } catch (error) {\n      console.error("Erreur de connexion", error);\n      status.className = "error";\n      status.textContent = "Erreur de connexion : " + (error?.message || error);\n    }\n  }` + s.slice(se);
+            const ci = s.indexOf('  async function checkSession() {');
+            const ce = s.indexOf('\n\n\n  /* ============================================================\n     DEMARRAGE', ci);
+            if (ci < 0 || ce < 0) throw new Error('checkSession introuvable');
+            s = s.slice(0,ci) + `  async function checkSession() {\n    const status = document.getElementById("loginStatus");\n    try {\n      const { data: { session } } = await getSupabaseClient().auth.getSession();\n      if (session) await showApplication();\n    } catch (error) {\n      console.warn("Session non disponible au démarrage", error);\n      if (status) {\n        status.className = "error";\n        status.textContent = "Connexion prête : " + (error?.message || error);\n      }\n    }\n  }` + s.slice(ce);
+            const rs = s.indexOf('  function restoreControlTable(text) {');
+            const re = s.indexOf('\n  function parseScore(id)', rs);
+            if (rs < 0 || re < 0) throw new Error('restoreControlTable introuvable');
+            const restore = s.slice(rs,re).replace('const jsonPos = section.indexOf(jsonMarker);','const jsonPos = raw.lastIndexOf(jsonMarker);').replace('const json = section.slice(jsonPos + jsonMarker.length).trim();','const jsonEnd = raw.indexOf(endMarker, jsonPos);\n      const json = raw.slice(jsonPos + jsonMarker.length, jsonEnd >= 0 ? jsonEnd : raw.length).trim();');
+            s = s.slice(0,rs) + restore + s.slice(re);
+            if (!s.includes('<div class="app-version-v18">V52</div>')) throw new Error('V52 marker absent');
+            if (!s.includes('let supabaseClient = null;')) throw new Error('lazy client absent');
+            if (!s.includes('function getSupabaseClient()')) throw new Error('getter absent');
+            if (!s.includes('const jsonPos = raw.lastIndexOf(jsonMarker);')) throw new Error('last JSON absent');
+            const scripts = [...s.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);
+            for (const code of scripts) Function(code);
+            const { data: current } = await github.rest.repos.getContent({owner, repo, path:'index.html', ref:'main'});
+            await github.rest.repos.createOrUpdateFileContents({owner, repo, path:'index.html', message:'V52 - base V45 robuste', content:Buffer.from(s,'utf8').toString('base64'), sha:current.sha, branch:'main'});
