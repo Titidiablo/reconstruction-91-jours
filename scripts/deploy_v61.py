@@ -3,14 +3,8 @@ from pathlib import Path
 path = Path("index.html")
 html = path.read_text(encoding="utf-8")
 
-# The application was restored to V62. The deploy script must not depend on
-# a historical V59 badge that no longer exists in the source HTML.
-# V61 dashboard enhancements are injected only when their markers are absent.
-
-if ">V61</div>" not in html:
-    # Accept the current V62 badge/version marker(s) without forcing an old
-    # version string. The dashboard content checks below are the real guard.
-    pass
+# The application is currently V62. Do not require any historical V59/V61 badge.
+# Keep the dashboard injection idempotent and validate the injected markers.
 
 css = r'''<style id="v61-dashboard-style">
 .v61-dashboard{margin-top:0}
