@@ -1,4 +1,4 @@
-name: Deploy V68
+name: Deploy V69
 
 on:
   push:
@@ -37,20 +37,24 @@ jobs:
       - name: Apply V68 Dashboard / Programme separation
         run: python3 scripts/patch_v68_dashboard_program.py
 
-      - name: Set displayed version V68
+      - name: Apply V69 Dashboard cleanup
+        run: python3 scripts/patch_v69_dashboard_cleanup.py
+
+      - name: Set displayed version V69
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          s = s.replace('>V64</div>', '>V68</div>')
-          s = s.replace('>V67</div>', '>V68</div>')
+          s = s.replace('>V64</div>', '>V69</div>')
+          s = s.replace('>V67</div>', '>V69</div>')
+          s = s.replace('>V68</div>', '>V69</div>')
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Validate V68
+      - name: Validate V69
         run: |
-          grep -q '>V68</div>' index.html
+          grep -q '>V69</div>' index.html
           grep -q 'id="v63-resources-runtime"' index.html
           grep -q 'id="v64-ux-style"' index.html
           grep -q 'id="v64-ux-runtime"' index.html
@@ -59,6 +63,7 @@ jobs:
           grep -q 'id="v66-today-program-fix"' index.html
           grep -q 'id="v67-program-active-fix"' index.html
           grep -q 'id="v68-dashboard-program-fix"' index.html
+          grep -q 'id="v69-dashboard-cleanup"' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Pleine conscience' index.html
           grep -q 'Maîtrise des impulsions' index.html
@@ -68,17 +73,17 @@ jobs:
           ! grep -q 'id="v64OpenDays"' index.html
           ! grep -q 'id="v64CompactDays"' index.html
           grep -q 'await requestDayChange(d)' index.html
-          test "$(grep -o '>V68</div>' index.html | wc -l)" -eq 1
+          test "$(grep -o '>V69</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V68
+      - name: Commit V69
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V68 déjà présent"
+            echo "V69 déjà présent"
             exit 0
           fi
-          git commit -m "V68 - dashboard and programme separation"
+          git commit -m "V69 - remove Aujourd'hui content from dashboard"
           git pull --rebase origin main
           git push origin HEAD:main
