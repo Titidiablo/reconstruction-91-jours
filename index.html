@@ -802,7 +802,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V90</div>
+  <div class="app-version-v18">V91</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -4013,6 +4013,35 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',sync);else sync();
   window.addEventListener('load',()=>setTimeout(sync,500));
   setInterval(install,1000);
+})();
+</script>
+
+
+<style id="v91-default-today-button">
+/* V91 — à l'arrivée sur l'application, Aujourd'hui est le bouton sélectionné par défaut. */
+</style>
+<script id="v91-default-today-button">
+(function(){
+  function setOnly(btn){
+    if(!btn) return;
+    document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>b.classList.remove('nav-active'));
+    btn.classList.add('nav-active');
+  }
+  function initDefault(){
+    const today=document.getElementById('todayNavButton');
+    const program=document.getElementById('programSection');
+    const dashboard=document.getElementById('v61Dashboard');
+    if(!today) return;
+    /* Ne force Aujourd'hui que lors de l'arrivée initiale, quand aucune autre section n'est active. */
+    const active=document.querySelector('.nav-buttons button.nav-active');
+    const programVisible=program && !program.classList.contains('hidden');
+    const dashboardVisible=dashboard && !dashboard.classList.contains('hidden');
+    if(!active && !programVisible && !dashboardVisible) setOnly(today);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(initDefault,50));
+  else setTimeout(initDefault,50);
+  window.addEventListener('load',()=>setTimeout(initDefault,300));
+  setTimeout(initDefault,1000);
 })();
 </script>
 
