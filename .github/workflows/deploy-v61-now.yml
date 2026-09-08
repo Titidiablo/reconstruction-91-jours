@@ -1,40 +1,11 @@
-name: Deploy V61 dashboard now
+name: Deploy V61 dashboard now (disabled)
 
 on:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Apply V61
-        run: python3 scripts/deploy_v61.py
-
-      - name: Commit V61
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then
-            echo "V61 déjà présent"
-          else
-            git commit -m "Update index.html V61 - dashboard and analysis"
-            git push
-          fi
-
-      - name: Verify V61
-        run: |
-          grep -q 'id="v61-dashboard-runtime"' index.html
-          grep -q 'id="v61Dashboard"' index.html
-          grep -q 'Progression depuis J1' index.html
-          grep -q 'id="v61-save-visibility"' index.html
+      - name: Disabled
+        run: echo "Le workflow V61 est obsolète. Utiliser Deploy V63."
