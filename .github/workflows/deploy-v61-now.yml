@@ -34,7 +34,7 @@ jobs:
 
       - name: Verify V61
         run: |
-          grep -q '>V61</div>' index.html
           grep -q 'id="v61-dashboard-runtime"' index.html
           grep -q 'id="v61Dashboard"' index.html
           grep -q 'Progression depuis J1' index.html
+          grep -q 'id="v61-save-visibility"' index.html
