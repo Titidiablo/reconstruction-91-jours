@@ -92,7 +92,6 @@ jobs:
       - name: Validate V98
         run: |
           # V98 builds the settings button/panel dynamically in JavaScript.
-          # Validate the actual selectors/code rather than generated HTML ids.
           grep -q "settingsNavButton" index.html
           grep -q "v98SettingsPanel" index.html
           grep -q "v98-settings" index.html
