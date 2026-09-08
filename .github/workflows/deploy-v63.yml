@@ -1,4 +1,4 @@
-name: Deploy V96
+name: Deploy V97
 
 on:
   push:
@@ -70,63 +70,37 @@ jobs:
         run: python3 scripts/patch_v96_reperes_detail.py
       - name: Apply V96 mobile score layout
         run: python3 scripts/patch_v96_mobile_score_layout.py
+      - name: Apply V97 evolution mobile no overlap
+        run: python3 scripts/patch_v97_evolution_mobile_no_overlap.py
 
-      - name: Set displayed version V96
+      - name: Set displayed version V97
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94','V95'):
-              s = s.replace(f'>{old}</div>', '>V96</div>')
-          s = s.replace('🗓️ Mon parcours', '')
-          s = s.replace('🗓️ Les 91 jours', '')
-          p.write_text(s, encoding='utf-8')
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94','V95','V96'):
+              s=s.replace(f'>{old}</div>','>V97</div>')
+          p.write_text(s,encoding='utf-8')
           PY
-
-      - name: Validate V96
+      - name: Validate V97
         run: |
-          grep -q '>V96</div>' index.html
-          grep -q 'id="v80-dashboard-navigation-fix"' index.html
-          grep -q 'id="v81-media-menu"' index.html
-          grep -q 'id="v85-media-program"' index.html
-          grep -q 'id="v87-media-filename-title"' index.html
-          grep -q 'id="v88-meditation-picker-position"' index.html
-          grep -q 'id="v89-meditation-picker-exact-position"' index.html
-          grep -q 'id="v90-button-selection-fix"' index.html
-          grep -q 'id="v91-default-today-button"' index.html
-          grep -q 'id="v92-zen-design"' index.html
-          grep -q 'id="v93-zen-images"' index.html
-          grep -q 'id="v94-evolution-scores"' index.html
-          grep -q 'id="v95-bilan-piliers"' index.html
+          grep -q '>V97</div>' index.html
+          grep -q 'id="v97-evolution-mobile-no-overlap"' index.html
           grep -q 'id="v96-reperes-detail"' index.html
           grep -q 'id="v96-mobile-score-layout"' index.html
-          grep -q 'id="meditation"' index.html
-          grep -q 'meditationMediaSelect' index.html
-          grep -q 'MEDIA_MEDITATION_ID' index.html
-          grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
+          grep -q 'id="v95-bilan-piliers"' index.html
+          grep -q 'id="v94-evolution-scores"' index.html
           grep -q 'DEVENIR SOI' index.html
-          grep -q 'Mon tableau de bord' index.html
-          grep -q 'Analyse de mon évolution' index.html
-          grep -q 'Mes dernières journées' index.html
-          grep -q '💾 Sauvegarder' index.html
-          grep -q 'Accroche-toi' index.html
-          grep -q 'bonheur' index.html
-          ! grep -q 'id="v72-dashboard-no-today-duplicates"' index.html
-          ! grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
-          test "$(grep -o '>V96</div>' index.html | wc -l)" -eq 1
-
-      - name: Commit V96
+          grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
+          test "$(grep -o '>V97</div>' index.html | wc -l)" -eq 1
+      - name: Commit V97
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          if git diff --cached --quiet; then
-            echo "V96 déjà présent"
-            exit 0
-          fi
-          git commit -m "V96 - fix mobile score layout"
+          if git diff --cached --quiet; then echo "V97 déjà présent"; exit 0; fi
+          git commit -m "V97 - eliminate mobile evolution overlaps"
           git pull --rebase origin main
           git push origin HEAD:main
-
-# V96 mobile layout trigger - 2026-09-08T13:50:00Z
+# V97 mobile overlap fix - 2026-09-08T13:55:00Z
