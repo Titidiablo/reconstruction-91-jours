@@ -701,7 +701,7 @@
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V61</div>
+  <div class="app-version-v18">V62</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1011,7 +1011,6 @@
         <button
           class="primary"
           onclick="saveEntry()">
-          💾 Sauvegarder ma journée
         </button>
 
         <div id="saveStatus"></div>
@@ -2638,7 +2637,6 @@
 
   // Suppression d'une ligne : modification locale uniquement.
   // La BDD n'est modifiée que lorsque l'utilisateur clique sur
-  // « Sauvegarder ma journée ».
   function deleteControlRow(button) {
     const row = button && button.closest ? button.closest("tr") : null;
     if (!row || !row.parentElement) return false;
@@ -3070,3 +3068,4 @@
 </script>
 </body>
 </html>
+<script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>
