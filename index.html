@@ -697,18 +697,6 @@
 @media(max-width:700px){.v61-grid{grid-template-columns:1fr 1fr}.v61-insights{grid-template-columns:1fr}}
 @media(max-width:480px){.v61-grid{grid-template-columns:1fr}}
 </style>
-<style id="v63-resources-style">
-.v63-resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
-.v63-resource-card{border:1px solid #ddd9d1;border-radius:12px;padding:15px;background:#faf9f6}
-.v63-resource-card h3{margin:0 0 5px;font-size:17px}
-.v63-resource-meta{font-size:12px;color:#777;margin-bottom:10px}
-.v63-resource-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-.v63-resource-preview{width:100%;border-radius:9px;margin-top:10px}
-.v63-resource-preview iframe{width:100%;height:280px;border:0;border-radius:9px}
-.v63-resource-empty{color:#777;text-align:center;padding:30px 10px}
-.v63-upload-note{font-size:12px;color:#777;margin:8px 0 12px}
-@media(max-width:700px){.v63-resource-grid{grid-template-columns:1fr}}
-</style>
 <style id="v63-score-guidance-style">
 .score-guidance{font-size:12px;line-height:1.4;color:#666;margin:-2px 0 9px}
 .score-guidance-question{font-weight:600;color:#333;margin-bottom:3px}
@@ -802,13 +790,13 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V96</div>
+  <div class="app-version-v18">V100</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
   <!-- ========================================================= -->
 
-  <h1>RECONSTRUCTION — 91 JOURS</h1>
+  <h1>DEVENIR SOI</h1>
 
   <div class="subtitle">Ne subissez plus votre vie. Reprenez le contrôle !</div>
 
@@ -1446,7 +1434,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     }
 
     const { error } =
-      await supabaseClient.auth.signUp({
+      await getSupabaseClient().auth.signUp({
         email: email,
         password: password
       });
@@ -1520,6 +1508,10 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
     await loadJournalEntries();
     await loadScoreHistory();
+    /* Arrivée par défaut : Aujourd’hui, une fois tous les modules chargés. */
+    setTimeout(() => {
+      if (typeof window.showToday === "function") window.showToday();
+    }, 0);
   }
 
 
@@ -2016,23 +2008,20 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
   async function loadJournalEntries() {
 
-    const container =
-      document.getElementById("journalEntries");
+    const container = document.getElementById("journalEntries");
+    container.innerHTML = "Chargement...";
 
-    container.innerHTML =
-      "Chargement...";
+    const { data: { user } } = await getSupabaseClient().auth.getUser();
+    if (!user) {
+      container.innerHTML = '<div class="error">Session utilisateur introuvable.</div>';
+      return;
+    }
 
-
-    const {
-      data,
-      error
-    } =
-      await supabaseClient
-        .from("journal_entries")
-        .select("*")
-        .order("entry_date", {
-          ascending: false
-        });
+    const { data, error } = await getSupabaseClient()
+      .from("journal_entries")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("entry_date", { ascending: false });
 
 
     if (error) {
@@ -2259,7 +2248,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
       await supabaseClient
         .from("journal_entries")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", (await supabaseClient.auth.getUser()).data.user?.id);
 
 
     if (error) {
@@ -3092,62 +3082,117 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </script>
 <script id="v61-dashboard-runtime">
 (function(){
-  const originalShowSection=window.showSection;
   let entries=[];
   const dims=[["presence","Présence"],["impulse_control","Maîtrise des impulsions"],["values_coherence","Cohérence avec mes valeurs"],["self_relation","Relation à moi-même"]];
-  function score(v){const n=Number(v);return Number.isFinite(n)&&n>=1&&n<=10?n:null;}
-  function avg(r){const v=dims.map(x=>score(r&&r[x[0]])).filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
-  function rows(){return entries.filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));}
+  const score=v=>{const n=Number(v);return Number.isFinite(n)&&n>=1&&n<=10?n:null};
+  const avg=r=>{const a=dims.map(d=>score(r?.[d[0]])).filter(v=>v!==null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+  const rows=()=>entries.filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));
+
   function make(){
-    const app=document.getElementById("app");if(!app||document.getElementById("v61Dashboard"))return;
-    const top=app.querySelector(".topbar");if(!top)return;
+    const app=document.getElementById("app"), top=app?.querySelector(".topbar");
+    if(!top || document.getElementById("v61Dashboard")) return;
     const nav=top.querySelector(".nav-buttons");
-    if(nav&&!document.getElementById("dashboardNavButton")){
-      const b=document.createElement("button");b.id="dashboardNavButton";b.className="secondary";b.type="button";b.textContent="🏠 Tableau de bord";b.onclick=()=>window.showSection("dashboard");nav.insertBefore(b,nav.firstChild);
+    if(nav && !document.getElementById("dashboardNavButton")){
+      const b=document.createElement("button");
+      b.id="dashboardNavButton"; b.className="secondary"; b.type="button";
+      b.textContent="🏠 Tableau de bord"; b.onclick=()=>window.showSection("dashboard");
+      nav.insertBefore(b,nav.firstChild);
     }
-    const sec=document.createElement("div");sec.id="v61Dashboard";sec.className="hidden v61-dashboard";
-    sec.innerHTML='<div class="card"><h2 class="section-title">🏠 Mon tableau de bord</h2><p id="v61Welcome">Ton parcours en un coup d’œil.</p><div class="v61-progress"><span id="v61Bar"></span></div><div class="v61-grid"><div class="v61-stat"><span class="v61-label">Progression</span><strong id="v61Progress" class="v61-value">—</strong><span class="v61-note">jours du programme</span></div><div class="v61-stat"><span class="v61-label">Score global</span><strong id="v61Score" class="v61-value">—</strong><span id="v61ScoreNote" class="v61-note">sur 10</span></div><div class="v61-stat"><span class="v61-label">Série</span><strong id="v61Streak" class="v61-value">—</strong><span class="v61-note">jours consécutifs</span></div><div class="v61-stat"><span class="v61-label">Dernière journée notée</span><strong id="v61Last" class="v61-value">—</strong><span class="v61-note">avec un score</span></div></div></div><div class="card"><h2 class="section-title">🧠 Analyse de mon évolution</h2><div class="v61-insights"><div class="v61-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div><div class="v61-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strong">—</p></div><div class="v61-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weak">—</p></div><div class="v61-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div></div></div><div class="card"><h2 class="section-title">🗓️ Mes dernières journées</h2><div id="v61RecentList"></div></div>';
+    const sec=document.createElement("section");
+    sec.id="v61Dashboard"; sec.className="hidden v61-dashboard";
+    sec.innerHTML=`
+      <div class="card">
+        <h2 class="section-title">🏠 Mon tableau de bord</h2>
+        <p id="v61Welcome">Une vue d’ensemble de mon parcours et de mes repères.</p>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🧠 Analyse de mon évolution</h2>
+        <div class="v61-insights">
+          <div class="v61-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div>
+          <div class="v61-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strong">—</p></div>
+          <div class="v61-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weak">—</p></div>
+          <div class="v61-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="section-title">🗓️ Mes dernières journées</h2>
+        <div id="v61RecentList"></div>
+      </div>`;
     top.insertAdjacentElement("afterend",sec);
   }
+
   async function load(){
     try{
       const client=typeof getSupabaseClient==="function"?getSupabaseClient():null;
       if(!client)return;
       const {data:{user}}=await client.auth.getUser();
       if(!user)return;
-      const r=await client.from("daily_entries").select("day_number,presence,impulse_control,values_coherence,self_relation").eq("user_id",user.id).order("day_number",{ascending:true});
-      if(!r.error)entries=r.data||[];
+      const r=await client.from("daily_entries")
+        .select("day_number,presence,impulse_control,values_coherence,self_relation")
+        .eq("user_id",user.id).order("day_number",{ascending:true});
+      if(r.error) throw r.error;
+      entries=r.data||[];
     }catch(e){console.warn("V61 dashboard",e)}
     render();
   }
+
   function render(){
     make();
-    const box=document.getElementById("v61Dashboard");if(!box)return;
-    const rs=rows(),scored=rs.filter(r=>avg(r)!==null),first=scored[0],last=scored[scored.length-1];
+    const box=document.getElementById("v61Dashboard"); if(!box)return;
+    const rs=rows(), scored=rs.filter(r=>avg(r)!==null);
+    const first=scored[0], last=scored[scored.length-1];
     const current=(typeof currentDay!=="undefined"?Number(currentDay):1)||1;
-    const progress=last?Number(last.day_number):current;
-    const clamp=Math.min(91,Math.max(0,progress));
-    document.getElementById("v61Progress").textContent=clamp+"/91";
-    document.getElementById("v61Bar").style.width=(clamp/91*100)+"%";
-    document.getElementById("v61Score").textContent=last?avg(last).toFixed(1)+"/10":"—";
-    document.getElementById("v61ScoreNote").textContent=last?"J"+last.day_number:"aucun score enregistré";
-    document.getElementById("v61Last").textContent=last?"J"+last.day_number:"—";
-    const days=new Set(rs.map(r=>Number(r.day_number)));let latest=0;days.forEach(d=>{if(d>latest)latest=d});
-    let streak=0;for(let d=latest;latest&&days.has(d);d--)streak++;
-    document.getElementById("v61Streak").textContent=streak;
-    document.getElementById("v61Welcome").textContent="Jour "+current+" — observe avant de juger, et garde le cap.";
-    if(first&&last){const d=avg(last)-avg(first);document.getElementById("v61Delta").textContent=(d>=0?"+":"")+d.toFixed(1)+" point entre J"+first.day_number+" et J"+last.day_number+"."}
-    else document.getElementById("v61Delta").textContent="Il faut au moins deux journées notées pour mesurer une progression.";
-    const changes=dims.map(([k,l])=>{const x=scored.filter(r=>score(r[k])!==null);return x.length?{l,d:score(x[x.length-1][k])-score(x[0][k])}:null}).filter(Boolean).sort((a,b)=>b.d-a.d);
-    document.getElementById("v61Strong").textContent=changes[0]?changes[0].l+" ("+(changes[0].d>=0?"+":"")+changes[0].d.toFixed(1)+")":"—";
+    document.getElementById("v61Welcome").textContent=
+      "Le tableau de bord t’aide à prendre du recul sur ton parcours. Pour agir sur la journée en cours, utilise « Aujourd’hui ».";
+
+    document.getElementById("v61Delta").textContent =
+      first&&last
+        ? ((avg(last)-avg(first)>=0?"+":"")+(avg(last)-avg(first)).toFixed(1)+" point entre J"+first.day_number+" et J"+last.day_number+".")
+        : "Il faut au moins deux journées notées pour mesurer une progression.";
+
+    const changes=dims.map(([k,l])=>{
+      const x=scored.filter(r=>score(r[k])!==null);
+      return x.length?{l,d:score(x[x.length-1][k])-score(x[0][k])}:null;
+    }).filter(Boolean).sort((a,b)=>b.d-a.d);
+    document.getElementById("v61Strong").textContent=
+      changes[0]?changes[0].l+" ("+(changes[0].d>=0?"+":"")+changes[0].d.toFixed(1)+")":"—";
+
     const recent=scored.slice(-7);
-    const weak=dims.map(([k,l])=>{const v=recent.map(r=>score(r[k])).filter(x=>x!==null);return v.length?{l,a:v.reduce((a,b)=>a+b,0)/v.length}:null}).filter(Boolean).sort((a,b)=>a.a-b.a);
-    document.getElementById("v61Weak").textContent=weak[0]?weak[0].l+" · "+weak[0].a.toFixed(1)+"/10 sur les 7 dernières journées":"—";
-    document.getElementById("v61Recent").textContent=recent.length?"Moyenne des 7 dernières journées : "+(recent.reduce((a,r)=>a+avg(r),0)/recent.length).toFixed(1)+"/10.":"Continue à renseigner tes journées : l’analyse se précisera.";
-    document.getElementById("v61RecentList").innerHTML=rs.slice(-5).reverse().map(r=>'<div class="v61-day"><span class="v61-badge">J'+r.day_number+'</span><strong>'+(avg(r)!==null?avg(r).toFixed(1)+"/10":"sans score")+'</strong></div>').join("")||"<p>Aucune journée sauvegardée pour le moment.</p>";
+    const weak=dims.map(([k,l])=>{
+      const v=recent.map(r=>score(r[k])).filter(x=>x!==null);
+      return v.length?{l,a:v.reduce((a,b)=>a+b,0)/v.length}:null;
+    }).filter(Boolean).sort((a,b)=>a.a-b.a);
+    document.getElementById("v61Weak").textContent=
+      weak[0]?weak[0].l+" · "+weak[0].a.toFixed(1)+"/10 sur les 7 dernières journées":"—";
+    document.getElementById("v61Recent").textContent=
+      recent.length
+        ? "Moyenne des 7 dernières journées : "+(recent.map(avg).filter(v=>v!==null).reduce((a,b)=>a+b,0)/recent.map(avg).filter(v=>v!==null).length).toFixed(1)+"/10."
+        : "Continue à renseigner tes journées : l’analyse se précisera.";
+    document.getElementById("v61RecentList").innerHTML=
+      rs.slice(-5).reverse().map(r=>'<div class="v61-day"><span class="v61-badge">J'+r.day_number+
+      '</span><strong>'+(avg(r)!==null?avg(r).toFixed(1)+"/10":"sans score")+
+      '</strong></div>').join("") || "<p>Aucune journée sauvegardée pour le moment.</p>";
   }
-  window.showSection=function(section){make();if(section==="dashboard"){["programSection","journalSection","evolutionSection"].forEach(id=>document.getElementById(id)?.classList.add("hidden"));document.querySelectorAll(".nav-buttons button").forEach(b=>b.classList.remove("nav-active"));document.getElementById("v61Dashboard")?.classList.remove("hidden");document.getElementById("dashboardNavButton")?.classList.add("nav-active");load();return;}document.getElementById("v61Dashboard")?.classList.add("hidden");document.getElementById("dashboardNavButton")?.classList.remove("nav-active");if(typeof originalShowSection==="function")originalShowSection(section);};
-  window.addEventListener("load",()=>setTimeout(()=>{make();load();},700));
+
+  function showDashboard(){
+    make();
+    ["programSection","journalSection","evolutionSection","v64Dashboard","v63Resources","mediaSection","v98SettingsPanel"]
+      .forEach(id=>document.getElementById(id)?.classList.add("hidden"));
+    document.querySelectorAll(".nav-buttons button").forEach(b=>b.classList.remove("nav-active"));
+    document.getElementById("v61Dashboard")?.classList.remove("hidden");
+    document.getElementById("dashboardNavButton")?.classList.add("nav-active");
+    load();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  const originalShowSection=window.showSection;
+  window.showSection=function(section){
+    if(section==="dashboard"){showDashboard();return;}
+    document.getElementById("v61Dashboard")?.classList.add("hidden");
+    if(typeof originalShowSection==="function") originalShowSection.apply(this,arguments);
+  };
+
+  window.addEventListener("load",()=>setTimeout(()=>{make();},500));
 })();
 </script>
 <script id="v61-save-visibility">
@@ -3170,8 +3215,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   if(program)new MutationObserver(syncV61SaveVisibility).observe(program,{attributes:true,attributeFilter:["class"]});
 })();
 </script>
-<script id="v63-resources-runtime">(function(){const ID="v63Resources";let resources=[],busy=false;const client=()=>typeof getSupabaseClient==="function"?getSupabaseClient():null;const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c]));function yt(u){try{const x=new URL(u);if(x.hostname.includes("youtu.be"))return x.pathname.slice(1).split("/")[0];if(x.hostname.includes("youtube.com"))return x.searchParams.get("v")||(x.pathname.startsWith("/shorts/")?x.pathname.split("/")[2]:null)||(x.pathname.startsWith("/embed/")?x.pathname.split("/")[2]:null)}catch(e){}return null}function build(){if(document.getElementById(ID))return;const top=document.getElementById("app")?.querySelector(".topbar"),nav=top?.querySelector(".nav-buttons");if(!top)return;if(nav&&!document.getElementById("resourcesNavButton")){const b=document.createElement("button");b.id="resourcesNavButton";b.type="button";b.className="secondary";b.textContent="🎧 Ressources";b.onclick=show;nav.appendChild(b)}const sec=document.createElement("div");sec.id=ID;sec.className="hidden";sec.innerHTML=`<div class="card"><h2 class="section-title">🎧 Mes ressources</h2><p>Ton espace personnel pour tes méditations, formations, coachings, vidéos et contenus YouTube.</p><div class="card" style="margin-top:15px;padding:18px"><h3>➕ Ajouter une ressource</h3><label>Titre</label><input id="v63Title" type="text"><label>Description</label><textarea id="v63Description" style="min-height:80px"></textarea><label>Catégorie</label><select id="v63Category"><option>Méditation</option><option>Formation</option><option>Coaching</option><option>Développement personnel</option><option>YouTube</option><option>Autre</option></select><label>Type</label><select id="v63Type" onchange="window.v63ToggleResourceInput()"><option value="audio">Audio</option><option value="video">Vidéo</option><option value="youtube">YouTube</option><option value="link">Lien web</option></select><div id="v63FileWrap"><label>Fichier audio / vidéo</label><input id="v63File" type="file" accept="audio/*,video/*"></div><div id="v63UrlWrap" class="hidden"><label>URL</label><input id="v63Url" type="url" placeholder="https://..."></div><button class="primary" type="button" onclick="window.v63AddResource()">➕ Ajouter</button><div id="v63ResourceStatus"></div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="section-title" style="margin:0">📚 Ma bibliothèque</h2><button class="secondary" type="button" onclick="window.v63LoadResources()">↻ Actualiser</button></div><div id="v63ResourceList" class="v63-resource-grid"></div></div>`;top.insertAdjacentElement("afterend",sec)}function show(){build();["programSection","journalSection","evolutionSection","v61Dashboard"].forEach(id=>document.getElementById(id)?.classList.add("hidden"));document.getElementById(ID)?.classList.remove("hidden");load()}window.v63ShowResources=show;window.v63ToggleResourceInput=function(){const t=document.getElementById("v63Type")?.value;document.getElementById("v63FileWrap")?.classList.toggle("hidden",t==="youtube"||t==="link");document.getElementById("v63UrlWrap")?.classList.toggle("hidden",!(t==="youtube"||t==="link"))};async function getUrl(r){if(r.url)return r.url;if(!r.storage_path)return "";try{const x=await client().storage.from("personal-resources").createSignedUrl(r.storage_path,3600);return x.data?.signedUrl||""}catch(e){return ""}}async function load(){if(busy)return;busy=true;build();try{const c=client();if(!c)throw Error("Supabase indisponible");const {data:{user}}=await c.auth.getUser();if(!user)throw Error("Connecte-toi pour utiliser les ressources.");const r=await c.from("personal_resources").select("*").eq("user_id",user.id).order("created_at",{ascending:false});if(r.error)throw r.error;resources=r.data||[];await render()}catch(e){document.getElementById("v63ResourceList").innerHTML='<div class="v63-resource-empty">Impossible de charger les ressources : '+esc(e.message||e)+"</div>"}finally{busy=false}}window.v63LoadResources=load;async function render(){const l=document.getElementById("v63ResourceList");if(!resources.length){l.innerHTML='<div class="v63-resource-empty">Aucune ressource pour le moment.</div>';return}l.innerHTML=resources.map(r=>`<article class="v63-resource-card" data-id="${esc(r.id)}"><h3>${esc(r.title)}</h3><div class="v63-resource-meta">${esc(r.category)} · ${esc(r.media_type)}</div><div>${esc(r.description||"")}</div><div class="v63-resource-actions"><button class="secondary" data-open="${esc(r.id)}">▶ Ouvrir</button><button class="danger" data-del="${esc(r.id)}">🗑 Supprimer</button></div><div data-preview="${esc(r.id)}"></div></article>`).join("");for(const r of resources){const card=l.querySelector(`[data-id="${CSS.escape(r.id)}"]`),pre=card?.querySelector(`[data-preview="${CSS.escape(r.id)}"]`),u=await getUrl(r),id=yt(r.url||"");if(id)pre.innerHTML=`<iframe class="v63-resource-preview" src="https://www.youtube.com/embed/${encodeURIComponent(id)}" allowfullscreen></iframe>`;else if(u&&r.media_type==="audio")pre.innerHTML=`<audio class="v63-resource-preview" controls src="${esc(u)}"></audio>`;else if(u&&r.media_type==="video")pre.innerHTML=`<video class="v63-resource-preview" controls src="${esc(u)}"></video>`}l.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.open),u=r&&await getUrl(r);if(u)window.open(u,"_blank","noopener")});l.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.del);if(!r||!confirm("Supprimer cette ressource ?"))return;const c=client();if(r.storage_path)await c.storage.from("personal-resources").remove([r.storage_path]);const x=await c.from("personal_resources").delete().eq("id",r.id);if(x.error)alert(x.error.message);else load()})}window.v63AddResource=async function(){const st=document.getElementById("v63ResourceStatus");try{const c=client();const {data:{user}}=await c.auth.getUser();const title=document.getElementById("v63Title").value.trim(),description=document.getElementById("v63Description").value.trim(),category=document.getElementById("v63Category").value,type=document.getElementById("v63Type").value;if(!title)throw Error("Le titre est obligatoire.");let url=null,storage_path=null;if(type==="youtube"||type==="link"){url=document.getElementById("v63Url").value.trim();if(!url)throw Error("L’URL est obligatoire.");new URL(url)}else{const f=document.getElementById("v63File").files[0];if(!f)throw Error("Choisis un fichier audio ou vidéo.");if(f.size>200*1024*1024)throw Error("Fichier trop volumineux (maximum 200 Mo).");storage_path=user.id+"/"+crypto.randomUUID()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");const u=await c.storage.from("personal-resources").upload(storage_path,f,{upsert:false,contentType:f.type||undefined});if(u.error)throw u.error}const x=await c.from("personal_resources").insert({user_id:user.id,title,description,category,media_type:type,url,storage_path});if(x.error)throw x.error;st.className="success";st.textContent="Ressource ajoutée.";load()}catch(e){st.className="error";st.textContent=e.message||String(e)}};function init(){build();v63ToggleResourceInput()}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init()})();</script>
-
 <script id="v64-ux-runtime">
 (function(){
   const V='V64';
@@ -3218,7 +3261,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     $('v64ProgressValue').textContent=Math.round(n/91*100)+' %';$('v64ProgressBar').style.width=(n/91*100)+'%';
     let streak=0;for(let d=last?Number(last.day_number):0;d>0&&done.has(d);d--)streak++;$('v64Streak').textContent=streak;
   }
-  function showToday(){closeDays();['programSection','journalSection','evolutionSection','v61Dashboard','v63Resources'].forEach(id=>$(id)?.classList.add('hidden'));dashboard();$('v64Dashboard').classList.remove('hidden');document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));$('todayNavButton')?.classList.add('nav-active');loadEntries()}
+  function showToday(){closeDays();['programSection','journalSection','evolutionSection','v61Dashboard','v63Resources','mediaSection','v98SettingsPanel'].forEach(id=>$(id)?.classList.add('hidden'));dashboard();$('v64Dashboard').classList.remove('hidden');document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));$('todayNavButton')?.classList.add('nav-active');loadEntries()}
   function steps(){
     const card=document.querySelector('.exercise-card');if(!card||$('v64Stepper'))return;const s=document.createElement('div');s.id='v64Stepper';s.className='v64-stepper';s.innerHTML='<div class="v64-step">1 · Comprendre</div><div class="v64-step">2 · Pratiquer</div><div class="v64-step">3 · Méditer</div><div class="v64-step">4 · Écrire</div><div class="v64-step">5 · Évaluer</div>';card.insertBefore(s,card.firstChild)
   }
@@ -3694,7 +3737,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if(!isYoutube(url)){ setStatus('Le lien doit être un lien YouTube valide.',false); return; }
     try{
       const {client,user}=await currentUser();
-      const {error}=await client.from('personal_resources').insert({user_id:user.id,title,description:description||null,category:'Développement personnel',media_type:'youtube',url});
+      const {error}=await client.from('personal_resources').insert({user_id:user.id,title,description:description||null,category:($( 'mediaYoutubeCategory')?.value || 'YouTube'),media_type:'youtube',url});
       if(error) throw error;
       $('mediaYoutubeTitle').value=''; $('mediaYoutubeDescription').value=''; $('mediaYoutubeUrl').value='';
       setStatus('Lien YouTube ajouté.',true);
@@ -3706,8 +3749,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     const list=$('mediaResourceList');
     if(!list) return;
     try{
-      const {client}=await currentUser();
-      const {data,error}=await client.from('personal_resources').select('*').order('created_at',{ascending:false});
+      const {client,user}=await currentUser();
+      const {data,error}=await client.from('personal_resources').select('*').eq('user_id',user.id).order('created_at',{ascending:false});
       if(error) throw error;
       if(!data?.length){ list.innerHTML='<div class="media-empty">Aucun média pour le moment.</div>'; return; }
       const signed={};
@@ -3822,7 +3865,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
       if(!client) return;
       const {data:{user}}=await client.auth.getUser();
       if(!user) return;
-      const {data,error}=await client.from('personal_resources').select('id,title,description,storage_path,category,media_type,created_at').eq('category','Méditation').eq('media_type','audio').order('created_at',{ascending:false});
+      const {data,error}=await client.from('personal_resources').select('id,title,description,storage_path,category,media_type,created_at').eq('user_id',user.id).eq('category','Méditation').eq('media_type','audio').order('created_at',{ascending:false});
       if(error) throw error;
       const saved=findSavedMediaId();
       select.innerHTML='<option value="">— Aucun audio sélectionné —</option>' + (data||[]).map(r=>`<option value="${esc(r.id)}">${esc(r.title)}</option>`).join('');
@@ -3848,7 +3891,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if(!id) return;
     try{
       const client=getClient();
-      const {data,error}=await client.from('personal_resources').select('id,title,storage_path,category,media_type').eq('id',id).single();
+      const {data,error}=await client.from('personal_resources').select('id,title,storage_path,category,media_type').eq('id',id).eq('user_id',(await client.auth.getUser()).data.user?.id).single();
       if(error) throw error;
       if(data?.storage_path){
         const out=await client.storage.from('personal-resources').createSignedUrl(data.storage_path,3600);
@@ -3878,14 +3921,14 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   function wrapLoad(){
     if(typeof window.loadExistingEntry!=='function' || window.loadExistingEntry.__v85) return;
     const original=window.loadExistingEntry;
-    async function wrapped(entry){
-      const raw=entry?.exercise_response;
-      const saved=String(raw||'').match(MARKER_RE);
+    async function wrapped(dayNumber){
+      const result=await original.call(this,dayNumber);
+      const field=$('exerciseResponse');
+      const raw=String(field?.value||'');
+      const saved=raw.match(MARKER_RE);
       window.__v85SavedMeditationId=saved ? saved[1] : '';
-      window.__v85CurrentEntry=entry ? {...entry} : null;
-      if(window.__v85CurrentEntry && typeof raw==='string') window.__v85CurrentEntry.exercise_response=raw.replace(/\n?\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
-      const cleanEntry=window.__v85CurrentEntry;
-      const result=await original.call(this,cleanEntry,...Array.prototype.slice.call(arguments,1));
+      window.__v85CurrentEntry={exercise_response:raw};
+      if(field) field.value=raw.replace(/\n?\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
       window.setTimeout(insertPicker,50);
       return result;
     }
@@ -4022,26 +4065,21 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </style>
 <script id="v91-default-today-button">
 (function(){
-  function setOnly(btn){
-    if(!btn) return;
-    document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>b.classList.remove('nav-active'));
-    btn.classList.add('nav-active');
-  }
-  function initDefault(){
+  let initialized=false;
+  function init(){
+    if(initialized)return;
+    const app=document.getElementById('app');
     const today=document.getElementById('todayNavButton');
-    const program=document.getElementById('programSection');
-    const dashboard=document.getElementById('v61Dashboard');
-    if(!today) return;
-    /* Ne force Aujourd'hui que lors de l'arrivée initiale, quand aucune autre section n'est active. */
-    const active=document.querySelector('.nav-buttons button.nav-active');
-    const programVisible=program && !program.classList.contains('hidden');
-    const dashboardVisible=dashboard && !dashboard.classList.contains('hidden');
-    if(!active && !programVisible && !dashboardVisible) setOnly(today);
+    if(!app || app.classList.contains('hidden') || !today)return;
+    initialized=true;
+    if(typeof window.showToday==='function') window.showToday();
+    else {
+      document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+      today.classList.add('nav-active');
+    }
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(initDefault,50));
-  else setTimeout(initDefault,50);
-  window.addEventListener('load',()=>setTimeout(initDefault,300));
-  setTimeout(initDefault,1000);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,300));else setTimeout(init,300);
+  window.addEventListener('load',()=>setTimeout(init,500));
 })();
 </script>
 
@@ -4431,7 +4469,7 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
   function saveSettings(settings){localStorage.setItem(KEY,JSON.stringify(settings));}
   window.getDevenirSoiSettings=getSettings;
   window.showSettings=function(){
-    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources'];
+    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources','mediaSection'];
     ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden')});
     const panel=document.getElementById('v98SettingsPanel');
     if(!panel)return;
@@ -4471,10 +4509,10 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
           <h3>🧰 Mes modules</h3>
           <p>Active ou désactive les modules complémentaires. Ton choix est mémorisé sur cet appareil.</p>
           ${row('meditation','🧘','Méditation','Pratiques de présence et de pleine conscience')}
-          ${row('breathing','🌿','Respiration / relaxation','Calme, détente et retour à l'équilibre')}
+          ${row('breathing','🌿','Respiration / relaxation',"Calme, détente et retour à l'équilibre")}
           ${row('sleep','😴','Sommeil','Routines et exercices pour mieux récupérer')}
           ${row('development','🧠','Développement personnel','Réflexion, compréhension de soi et évolution')}
-          ${row('motivation','💪','Motivation','Passage à l'action, discipline et petits défis')}
+          ${row('motivation','💪','Motivation',"Passage à l'action, discipline et petits défis")}
         </div>
         <div class="v98-settings-group">
           <h3>🎨 Apparence</h3>
@@ -4516,21 +4554,62 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
 })();
 </script>
 
+
+<style id="v100-final-navigation-fix">
+#v64Dashboard.v100-visible,#v61Dashboard.v100-visible,#mediaSection.v100-visible,#v98SettingsPanel.v100-visible{display:block !important}
+</style>
+<script id="v100-final-navigation-fix">
+(function(){
+  const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','mediaSection','v98SettingsPanel','v63Resources'];
+  function hideAll(except){
+    ids.forEach(id=>{const el=document.getElementById(id);if(el && id!==except)el.classList.add('hidden');});
+  }
+  function setActive(id){
+    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+    document.getElementById(id)?.classList.add('nav-active');
+  }
+  function sync(){
+    const active=document.querySelector('.nav-buttons button.nav-active');
+    if(!active)return;
+    const id=active.id;
+    if(id==='todayNavButton'){
+      hideAll('v64Dashboard');
+      document.getElementById('v64Dashboard')?.classList.remove('hidden');
+    }else if(id==='dashboardNavButton'){
+      hideAll('v61Dashboard');
+      document.getElementById('v61Dashboard')?.classList.remove('hidden');
+    }else if(id==='mediaNavButton'){
+      hideAll('mediaSection');
+      document.getElementById('mediaSection')?.classList.remove('hidden');
+    }else if(id==='settingsNavButton'){
+      hideAll('v98SettingsPanel');
+      document.getElementById('v98SettingsPanel')?.classList.remove('hidden');
+    }else if(id==='journalNavButton'){
+      hideAll('journalSection');
+      document.getElementById('journalSection')?.classList.remove('hidden');
+    }else if(id==='evolutionNavButton'){
+      hideAll('evolutionSection');
+      document.getElementById('evolutionSection')?.classList.remove('hidden');
+    }else if(id==='programNavButton'){
+      hideAll('programSection');
+      document.getElementById('programSection')?.classList.remove('hidden');
+    }
+  }
+  function bind(){
+    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
+      if(btn.dataset.v100Bound)return;
+      btn.dataset.v100Bound='1';
+      btn.addEventListener('click',()=>setTimeout(sync,0));
+    });
+    sync();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,400));else setTimeout(bind,400);
+  window.addEventListener('load',()=>setTimeout(bind,800));
+  setInterval(bind,1000);
+})();
+</script>
+
+
+<!-- DISPLAY_VERSION -->V100<!-- /DISPLAY_VERSION -->
 </body>
 </html>
-<script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->
