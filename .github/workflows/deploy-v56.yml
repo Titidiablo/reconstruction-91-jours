@@ -12,49 +12,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch score chart
+      - name: Patch index.html
         shell: python
         run: |
           from pathlib import Path
-          import re
+          import re, subprocess
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          msg = __import__('subprocess').check_output(['git','log','-1','--pretty=%B'], text=True).strip()
-          if 'Update index.html V56' in msg:
+          msg = subprocess.check_output(['git','log','-1','--pretty=%B'], text=True).strip()
+          if '>V56</div>' in s or 'Update index.html V56' in msg:
+              print('V56 already present; nothing to patch.')
               raise SystemExit(0)
 
-          # Version
-          s2, n = re.subn(r'>V5[45]</div>', '>V56</div>', s, count=1)
+          # Version V55 -> V56.
+          s, n = re.subn(r'>V55</div>', '>V56</div>', s, count=1)
           if n != 1:
-              raise SystemExit('V54/V55 badge not found')
-          s = s2
+              raise SystemExit('V55 badge not found')
 
-          # Replace chart toolbar with fixed cumulative ranges from day 1.
-          old_toolbar = '''<button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 derniers jours</button>
-          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 derniers jours</button>
-          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>'''
-          new_toolbar = '''<button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
+          # Replace the existing score toolbar, whatever its current label text is.
+          toolbar_pattern = re.compile(r'(<div class="score-chart-toolbar">).*?(</div>\s*<div class="score-chart-wrap">)', re.S)
+          m = toolbar_pattern.search(s)
+          if not m:
+              raise SystemExit('Score chart toolbar not found')
+          toolbar = '''<div class="score-chart-toolbar">
+          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
           <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
           <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
           <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
           <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
           <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
-          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>'''
-          if old_toolbar not in s:
-              raise SystemExit('Chart toolbar not found')
-          s = s.replace(old_toolbar, new_toolbar, 1)
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
+        '''
+          s = s[:m.start()] + toolbar + m.group(2) + s[m.end():]
 
-          old_range = '''  function setChartRange(range) {
-    chartRange = range;
-
-    [7, 30, 90].forEach(r => {
-      const button = document.getElementById("chart" + r + "Button");
-      if (button) button.classList.toggle("active", r === range);
-    });
-
-    renderScoreEvolutionChart();
-  }'''
-          new_range = '''  function setChartRange(range) {
+          # Make range button activation cumulative-friendly.
+          s, n = re.subn(
+              r'function setChartRange\(range\) \{.*?renderScoreEvolutionChart\(\);\s*\n\s*\}',
+              '''function setChartRange(range) {
     chartRange = range;
 
     [7, 15, 30, 45, 60, 75, 90].forEach(r => {
@@ -63,52 +57,43 @@ jobs:
     });
 
     renderScoreEvolutionChart();
-  }'''
-          if old_range not in s:
-              raise SystemExit('setChartRange block not found')
-          s = s.replace(old_range, new_range, 1)
+  }''',
+              s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('setChartRange function not found')
 
-          # Replace the beginning of renderScoreEvolutionChart's range calculation.
-          old_calc = '''    const endDay = Number(currentDay) || 1;
-
-    // Le graphique est également visible au Jour 1.
-    // La période commence simplement à J1 lorsqu'il n'existe pas encore de jours précédents.
-    const startDay = Math.max(1, endDay - chartRange + 1);
-    const rows = (dailyScoreHistory || [])
-      .filter(row => {
-        const d = Number(row.day_number);
-        return Number.isFinite(d) && d >= startDay && d <= endDay;
-      })
-      .sort((a,b) => Number(a.day_number) - Number(b.day_number));'''
-          new_calc = '''    // Les boutons représentent les N premiers jours du programme.
-    // Le jour courant n'influence jamais la période affichée.
-    const startDay = 1;
+          # Cumulative display: always the first N program days, never a sliding window.
+          s, n = re.subn(
+              r'const endDay = Number\(currentDay\) \|\| 1;.*?\.sort\(\(a,b\) => Number\(a\.day_number\) - Number\(b\.day_number\)\);',
+              '''const startDay = 1;
     const endDay = Math.min(chartRange, 91);
     const rows = (dailyScoreHistory || [])
       .filter(row => {
         const d = Number(row.day_number);
         return Number.isFinite(d) && d >= startDay && d <= endDay;
       })
-      .sort((a,b) => Number(a.day_number) - Number(b.day_number));'''
-          if old_calc not in s:
-              raise SystemExit('chart range calculation block not found')
-          s = s.replace(old_calc, new_calc, 1)
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));''',
+              s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('renderScoreEvolutionChart range block not found')
 
-          # Ensure missing days are explicit zeros (already handled by the existing map/scoreValue path).
-          marker = '/* V56 - graphique cumulatif depuis J1 : 7/15/30/45/60/75/90 */'
-          if marker not in s:
-              s = s.replace('</style>', marker + '\n</style>', 1)
+          # Force every missing day to exist as 0-valued data points.
+          zero_marker = '/* V56 zeros: every missing score is displayed as 0 */'
+          if zero_marker not in s:
+              s = s.replace('</script>', zero_marker + '\n</script>', 1)
 
           checks = [
-              '>V56</div>', 'id="chart15Button"', 'id="chart45Button"',
-              'id="chart60Button"', 'id="chart75Button"',
+              '>V56</div>',
+              'id="chart7Button"', 'id="chart15Button"', 'id="chart30Button"',
+              'id="chart45Button"', 'id="chart60Button"', 'id="chart75Button"', 'id="chart90Button"',
               '[7, 15, 30, 45, 60, 75, 90]',
               'const startDay = 1;',
-              'const endDay = Math.min(chartRange, 91);'
+              'const endDay = Math.min(chartRange, 91);',
+              'return Number.isFinite(value) ? Math.max(0, Math.min(10,value)) : 0;'
           ]
           for c in checks:
               if c not in s:
-                  raise SystemExit('Missing expected V56 content: ' + c)
+                  raise SystemExit('Missing V56 content: ' + c)
           p.write_text(s, encoding='utf-8')
 
       - name: Validate and commit
@@ -124,5 +109,6 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
+          git diff --cached --quiet && exit 0
           git commit -m 'Update index.html V56'
           git push
