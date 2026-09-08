@@ -722,7 +722,7 @@
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V63</div>
+  <div class="app-version-v18">V64</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1036,6 +1036,7 @@
         <button
           class="primary"
           onclick="saveEntry()">
+          💾 Sauvegarder la journée
         </button>
 
         <div id="saveStatus"></div>
@@ -2811,8 +2812,8 @@
     for (let d = startDay; d <= endDay; d++) days.push(d);
 
     const keys = [
-      ["presence", "Présence", "#3b82f6"],
-      ["impulse_control", "Maîtrise de l'impulsion", "#ef4444"],
+      ["presence", "Pleine conscience", "#3b82f6"],
+      ["impulse_control", "Maîtrise des impulsions", "#ef4444"],
       ["values_coherence", "Cohérence avec mes valeurs", "#10b981"],
       ["self_relation", "Relation à moi-même", "#8b5cf6"]
     ];
@@ -3015,7 +3016,7 @@
 (function(){
   const originalShowSection=window.showSection;
   let entries=[];
-  const dims=[["presence","Présence"],["impulse_control","Maîtrise de l’impulsion"],["values_coherence","Cohérence avec mes valeurs"],["self_relation","Relation à moi-même"]];
+  const dims=[["presence","Présence"],["impulse_control","Maîtrise des impulsions"],["values_coherence","Cohérence avec mes valeurs"],["self_relation","Relation à moi-même"]];
   function score(v){const n=Number(v);return Number.isFinite(n)&&n>=1&&n<=10?n:null;}
   function avg(r){const v=dims.map(x=>score(r&&r[x[0]])).filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
   function rows(){return entries.filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));}
