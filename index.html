@@ -3409,6 +3409,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 
 
+
 <style id="v75-dashboard-today-isolation">
 /* V75 — Aujourd'hui et Tableau de bord sont deux écrans indépendants. */
 #v61Dashboard.v75-dashboard-visible { display:block !important; }
@@ -3430,7 +3431,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     const dashboard=document.getElementById('v61Dashboard');
     const today=document.getElementById('v64Dashboard');
     if(!today) return;
-
     [program,journal,evolution,dashboard].forEach(el=>el?.classList.add('hidden'));
     dashboard?.classList.remove('v75-dashboard-visible');
     dashboard?.classList.add('v75-dashboard-hidden');
@@ -3443,7 +3443,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     const dashboard=document.getElementById('v61Dashboard');
     const today=document.getElementById('v64Dashboard');
     if(!dashboard) return;
-
     ['programSection','journalSection','evolutionSection'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
     today?.classList.add('hidden');
     today?.classList.remove('v75-today-visible');
@@ -3455,21 +3454,25 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   function install(){
     const todayBtn=document.getElementById('todayNavButton');
     const dashboardBtn=document.getElementById('dashboardNavButton');
+
+    // IMPORTANT: ne pas remplacer onclick. Les boutons possèdent déjà leur logique
+    // (showToday/showSection/loadEntries). On ajoute seulement une synchronisation
+    // après cette logique afin de ne casser aucun chargement.
     if(todayBtn && !todayBtn.dataset.v75Bound){
       todayBtn.dataset.v75Bound='1';
-      todayBtn.onclick=showTodayScreen;
+      todayBtn.addEventListener('click',()=>setTimeout(showTodayScreen,0));
     }
     if(dashboardBtn && !dashboardBtn.dataset.v75Bound){
       dashboardBtn.dataset.v75Bound='1';
-      dashboardBtn.onclick=showDashboardScreen;
+      dashboardBtn.addEventListener('click',()=>setTimeout(showDashboardScreen,0));
     }
 
-    // Si l'utilisateur arrive sur Aujourd'hui après le chargement,
-    // conserver l'écran courant sans laisser le Tableau de bord recouvrir le cockpit.
     const today=document.getElementById('v64Dashboard');
     const dashboard=document.getElementById('v61Dashboard');
-    if(today && dashboard && document.getElementById('todayNavButton')?.classList.contains('nav-active')){
+    if(today && dashboard && todayBtn?.classList.contains('nav-active')){
       showTodayScreen();
+    } else if(today && dashboard && dashboardBtn?.classList.contains('nav-active')){
+      showDashboardScreen();
     }
   }
 
