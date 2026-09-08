@@ -1,4 +1,4 @@
-name: Deploy V63
+name: Deploy V64
 
 on:
   push:
@@ -19,27 +19,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Prepare V63
+      - name: Prepare V64
         run: python3 scripts/deploy_v63.py
 
-      - name: Validate V63
+      - name: Validate V64
         run: |
-          grep -q '>V63</div>' index.html
+          grep -q '>V64</div>' index.html
           grep -q 'id="v63-resources-runtime"' index.html
           grep -q 'id="v63-resources-style"' index.html
-          grep -q 'personal_resources' index.html
-          grep -q 'personal-resources' index.html
-          test "$(grep -o '>V63</div>' index.html | wc -l)" -eq 1
+          grep -q 'Pleine conscience' index.html
+          grep -q 'Maîtrise des impulsions' index.html
+          grep -q '💾 Sauvegarder la journée' index.html
+          test "$(grep -o '>V64</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V63
+      - name: Commit V64
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V63 déjà présent"
+            echo "V64 déjà présent"
             exit 0
           fi
-          git commit -m "Update index.html V63 - resources"
+          git commit -m "Update index.html V64 - score UI"
           git pull --rebase origin main
           git push origin HEAD:main
