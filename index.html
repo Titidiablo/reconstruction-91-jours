@@ -798,11 +798,55 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4/dist/tus.min.js"></script>
+
+<style id="optional-modules-settings-v1">
+  .optional-modules-nav {
+    display:flex; flex-wrap:wrap; gap:7px; margin: 0 0 18px;
+  }
+  .optional-modules-nav button { margin:0; }
+  .optional-modules-nav button.module-hidden { display:none !important; }
+  .settings-panel {
+    position:fixed; inset:0; z-index:100000; display:flex; align-items:center; justify-content:center;
+    padding:20px; background:rgba(0,0,0,.5);
+  }
+  .settings-panel.hidden { display:none !important; }
+  .settings-dialog {
+    width:min(620px,100%); max-height:90vh; overflow:auto; background:#fff; border-radius:18px;
+    padding:24px; box-shadow:0 18px 60px rgba(0,0,0,.3);
+  }
+  .settings-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+  .settings-header h2 { margin:0; }
+  .settings-close { width:38px; height:38px; padding:0; border-radius:50%; background:#eeeae3; color:#222; font-size:20px; }
+  .module-setting {
+    display:flex; align-items:center; justify-content:space-between; gap:15px; padding:13px 0;
+    border-top:1px solid #e3dfd7;
+  }
+  .module-setting:first-of-type { border-top:0; }
+  .module-setting-info strong { display:block; margin-bottom:2px; }
+  .module-setting-info span { display:block; color:#777; font-size:13px; }
+  .module-switch { position:relative; width:48px; height:28px; flex:0 0 auto; }
+  .module-switch input { opacity:0; width:0; height:0; position:absolute; }
+  .module-slider {
+    position:absolute; inset:0; cursor:pointer; background:#d8d4cd; border-radius:999px; transition:.2s;
+  }
+  .module-slider:before {
+    content:""; position:absolute; width:22px; height:22px; left:3px; top:3px; background:#fff;
+    border-radius:50%; box-shadow:0 1px 4px rgba(0,0,0,.2); transition:.2s;
+  }
+  .module-switch input:checked + .module-slider { background:#222; }
+  .module-switch input:checked + .module-slider:before { transform:translateX(20px); }
+  .optional-module-section { margin-top:18px; }
+  .optional-module-section.hidden { display:none !important; }
+  .optional-module-placeholder {
+    background:#faf9f6; border:1px solid #ddd9d1; border-radius:12px; padding:18px;
+  }
+  @media(max-width:600px){ .settings-panel{padding:10px}.settings-dialog{padding:18px} }
+</style>
 </head>
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V96</div>
+  <div class="app-version-v18">V96 + modules optionnels</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -887,6 +931,14 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
       </div>
 
       <button
+        id="settingsNavButton"
+        class="secondary"
+        type="button"
+        onclick="openModuleSettings()">
+        ⚙️ Paramètres
+      </button>
+
+      <button
         class="secondary"
         onclick="logout()">
         Se déconnecter
@@ -894,6 +946,41 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
     </div>
 
+    <!-- ======================================================= -->
+    <!-- MODULES OPTIONNELS -->
+    <!-- ======================================================= -->
+
+    <div id="optionalModulesNav" class="optional-modules-nav" aria-label="Modules optionnels">
+      <button id="moduleMeditationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('meditation')">🧘 Méditation</button>
+      <button id="moduleBreathingBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('breathing')">🌿 Respiration / relaxation</button>
+      <button id="moduleSleepBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('sleep')">😴 Sommeil</button>
+      <button id="modulePersonalBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('personal')">🧠 Développement personnel</button>
+      <button id="moduleMotivationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('motivation')">💪 Motivation</button>
+    </div>
+
+    <!-- Conteneur des modules optionnels : le contenu détaillé sera défini ensuite. -->
+    <div id="optionalModulesContent">
+      <div id="optionalModuleMeditation" class="card optional-module-section hidden">
+        <h2 class="section-title">🧘 Méditation</h2>
+        <div class="optional-module-placeholder">Le module Méditation est activé. Les sous-modules et exercices seront définis dans une prochaine étape.</div>
+      </div>
+      <div id="optionalModuleBreathing" class="card optional-module-section hidden">
+        <h2 class="section-title">🌿 Respiration / relaxation</h2>
+        <div class="optional-module-placeholder">Le module Respiration / relaxation est activé. Les sous-modules et exercices seront définis dans une prochaine étape.</div>
+      </div>
+      <div id="optionalModuleSleep" class="card optional-module-section hidden">
+        <h2 class="section-title">😴 Sommeil</h2>
+        <div class="optional-module-placeholder">Le module Sommeil est activé. Les sous-modules et exercices seront définis dans une prochaine étape.</div>
+      </div>
+      <div id="optionalModulePersonal" class="card optional-module-section hidden">
+        <h2 class="section-title">🧠 Développement personnel</h2>
+        <div class="optional-module-placeholder">Le module Développement personnel est activé. Les sous-modules et exercices seront définis dans une prochaine étape.</div>
+      </div>
+      <div id="optionalModuleMotivation" class="card optional-module-section hidden">
+        <h2 class="section-title">💪 Motivation</h2>
+        <div class="optional-module-placeholder">Le module Motivation est activé. Les sous-modules et exercices seront définis dans une prochaine étape.</div>
+      </div>
+    </div>
 
     <!-- ======================================================= -->
     <!-- PROGRAMME 91 JOURS -->
@@ -1124,6 +1211,41 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     </div>
 
 
+
+    <div id="moduleSettingsModal" class="settings-panel hidden" role="dialog" aria-modal="true" aria-labelledby="moduleSettingsTitle">
+      <div class="settings-dialog">
+        <div class="settings-header">
+          <h2 id="moduleSettingsTitle">⚙️ Paramètres des modules</h2>
+          <button class="settings-close" type="button" onclick="closeModuleSettings()" aria-label="Fermer">×</button>
+        </div>
+        <p>Choisis les modules optionnels que tu souhaites afficher. Tes choix sont conservés dans ce navigateur.</p>
+
+        <div class="module-setting">
+          <div class="module-setting-info"><strong>🧘 Méditation</strong><span>Respiration, pleine conscience, scan corporel, observation…</span></div>
+          <label class="module-switch"><input id="settingMeditation" type="checkbox" onchange="toggleOptionalModule('meditation', this.checked)"><span class="module-slider"></span></label>
+        </div>
+        <div class="module-setting">
+          <div class="module-setting-info"><strong>🌿 Respiration / relaxation</strong><span>Respiration, détente, stress, ruminations…</span></div>
+          <label class="module-switch"><input id="settingBreathing" type="checkbox" onchange="toggleOptionalModule('breathing', this.checked)"><span class="module-slider"></span></label>
+        </div>
+        <div class="module-setting">
+          <div class="module-setting-info"><strong>😴 Sommeil</strong><span>Routine du soir, déconnexion mentale, suivi…</span></div>
+          <label class="module-switch"><input id="settingSleep" type="checkbox" onchange="toggleOptionalModule('sleep', this.checked)"><span class="module-slider"></span></label>
+        </div>
+        <div class="module-setting">
+          <div class="module-setting-info"><strong>🧠 Développement personnel</strong><span>Connaissance de soi, émotions, pensées, Jung…</span></div>
+          <label class="module-switch"><input id="settingPersonal" type="checkbox" onchange="toggleOptionalModule('personal', this.checked)"><span class="module-slider"></span></label>
+        </div>
+        <div class="module-setting">
+          <div class="module-setting-info"><strong>💪 Motivation</strong><span>Objectifs, discipline, procrastination, persévérance…</span></div>
+          <label class="module-switch"><input id="settingMotivation" type="checkbox" onchange="toggleOptionalModule('motivation', this.checked)"><span class="module-slider"></span></label>
+        </div>
+
+        <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px;">
+          <button class="secondary" type="button" onclick="closeModuleSettings()">Fermer</button>
+        </div>
+      </div>
+    </div>
 
     <div id="unsavedChangesModal" class="unsaved-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="unsavedChangesTitle">
       <div class="unsaved-modal">
@@ -4317,6 +4439,86 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
 })();
 </script>
 
+
+<script id="optional-modules-settings-v1-js">
+(function(){
+  const STORAGE_KEY = 'reconstruction91_optional_modules_v1';
+  const MODULES = {
+    meditation: { button:'moduleMeditationBtn', setting:'settingMeditation', section:'optionalModuleMeditation' },
+    breathing: { button:'moduleBreathingBtn', setting:'settingBreathing', section:'optionalModuleBreathing' },
+    sleep: { button:'moduleSleepBtn', setting:'settingSleep', section:'optionalModuleSleep' },
+    personal: { button:'modulePersonalBtn', setting:'settingPersonal', section:'optionalModulePersonal' },
+    motivation: { button:'moduleMotivationBtn', setting:'settingMotivation', section:'optionalModuleMotivation' }
+  };
+
+  function readSettings(){
+    const defaults = { meditation:false, breathing:false, sleep:false, personal:false, motivation:false };
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return Object.assign(defaults, saved);
+    } catch(e) { return defaults; }
+  }
+
+  function saveSettings(settings){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch(e) {}
+  }
+
+  function applySettings(){
+    const settings = readSettings();
+    Object.entries(MODULES).forEach(([key, cfg]) => {
+      const enabled = !!settings[key];
+      const button = document.getElementById(cfg.button);
+      const input = document.getElementById(cfg.setting);
+      const section = document.getElementById(cfg.section);
+      if (button) button.classList.toggle('module-hidden', !enabled);
+      if (input) input.checked = enabled;
+      if (section && !enabled) section.classList.add('hidden');
+    });
+  }
+
+  window.openModuleSettings = function(){
+    applySettings();
+    const modal = document.getElementById('moduleSettingsModal');
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  window.closeModuleSettings = function(){
+    const modal = document.getElementById('moduleSettingsModal');
+    if (modal) modal.classList.add('hidden');
+  };
+
+  window.toggleOptionalModule = function(key, enabled){
+    if (!MODULES[key]) return;
+    const settings = readSettings();
+    settings[key] = !!enabled;
+    saveSettings(settings);
+    applySettings();
+    if (!enabled) {
+      const section = document.getElementById(MODULES[key].section);
+      if (section) section.classList.add('hidden');
+    }
+  };
+
+  window.showOptionalModule = function(key){
+    if (!MODULES[key]) return;
+    const settings = readSettings();
+    if (!settings[key]) return;
+    Object.entries(MODULES).forEach(([name, cfg]) => {
+      const section = document.getElementById(cfg.section);
+      if (section) section.classList.toggle('hidden', name !== key);
+    });
+    const target = document.getElementById(MODULES[key].section);
+    if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  document.addEventListener('keydown', function(event){
+    if (event.key === 'Escape') window.closeModuleSettings();
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applySettings);
+  else applySettings();
+})();
+</script>
 </body>
 </html>
 <script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>
