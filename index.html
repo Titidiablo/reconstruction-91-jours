@@ -520,7 +520,7 @@
       }
     }
   
-/* V44 - protection contre les changements de jour avec modifications non sauvegardées */
+/* V45 - protection contre les changements de jour avec modifications non sauvegardées */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V44</div>
+  <div class="app-version-v18">V45</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1217,7 +1217,7 @@
 
 
 
-  // V44 : toute modification de formulaire rend la journée "sale".
+  // V45 : toute modification de formulaire rend la journée "sale".
   function installDirtyTracking() {
     const root = document.getElementById("programSection");
     if (!root || root.dataset.dirtyTrackingInstalled) return;
@@ -2567,6 +2567,16 @@
     row.querySelectorAll("textarea").forEach((field, index) => {
       field.value = values[index] || "";
     });
+
+    // Gestionnaire DIRECT sur le bouton. Aucun handler global ne bloque le clic.
+    const deleteButton = row.querySelector("[data-delete-control-row]");
+    if (deleteButton) {
+      deleteButton.addEventListener("click", function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteControlRow(this);
+      });
+    }
   }
 
   // Suppression d'une ligne : modification locale uniquement.
@@ -2576,29 +2586,12 @@
     const row = button && button.closest ? button.closest("tr") : null;
     if (!row || !row.parentElement) return false;
     row.remove();
+    // Une suppression est une modification non sauvegardée.
+    setDirtyState(true);
     return false;
   }
 
   window.deleteControlRow = deleteControlRow;
-
-  // Capture au pointerdown : le clic est intercepté avant tout mécanisme de formulaire/navigation.
-  document.addEventListener("pointerdown", function(event) {
-    const target = event.target && event.target.nodeType === 3 ? event.target.parentElement : event.target;
-    const button = target && target.closest ? target.closest("[data-delete-control-row]") : null;
-    if (!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    deleteControlRow(button);
-  }, true);
-
-  // Filet de sécurité pour clavier/clic sur les navigateurs qui ne déclenchent pas pointerdown.
-  document.addEventListener("click", function(event) {
-    const target = event.target && event.target.nodeType === 3 ? event.target.parentElement : event.target;
-    const button = target && target.closest ? target.closest("[data-delete-control-row]") : null;
-    if (!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-  }, true);
 
   function removeControlRow() {
     const body = document.getElementById("controlTableBody");
