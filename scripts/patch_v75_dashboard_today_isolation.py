@@ -4,7 +4,7 @@ import re
 p = Path('index.html')
 s = p.read_text(encoding='utf-8')
 
-# Remove the two previous patches that could delete the real dashboard card.
+# Remove previous V72/V74/V75 isolation patches so the generated page contains one clean V75 patch.
 s = re.sub(r'\n<style id="v72-dashboard-no-today-duplicates">.*?</style>\s*<script id="v72-dashboard-no-today-duplicates">.*?</script>\s*', '\n', s, flags=re.S)
 s = re.sub(r'\n<style id="v74-remove-today-cockpit-from-dashboard">.*?</style>\s*<script id="v74-remove-today-cockpit-from-dashboard">.*?</script>\s*', '\n', s, flags=re.S)
 s = re.sub(r'\n<style id="v75-dashboard-today-isolation">.*?</style>\s*<script id="v75-dashboard-today-isolation">.*?</script>\s*', '\n', s, flags=re.S)
@@ -31,7 +31,6 @@ patch = r'''
     const dashboard=document.getElementById('v61Dashboard');
     const today=document.getElementById('v64Dashboard');
     if(!today) return;
-
     [program,journal,evolution,dashboard].forEach(el=>el?.classList.add('hidden'));
     dashboard?.classList.remove('v75-dashboard-visible');
     dashboard?.classList.add('v75-dashboard-hidden');
@@ -44,7 +43,6 @@ patch = r'''
     const dashboard=document.getElementById('v61Dashboard');
     const today=document.getElementById('v64Dashboard');
     if(!dashboard) return;
-
     ['programSection','journalSection','evolutionSection'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
     today?.classList.add('hidden');
     today?.classList.remove('v75-today-visible');
@@ -56,21 +54,25 @@ patch = r'''
   function install(){
     const todayBtn=document.getElementById('todayNavButton');
     const dashboardBtn=document.getElementById('dashboardNavButton');
+
+    // IMPORTANT: ne pas remplacer onclick. Les boutons possèdent déjà leur logique
+    // (showToday/showSection/loadEntries). On ajoute seulement une synchronisation
+    // après cette logique afin de ne casser aucun chargement.
     if(todayBtn && !todayBtn.dataset.v75Bound){
       todayBtn.dataset.v75Bound='1';
-      todayBtn.onclick=showTodayScreen;
+      todayBtn.addEventListener('click',()=>setTimeout(showTodayScreen,0));
     }
     if(dashboardBtn && !dashboardBtn.dataset.v75Bound){
       dashboardBtn.dataset.v75Bound='1';
-      dashboardBtn.onclick=showDashboardScreen;
+      dashboardBtn.addEventListener('click',()=>setTimeout(showDashboardScreen,0));
     }
 
-    // Si l'utilisateur arrive sur Aujourd'hui après le chargement,
-    // conserver l'écran courant sans laisser le Tableau de bord recouvrir le cockpit.
     const today=document.getElementById('v64Dashboard');
     const dashboard=document.getElementById('v61Dashboard');
-    if(today && dashboard && document.getElementById('todayNavButton')?.classList.contains('nav-active')){
+    if(today && dashboard && todayBtn?.classList.contains('nav-active')){
       showTodayScreen();
+    } else if(today && dashboard && dashboardBtn?.classList.contains('nav-active')){
+      showDashboardScreen();
     }
   }
 
@@ -84,4 +86,4 @@ patch = r'''
 s = s.replace('</body>', patch + '\n</body>', 1)
 
 p.write_text(s, encoding='utf-8')
-print('V75 Dashboard/Today isolation fixed')
+print('V75 Dashboard/Today isolation fixed without replacing navigation handlers')
