@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V48</div>
+  <div class="app-version-v18">V49</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1190,11 +1190,20 @@
   const SUPABASE_KEY =
     "sb_publishable_NPauAhlEI3TJKIUNSLywGQ_k6FGMs2a";
 
-  const supabaseClient =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+  let supabaseClient = null;
+
+  function getSupabaseClient() {
+    if (!window.supabase || !window.supabase.createClient) {
+      throw new Error("La bibliothèque Supabase n'est pas chargée. Recharge la page avec Ctrl+F5.");
+    }
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+    }
+    return supabaseClient;
+  }
 
 
   /* ============================================================
@@ -1217,7 +1226,7 @@
 
 
 
-  // V48 : toute modification de formulaire rend la journée "sale".
+  // V49 : initialisation Supabase différée pour que le bouton de connexion reste fonctionnel.
   function installDirtyTracking() {
     const root = document.getElementById("programSection");
     if (!root || root.dataset.dirtyTrackingInstalled) return;
@@ -1276,7 +1285,7 @@
     }
 
     const { error } =
-      await supabaseClient.auth.signUp({
+      await getSupabaseClient().auth.signUp({
         email: email,
         password: password
       });
@@ -1333,7 +1342,7 @@
       }
 
       const { error } =
-        await supabaseClient.auth.signInWithPassword({
+        await getSupabaseClient().auth.signInWithPassword({
           email: email,
           password: password
         });
