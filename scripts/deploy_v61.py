@@ -88,20 +88,45 @@ js = r'''<script id="v61-dashboard-runtime">
 })();
 </script>'''
 
+save_visibility = r'''<script id="v61-save-visibility">
+(function(){
+  function syncV61SaveVisibility(){
+    const program=document.getElementById("programSection");
+    const visible=!!program && !program.classList.contains("hidden");
+    document.querySelectorAll('button[onclick="saveEntry()"], #floatingSaveButton').forEach(btn=>{
+      btn.classList.toggle("hidden",!visible);
+    });
+  }
+  const previousShowSection=window.showSection;
+  window.showSection=function(){
+    const result=typeof previousShowSection==="function"?previousShowSection.apply(this,arguments):undefined;
+    setTimeout(syncV61SaveVisibility,0);
+    return result;
+  };
+  window.addEventListener("load",()=>setTimeout(syncV61SaveVisibility,750));
+  const program=document.getElementById("programSection");
+  if(program)new MutationObserver(syncV61SaveVisibility).observe(program,{attributes:true,attributeFilter:["class"]});
+})();
+</script>'''
+
 if 'id="v61-dashboard-style"' not in html:
     html = html.replace('</head>', css + "\n</head>", 1)
 if 'id="v61-dashboard-runtime"' not in html:
     html = html.replace('</body>', js + "\n</body>", 1)
+if 'id="v61-save-visibility"' not in html:
+    html = html.replace('</body>', save_visibility + "\n</body>", 1)
 
 checks = [
     ">V61</div>",
     'id="v61-dashboard-style"',
     'id="v61-dashboard-runtime"',
+    'id="v61-save-visibility"',
     'id="v61Dashboard"',
     'id="dashboardNavButton"',
     "Progression depuis J1",
     "Dimension qui progresse le plus",
     "Dimension à surveiller",
+    "syncV61SaveVisibility",
 ]
 for check in checks:
     if check not in html:
@@ -110,6 +135,8 @@ if html.count(">V61</div>") != 1:
     raise SystemExit("V61 badge count invalid")
 if html.count('id="v61-dashboard-runtime"') != 1:
     raise SystemExit("V61 runtime count invalid")
+if html.count('id="v61-save-visibility"') != 1:
+    raise SystemExit("V61 save visibility count invalid")
 
 path.write_text(html, encoding="utf-8")
 print("V61 source prepared and validated")
