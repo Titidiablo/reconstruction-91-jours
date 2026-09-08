@@ -801,7 +801,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V74</div>
+  <div class="app-version-v18">V75</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3407,70 +3407,66 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 })();
 </script>
 
-<style id="v72-dashboard-no-today-duplicates">
-/* V72 — Tableau de bord ne répète aucun élément du cockpit Aujourd'hui. */
-#v61Dashboard .v72-today-duplicate { display:none !important; }
+
+<style id="v75-dashboard-today-isolation">
+/* V75 — Aujourd'hui et Tableau de bord sont deux écrans indépendants. */
+#v61Dashboard.v75-dashboard-visible + #v64Dashboard,
+#v64Dashboard.v75-dashboard-hidden { display:none !important; }
 </style>
-<script id="v72-dashboard-no-today-duplicates">
+<script id="v75-dashboard-today-isolation">
 (function(){
-  function clean(){
+  function sync(){
     const dashboard=document.getElementById('v61Dashboard');
-    if(!dashboard) return;
-    const firstCard=dashboard.querySelector('.card');
-    if(firstCard && firstCard.querySelector('#v61Progress, #v61Score, #v61Streak, #v61Last')){
-      firstCard.classList.add('v72-today-duplicate');
-      firstCard.remove();
+    const today=document.getElementById('v64Dashboard');
+    if(!dashboard || !today) return;
+
+    const dashboardBtn=document.getElementById('dashboardNavButton');
+    const todayBtn=document.getElementById('todayNavButton');
+    const dashboardActive=!!dashboardBtn?.classList.contains('nav-active');
+    const todayActive=!!todayBtn?.classList.contains('nav-active');
+
+    if(dashboardActive){
+      dashboard.classList.add('v75-dashboard-visible');
+      dashboard.classList.remove('hidden');
+      today.classList.add('hidden','v75-dashboard-hidden');
+      return;
+    }
+    if(todayActive){
+      dashboard.classList.add('hidden');
+      dashboard.classList.remove('v75-dashboard-visible');
+      today.classList.remove('hidden','v75-dashboard-hidden');
+      return;
     }
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean);
-  else clean();
-  window.addEventListener('load',()=>setTimeout(clean,1000));
-  new MutationObserver(()=>setTimeout(clean,0)).observe(document.body,{childList:true,subtree:true});
-})();
-</script>
 
+  function install(){
+    const oldShowSection=window.showSection;
+    if(typeof oldShowSection==='function' && !oldShowSection.__v75Wrapped){
+      const wrapped=function(){
+        const result=oldShowSection.apply(this,arguments);
+        setTimeout(sync,0);
+        return result;
+      };
+      wrapped.__v75Wrapped=true;
+      window.showSection=wrapped;
+    }
 
-<style id="v74-remove-today-cockpit-from-dashboard">
-/* V74 — Le cockpit « Aujourd’hui » ne doit jamais apparaître dans « Tableau de bord ». */
-#v61Dashboard .v74-today-cockpit { display:none !important; }
-</style>
-<script id="v74-remove-today-cockpit-from-dashboard">
-(function(){
-  function clean(){
-    const dashboard=document.getElementById('v61Dashboard');
-    if(!dashboard) return;
-
-    dashboard.querySelectorAll('.v74-today-cockpit').forEach(el=>el.remove());
-
-    dashboard.querySelectorAll('.v64-hero, .v64-dashboard-grid').forEach(el=>{
-      const text=String(el.textContent||'');
-      if(text.includes('Aujourd’hui') || text.includes("Aujourd'hui") || text.includes('Ton parcours · 91 jours')) el.remove();
-    });
-
-    dashboard.querySelectorAll('*').forEach(el=>{
-      if(el.children.length>0) return;
-      const text=String(el.textContent||'').trim();
-      if([
-        'Ton parcours · 91 jours',
-        'Aujourd’hui · Jour 1',
-        'Aujourd’hui',
-        'Continue là où tu t’es arrêté.',
-        '▶ Continuer ma journée',
-        'Jours réalisés',
-        'Score du jour',
-        'Série',
-        'Dernier jour'
-      ].includes(text)) {
-        const card=el.closest('.card');
-        if(card && (card.textContent.includes('Aujourd’hui') || card.textContent.includes('Ton parcours · 91 jours'))) card.remove();
-        else el.remove();
-      }
-    });
+    const oldShowToday=window.showToday;
+    if(typeof oldShowToday==='function' && !oldShowToday.__v75Wrapped){
+      const wrapped=function(){
+        const result=oldShowToday.apply(this,arguments);
+        setTimeout(sync,0);
+        return result;
+      };
+      wrapped.__v75Wrapped=true;
+      window.showToday=wrapped;
+    }
+    sync();
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean);
-  else clean();
-  window.addEventListener('load',()=>setTimeout(clean,1000));
-  new MutationObserver(()=>setTimeout(clean,0)).observe(document.body,{childList:true,subtree:true});
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,1000));
 })();
 </script>
 
