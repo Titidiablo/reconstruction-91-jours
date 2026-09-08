@@ -3459,120 +3459,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 
 
-<style id="v97-evolution-mobile-no-overlap">
-/* V97 — remise à plat du flux mobile de toute la section Évolution. */
-#evolutionSection{display:block !important;width:100% !important;min-width:0 !important;overflow:visible !important}
-#evolutionSection>.card{position:relative !important;display:block !important;width:100% !important;min-width:0 !important;height:auto !important;min-height:0 !important;overflow:visible !important;clear:both !important;margin-bottom:16px !important}
-#evolutionSection .v94-score-cards,
-#evolutionSection .v94-grid,
-#evolutionSection .v94-periods,
-#evolutionSection .v94-records,
-#evolutionSection .v96-record-details{position:relative !important;width:100% !important;height:auto !important;min-height:0 !important;display:grid !important;clear:both !important}
-#evolutionSection .v94-analysis,
-#evolutionSection .v94-score-card,
-#evolutionSection .v94-period,
-#evolutionSection .v94-record,
-#evolutionSection .v96-record-detail{position:relative !important;float:none !important;display:block !important;width:auto !important;height:auto !important;min-height:0 !important;box-sizing:border-box !important;clear:none !important;overflow:visible !important}
-#evolutionSection .v94-score-card .label,
-#evolutionSection .v94-score-card .value,
-#evolutionSection .v94-score-card .delta,
-#evolutionSection .v94-analysis h3,
-#evolutionSection .v94-analysis p,
-#evolutionSection .v94-period span,
-#evolutionSection .v94-record strong,
-#evolutionSection .v94-record span,
-#evolutionSection .v96-record-detail h3,
-#evolutionSection .v96-record-detail p{position:static !important;overflow-wrap:anywhere !important;word-break:normal !important}
-@media(max-width:700px){
-#evolutionSection>.card{margin-left:0 !important;margin-right:0 !important;padding:14px !important}
-#evolutionSection .v94-score-cards{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v94-grid{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v94-periods{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v94-records{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v96-record-details{grid-template-columns:1fr !important;gap:12px !important;margin-top:12px !important}
-#evolutionSection .v94-score-card,
-#evolutionSection .v94-analysis,
-#evolutionSection .v94-period,
-#evolutionSection .v94-record,
-#evolutionSection .v96-record-detail{margin:0 !important;padding:14px !important}
-#evolutionSection .v94-score-card .label{line-height:1.4 !important}
-#evolutionSection .v94-score-card .value{line-height:1.25 !important;margin-top:6px !important}
-#evolutionSection .v94-score-card .delta{line-height:1.4 !important;margin-top:5px !important}
-#evolutionSection .v94-analysis h3{line-height:1.35 !important;margin-bottom:8px !important}
-#evolutionSection .v94-analysis p{line-height:1.55 !important}
-#evolutionSection .v94-record-detail h3{line-height:1.35 !important}
-#evolutionSection .score-chart-wrap{position:relative !important;width:100% !important;height:300px !important;min-height:300px !important;overflow:hidden !important}
-#evolutionSection #scoreEvolutionChartContainer{position:relative !important;width:100% !important;height:100% !important;min-height:0 !important;overflow:hidden !important}
-}
-@media(max-width:380px){
-#evolutionSection>.card{padding:12px !important}
-#evolutionSection .v94-score-card,
-#evolutionSection .v94-analysis,
-#evolutionSection .v94-period,
-#evolutionSection .v94-record,
-#evolutionSection .v96-record-detail{padding:12px !important}
-#evolutionSection .score-chart-wrap{height:260px !important;min-height:260px !important}
-}
-</style>
-
-
-<style id="v100-final-navigation-fix">
-#v64Dashboard.v100-visible,#v61Dashboard.v100-visible,#mediaSection.v100-visible,#v98SettingsPanel.v100-visible{display:block !important}
-</style>
-<script id="v100-final-navigation-fix">
-(function(){
-  const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','mediaSection','v98SettingsPanel','v63Resources'];
-  function hideAll(except){
-    ids.forEach(id=>{const el=document.getElementById(id);if(el && id!==except)el.classList.add('hidden');});
-  }
-  function setActive(id){
-    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
-    document.getElementById(id)?.classList.add('nav-active');
-  }
-  function sync(){
-    const active=document.querySelector('.nav-buttons button.nav-active');
-    if(!active)return;
-    const id=active.id;
-    if(id==='todayNavButton'){
-      hideAll('v64Dashboard');
-      document.getElementById('v64Dashboard')?.classList.remove('hidden');
-    }else if(id==='dashboardNavButton'){
-      hideAll('v61Dashboard');
-      document.getElementById('v61Dashboard')?.classList.remove('hidden');
-    }else if(id==='mediaNavButton'){
-      hideAll('mediaSection');
-      document.getElementById('mediaSection')?.classList.remove('hidden');
-    }else if(id==='settingsNavButton'){
-      hideAll('v98SettingsPanel');
-      document.getElementById('v98SettingsPanel')?.classList.remove('hidden');
-    }else if(id==='journalNavButton'){
-      hideAll('journalSection');
-      document.getElementById('journalSection')?.classList.remove('hidden');
-    }else if(id==='evolutionNavButton'){
-      hideAll('evolutionSection');
-      document.getElementById('evolutionSection')?.classList.remove('hidden');
-    }else if(id==='programNavButton'){
-      hideAll('programSection');
-      document.getElementById('programSection')?.classList.remove('hidden');
-    }
-  }
-  function bind(){
-    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
-      if(btn.dataset.v100Bound)return;
-      btn.dataset.v100Bound='1';
-      btn.addEventListener('click',()=>setTimeout(sync,0));
-    });
-    sync();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(bind,400));else setTimeout(bind,400);
-  window.addEventListener('load',()=>setTimeout(bind,800));
-  setInterval(bind,1000);
-})();
-</script>
-
-
-<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->
-
 <style id="v80-dashboard-navigation-fix">
 /* V80 — séparation stricte sans observer de classes : évite toute boucle qui bloque les clics. */
 #v61Dashboard.v80-dashboard-visible { display:block !important; }
@@ -3851,7 +3737,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if(!isYoutube(url)){ setStatus('Le lien doit être un lien YouTube valide.',false); return; }
     try{
       const {client,user}=await currentUser();
-      const {error}=await client.from('personal_resources').insert({user_id:user.id,title,description:description||null,category:'Développement personnel',media_type:'youtube',url});
+      const {error}=await client.from('personal_resources').insert({user_id:user.id,title,description:description||null,category:($( 'mediaYoutubeCategory')?.value || 'YouTube'),media_type:'youtube',url});
       if(error) throw error;
       $('mediaYoutubeTitle').value=''; $('mediaYoutubeDescription').value=''; $('mediaYoutubeUrl').value='';
       setStatus('Lien YouTube ajouté.',true);
@@ -3863,8 +3749,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     const list=$('mediaResourceList');
     if(!list) return;
     try{
-      const {client}=await currentUser();
-      const {data,error}=await client.from('personal_resources').select('*').order('created_at',{ascending:false});
+      const {client,user}=await currentUser();
+      const {data,error}=await client.from('personal_resources').select('*').eq('user_id',user.id).order('created_at',{ascending:false});
       if(error) throw error;
       if(!data?.length){ list.innerHTML='<div class="media-empty">Aucun média pour le moment.</div>'; return; }
       const signed={};
@@ -3979,7 +3865,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
       if(!client) return;
       const {data:{user}}=await client.auth.getUser();
       if(!user) return;
-      const {data,error}=await client.from('personal_resources').select('id,title,description,storage_path,category,media_type,created_at').eq('category','Méditation').eq('media_type','audio').order('created_at',{ascending:false});
+      const {data,error}=await client.from('personal_resources').select('id,title,description,storage_path,category,media_type,created_at').eq('user_id',user.id).eq('category','Méditation').eq('media_type','audio').order('created_at',{ascending:false});
       if(error) throw error;
       const saved=findSavedMediaId();
       select.innerHTML='<option value="">— Aucun audio sélectionné —</option>' + (data||[]).map(r=>`<option value="${esc(r.id)}">${esc(r.title)}</option>`).join('');
@@ -4005,7 +3891,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if(!id) return;
     try{
       const client=getClient();
-      const {data,error}=await client.from('personal_resources').select('id,title,storage_path,category,media_type').eq('id',id).single();
+      const {data,error}=await client.from('personal_resources').select('id,title,storage_path,category,media_type').eq('id',id).eq('user_id',(await client.auth.getUser()).data.user?.id).single();
       if(error) throw error;
       if(data?.storage_path){
         const out=await client.storage.from('personal-resources').createSignedUrl(data.storage_path,3600);
@@ -4035,14 +3921,14 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   function wrapLoad(){
     if(typeof window.loadExistingEntry!=='function' || window.loadExistingEntry.__v85) return;
     const original=window.loadExistingEntry;
-    async function wrapped(entry){
-      const raw=entry?.exercise_response;
-      const saved=String(raw||'').match(MARKER_RE);
+    async function wrapped(dayNumber){
+      const result=await original.call(this,dayNumber);
+      const field=$('exerciseResponse');
+      const raw=String(field?.value||'');
+      const saved=raw.match(MARKER_RE);
       window.__v85SavedMeditationId=saved ? saved[1] : '';
-      window.__v85CurrentEntry=entry ? {...entry} : null;
-      if(window.__v85CurrentEntry && typeof raw==='string') window.__v85CurrentEntry.exercise_response=raw.replace(/\n?\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
-      const cleanEntry=window.__v85CurrentEntry;
-      const result=await original.call(this,cleanEntry,...Array.prototype.slice.call(arguments,1));
+      window.__v85CurrentEntry={exercise_response:raw};
+      if(field) field.value=raw.replace(/\n?\[\[MEDIA_MEDITATION_ID:[^\]]+\]\]/g,'').trim();
       window.setTimeout(insertPicker,50);
       return result;
     }
@@ -4179,26 +4065,21 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </style>
 <script id="v91-default-today-button">
 (function(){
-  function setOnly(btn){
-    if(!btn) return;
-    document.querySelectorAll('.nav-buttons button.nav-active').forEach(b=>b.classList.remove('nav-active'));
-    btn.classList.add('nav-active');
-  }
-  function initDefault(){
+  let initialized=false;
+  function init(){
+    if(initialized)return;
+    const app=document.getElementById('app');
     const today=document.getElementById('todayNavButton');
-    const program=document.getElementById('programSection');
-    const dashboard=document.getElementById('v61Dashboard');
-    if(!today) return;
-    /* Ne force Aujourd'hui que lors de l'arrivée initiale, quand aucune autre section n'est active. */
-    const active=document.querySelector('.nav-buttons button.nav-active');
-    const programVisible=program && !program.classList.contains('hidden');
-    const dashboardVisible=dashboard && !dashboard.classList.contains('hidden');
-    if(!active && !programVisible && !dashboardVisible) setOnly(today);
+    if(!app || app.classList.contains('hidden') || !today)return;
+    initialized=true;
+    if(typeof window.showToday==='function') window.showToday();
+    else {
+      document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+      today.classList.add('nav-active');
+    }
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(initDefault,50));
-  else setTimeout(initDefault,50);
-  window.addEventListener('load',()=>setTimeout(initDefault,300));
-  setTimeout(initDefault,1000);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,300));else setTimeout(init,300);
+  window.addEventListener('load',()=>setTimeout(init,500));
 })();
 </script>
 
@@ -4588,7 +4469,7 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
   function saveSettings(settings){localStorage.setItem(KEY,JSON.stringify(settings));}
   window.getDevenirSoiSettings=getSettings;
   window.showSettings=function(){
-    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources'];
+    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources','mediaSection'];
     ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden')});
     const panel=document.getElementById('v98SettingsPanel');
     if(!panel)return;
@@ -4628,10 +4509,10 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
           <h3>🧰 Mes modules</h3>
           <p>Active ou désactive les modules complémentaires. Ton choix est mémorisé sur cet appareil.</p>
           ${row('meditation','🧘','Méditation','Pratiques de présence et de pleine conscience')}
-          ${row('breathing','🌿','Respiration / relaxation','Calme, détente et retour à l'équilibre')}
+          ${row('breathing','🌿','Respiration / relaxation',"Calme, détente et retour à l'équilibre")}
           ${row('sleep','😴','Sommeil','Routines et exercices pour mieux récupérer')}
           ${row('development','🧠','Développement personnel','Réflexion, compréhension de soi et évolution')}
-          ${row('motivation','💪','Motivation','Passage à l'action, discipline et petits défis')}
+          ${row('motivation','💪','Motivation',"Passage à l'action, discipline et petits défis")}
         </div>
         <div class="v98-settings-group">
           <h3>🎨 Apparence</h3>
@@ -4670,6 +4551,155 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
   function row(key,emoji,title,help){return `<div class="v98-setting-row"><div class="v98-setting-label"><span>${emoji}</span><span>${title}<span class="v98-setting-help">${help}</span></span></div><label class="v98-switch"><input type="checkbox" data-module="${key}"><span class="v98-slider"></span></label></div>`}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
   window.addEventListener('load',()=>setTimeout(install,500));
+})();
+</script>
+
+
+<style id="v100-final-navigation-fix">
+#v64Dashboard.v100-visible,#v61Dashboard.v100-visible,#mediaSection.v100-visible,#v98SettingsPanel.v100-visible{display:block !important}
+</style>
+<!-- DISPLAY_VERSION -->V100<!-- /DISPLAY_VERSION -->
+
+<style id="v100-authoritative-navigation">
+/* V100 — une seule section applicative visible à la fois.
+   Chaque module possède une destination unique. */
+#v64Dashboard,#v61Dashboard,#programSection,#journalSection,#evolutionSection,
+#mediaSection,#v98SettingsPanel,#v63Resources{width:100%;min-width:0}
+</style>
+<script id="v100-authoritative-navigation">
+(function(){
+  const SECTIONS={
+    today:'v64Dashboard',
+    dashboard:'v61Dashboard',
+    program:'programSection',
+    journal:'journalSection',
+    evolution:'evolutionSection',
+    media:'mediaSection',
+    settings:'v98SettingsPanel'
+  };
+  const BUTTONS={
+    today:'todayNavButton',
+    dashboard:'dashboardNavButton',
+    program:'programNavButton',
+    journal:'journalNavButton',
+    evolution:'evolutionNavButton',
+    media:'mediaNavButton',
+    settings:'settingsNavButton'
+  };
+  const ALL=[...new Set(Object.values(SECTIONS).concat(['v63Resources']))];
+
+  function el(id){return document.getElementById(id);}
+  function hideAll(){
+    ALL.forEach(id=>el(id)?.classList.add('hidden'));
+  }
+  function active(buttonId){
+    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+    el(buttonId)?.classList.add('nav-active');
+  }
+  function showOnly(section,buttonId){
+    hideAll();
+    const target=el(SECTIONS[section]);
+    if(target) target.classList.remove('hidden');
+    active(buttonId);
+  }
+
+  function go(section){
+    if(section==='today'){
+      if(typeof window.showToday==='function'){
+        // showToday() reste la source des données du cockpit.
+        window.showToday();
+      }else{
+        showOnly('today',BUTTONS.today);
+      }
+      setTimeout(()=>enforce('today'),0);
+      return;
+    }
+    if(section==='dashboard'){
+      if(typeof window.showSection==='function') window.showSection('dashboard');
+      setTimeout(()=>enforce('dashboard'),0);
+      return;
+    }
+    if(section==='program'){
+      if(typeof window.showSection==='function') window.showSection('program');
+      setTimeout(()=>enforce('program'),0);
+      return;
+    }
+    if(section==='journal'){
+      if(typeof window.showSection==='function') window.showSection('journal');
+      setTimeout(()=>enforce('journal'),0);
+      return;
+    }
+    if(section==='evolution'){
+      if(typeof window.showSection==='function') window.showSection('evolution');
+      setTimeout(()=>enforce('evolution'),0);
+      return;
+    }
+    if(section==='media'){
+      if(typeof window.showMedia==='function') window.showMedia();
+      else showOnly('media',BUTTONS.media);
+      setTimeout(()=>enforce('media'),0);
+      return;
+    }
+    if(section==='settings'){
+      if(typeof window.showSettings==='function') window.showSettings();
+      else showOnly('settings',BUTTONS.settings);
+      setTimeout(()=>enforce('settings'),0);
+    }
+  }
+
+  function enforce(section){
+    const id=SECTIONS[section];
+    if(!id)return;
+    hideAll();
+    if(el(id))el(id).classList.remove('hidden');
+    active(BUTTONS[section]);
+  }
+
+  function bind(){
+    const nav=document.querySelector('.nav-buttons');
+    if(!nav)return false;
+
+    const map=[
+      ['todayNavButton','today'],
+      ['dashboardNavButton','dashboard'],
+      ['programNavButton','program'],
+      ['journalNavButton','journal'],
+      ['evolutionNavButton','evolution'],
+      ['mediaNavButton','media'],
+      ['settingsNavButton','settings']
+    ];
+    map.forEach(([id,section])=>{
+      const b=el(id);
+      if(!b || b.dataset.v100Authoritative)return;
+      b.dataset.v100Authoritative='1';
+      b.addEventListener('click',function(){
+        // Le contrôleur s'exécute après les anciens handlers pour reprendre la main.
+        setTimeout(()=>go(section),0);
+      });
+    });
+    return true;
+  }
+
+  function initial(){
+    if(!el('app') || el('app').classList.contains('hidden'))return;
+    bind();
+    // Au démarrage, Aujourd'hui est la destination unique.
+    if(!window.__v100Initialised){
+      window.__v100Initialised=true;
+      setTimeout(()=>go('today'),50);
+    }
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(initial,350));
+  }else{
+    setTimeout(initial,350);
+  }
+  window.addEventListener('load',()=>setTimeout(initial,700));
+
+  // Les boutons Média/Paramètres sont créés dynamiquement par leurs modules.
+  // On ne surveille que l'arbre DOM, jamais les attributs/classes : aucun risque de boucle.
+  setInterval(bind,1000);
 })();
 </script>
 
