@@ -1,0 +1,76 @@
+name: Deploy V57
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch index.html
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          if '>V57</div>' in s:
+              print('V57 already installed')
+              raise SystemExit(0)
+
+          if '>V56</div>' not in s:
+              raise SystemExit('V56 badge not found')
+
+          s = s.replace('>V56</div>', '>V57</div>', 1)
+
+          declaration = '  let dailyScoreHistory = [];'
+          if 'let dailyScoreHistory = [];' not in s:
+              anchor = '  let allDailyEntries = [];\n'
+              if anchor not in s:
+                  raise SystemExit('Variable anchor not found')
+              s = s.replace(anchor, anchor + declaration + '\n', 1)
+
+          required = [
+              '>V57</div>',
+              'let dailyScoreHistory = [];',
+              'id="chart15Button"',
+              'id="chart45Button"',
+              'id="chart60Button"',
+              'id="chart75Button"',
+              'const startDay = 1;',
+              'const endDay = Math.min(chartRange, 91);',
+              'id="floatingSaveButton"'
+          ]
+          for item in required:
+              if item not in s:
+                  raise SystemExit('Missing V57 content: ' + item)
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          grep -q '>V57</div>' index.html
+          grep -q 'let dailyScoreHistory = \[\];' index.html
+          grep -q 'id="chart15Button"' index.html
+          grep -q 'id="chart45Button"' index.html
+          grep -q 'id="chart60Button"' index.html
+          grep -q 'id="chart75Button"' index.html
+          grep -q 'const startDay = 1;' index.html
+          grep -q 'const endDay = Math.min(chartRange, 91);' index.html
+          grep -q 'id="floatingSaveButton"' index.html
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Update index.html V57'
+          git push
