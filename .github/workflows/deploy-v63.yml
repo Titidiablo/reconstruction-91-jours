@@ -1,4 +1,4 @@
-name: Deploy V74
+name: Deploy V75
 
 on:
   push:
@@ -36,45 +36,44 @@ jobs:
         run: python3 scripts/patch_v70_restore_structure.py
       - name: Apply V71 remove 91 day grid
         run: python3 scripts/patch_v71_remove_day_grid.py
-      - name: Apply V72 separate Dashboard from Today
-        run: python3 scripts/patch_v72_dashboard_no_today_duplicates.py
-      - name: Apply V74 remove Today cockpit from Dashboard
-        run: python3 scripts/patch_v74_remove_today_cockpit_from_dashboard.py
+      - name: Apply V75 Dashboard / Today isolation
+        run: python3 scripts/patch_v75_dashboard_today_isolation.py
 
-      - name: Set displayed version V74
+      - name: Set displayed version V75
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73'):
-              s = s.replace(f'>{old}</div>', '>V74</div>')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74'):
+              s = s.replace(f'>{old}</div>', '>V75</div>')
           s = s.replace('🗓️ Mon parcours', '')
           s = s.replace('🗓️ Les 91 jours', '')
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Validate V74
+      - name: Validate V75
         run: |
-          grep -q '>V74</div>' index.html
-          grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
+          grep -q '>V75</div>' index.html
+          grep -q 'id="v75-dashboard-today-isolation"' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Mon tableau de bord' index.html
           grep -q 'Analyse de mon évolution' index.html
           grep -q 'Mes dernières journées' index.html
           grep -q '💾 Sauvegarder' index.html
-          ! grep -q '>V73</div>' index.html
-          test "$(grep -o '>V74</div>' index.html | wc -l)" -eq 1
+          ! grep -q 'id="v72-dashboard-no-today-duplicates"' index.html
+          ! grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
+          test "$(grep -o '>V75</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V74
+      - name: Commit V75
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V74 déjà présent"
+            echo "V75 déjà présent"
             exit 0
           fi
-          git commit -m "V74 - remove Today cockpit from Dashboard"
+          git commit -m "V75 - isolate Today from Dashboard"
           git pull --rebase origin main
           git push origin HEAD:main
