@@ -1,0 +1,101 @@
+name: Deploy V56 final
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply V56
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const path = 'index.html';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const current = await github.rest.repos.getContent({owner, repo, path, ref: 'main'});
+            let html = Buffer.from(current.data.content, 'base64').toString('utf8');
+            if (html.includes('>V56</div>')) {
+              core.info('V56 already installed.');
+              return;
+            }
+            if (!html.includes('>V55</div>')) throw new Error('V55 badge not found');
+
+            html = html.replace('>V55</div>', '>V56</div>');
+
+            const oldToolbar = /<div class="score-chart-toolbar">[\s\S]*?<\/div>\s*<div class="score-chart-wrap">/;
+            const newToolbar = `<div class="score-chart-toolbar">
+              <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
+              <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
+              <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
+              <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
+              <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
+              <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
+              <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
+            </div>
+            <div class="score-chart-wrap">`;
+            if (!oldToolbar.test(html)) throw new Error('Score toolbar not found');
+            html = html.replace(oldToolbar, newToolbar);
+
+            const oldRange = /function setChartRange\(range\) \{[\s\S]*?\n\s*renderScoreEvolutionChart\(\);\n\s*\}/;
+            const newRange = `function setChartRange(range) {
+              chartRange = range;
+
+              [7, 15, 30, 45, 60, 75, 90].forEach(r => {
+                const button = document.getElementById("chart" + r + "Button");
+                if (button) button.classList.toggle("active", r === range);
+              });
+
+              renderScoreEvolutionChart();
+            }`;
+            if (!oldRange.test(html)) throw new Error('setChartRange not found');
+            html = html.replace(oldRange, newRange);
+
+            const oldCalc = /const endDay = Number\(currentDay\) \|\| 1;[\s\S]*?\.sort\(\(a,b\) => Number\(a\.day_number\) - Number\(b\.day_number\)\);/;
+            const newCalc = `const startDay = 1;
+              const endDay = Math.min(chartRange, 91);
+              const rows = (dailyScoreHistory || [])
+                .filter(row => {
+                  const d = Number(row.day_number);
+                  return Number.isFinite(d) && d >= startDay && d <= endDay;
+                })
+                .sort((a,b) => Number(a.day_number) - Number(b.day_number));`;
+            if (!oldCalc.test(html)) throw new Error('Chart day-range calculation not found');
+            html = html.replace(oldCalc, newCalc);
+
+            const required = [
+              '>V56</div>',
+              'id="chart7Button"', 'id="chart15Button"', 'id="chart30Button"',
+              'id="chart45Button"', 'id="chart60Button"', 'id="chart75Button"', 'id="chart90Button"',
+              '[7, 15, 30, 45, 60, 75, 90]',
+              'const startDay = 1;',
+              'const endDay = Math.min(chartRange, 91);',
+              'return Number.isFinite(value) ? Math.max(0, Math.min(10,value)) : 0;'
+            ];
+            for (const item of required) if (!html.includes(item)) throw new Error('Missing V56 content: ' + item);
+
+            await github.rest.repos.createOrUpdateFileContents({
+              owner,
+              repo,
+              path,
+              message: 'Update index.html V56',
+              content: Buffer.from(html, 'utf8').toString('base64'),
+              sha: current.data.sha,
+              branch: 'main'
+            });
+            core.info('V56 committed.');
+
+      - name: Verify
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const current = await github.rest.repos.getContent({owner: context.repo.owner, repo: context.repo.repo, path: 'index.html', ref: 'main'});
+            const html = Buffer.from(current.data.content, 'base64').toString('utf8');
+            const checks = ['>V56</div>','id="chart15Button"','id="chart45Button"','id="chart60Button"','id="chart75Button"','const startDay = 1;','const endDay = Math.min(chartRange, 91);'];
+            for (const item of checks) if (!html.includes(item)) throw new Error('Verification failed: ' + item);
+            core.info('All V56 checks passed.');
