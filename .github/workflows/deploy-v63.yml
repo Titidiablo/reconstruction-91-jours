@@ -20,16 +20,21 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare V64
-        run: python3 scripts/deploy_v63.py
+        run: python3 scripts/deploy_v64.py
 
       - name: Validate V64
         run: |
           grep -q '>V64</div>' index.html
           grep -q 'id="v63-resources-runtime"' index.html
-          grep -q 'id="v63-resources-style"' index.html
+          grep -q 'id="v64-ux-style"' index.html
+          grep -q 'id="v64-ux-runtime"' index.html
+          grep -q 'DEVENIR SOI' index.html
+          grep -q 'Aujourd’hui' index.html
+          grep -q '91 jours' index.html
+          grep -q 'Mes préoccupations' index.html
           grep -q 'Pleine conscience' index.html
           grep -q 'Maîtrise des impulsions' index.html
-          grep -q '💾 Sauvegarder la journée' index.html
+          grep -q '💾 Sauvegarder ma journée' index.html
           test "$(grep -o '>V64</div>' index.html | wc -l)" -eq 1
 
       - name: Commit V64
@@ -41,6 +46,6 @@ jobs:
             echo "V64 déjà présent"
             exit 0
           fi
-          git commit -m "Update index.html V64 - score UI"
+          git commit -m "Update index.html V64 - complete UX overhaul"
           git pull --rebase origin main
           git push origin HEAD:main
