@@ -1,23 +1,89 @@
 from pathlib import Path
 
-p=Path('index.html');s=p.read_text(encoding='utf-8')
-if 'id="v63-resources-runtime"' in s:
-    print('V63 already present')
-    raise SystemExit(0)
-if '>V62</div>' not in s:
-    raise SystemExit('Expected V62 before creating V63')
-s=s.replace('>V62</div>','>V63</div>',1)
-css='''<style id="v63-resources-style">
-.v63-resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
-.v63-resource-card{border:1px solid #ddd9d1;border-radius:12px;padding:15px;background:#faf9f6}
-.v63-resource-card h3{margin:0 0 5px;font-size:17px}
-.v63-resource-meta{font-size:12px;color:#777;margin-bottom:10px}
-.v63-resource-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
-.v63-resource-preview{width:100%;border-radius:9px;margin-top:10px}
-.v63-resource-preview iframe{width:100%;height:280px;border:0;border-radius:9px}
-.v63-resource-empty{color:#777;text-align:center;padding:30px 10px}
-.v63-upload-note{font-size:12px;color:#777;margin:8px 0 12px}
-@media(max-width:700px){.v63-resource-grid{grid-template-columns:1fr}}
+p = Path("index.html")
+s = p.read_text(encoding="utf-8")
+
+if '>V62</div>' in s:
+    s = s.replace('>V62</div>', '>V63</div>', 1)
+
+# V63 resources are already deployed; from now on this script also applies incremental V63 UI fixes.
+if 'id="v63-resources-runtime"' not in s:
+    raise SystemExit('V63 resources runtime not found in index.html')
+
+# Score labels: clearer wording requested for the four daily dimensions.
+replacements = {
+    '🧘 Présence': '🧘 Pleine conscience',
+    "🛑 Maîtrise de l'impulsion": '🔥 Maîtrise des impulsions',
+    '🧭 Cohérence avec mes valeurs': '🧭 Cohérence avec mes valeurs',
+    '❤️ Relation à moi-même': '❤️ Relation à moi-même',
+}
+for old, new in replacements.items():
+    s = s.replace(old, new)
+
+# Add an explicit evaluation question and anchors for 1/10 and 10/10.
+score_guidance = {
+    'presenceScore': (
+        'Qu’ai-je réellement observé et vécu avec attention aujourd’hui ?',
+        '1/10 : j’étais presque entièrement en pilote automatique.',
+        '10/10 : j’ai été pleinement attentif à ce que je vivais, pensais et ressentais.'
+    ),
+    'impulseScore': (
+        'Dans quelle mesure ai-je choisi ma réponse plutôt que de suivre une impulsion ?',
+        '1/10 : j’ai presque toujours réagi sous le coup de l’impulsion.',
+        '10/10 : j’ai laissé un espace entre l’impulsion et ma réponse, puis choisi consciemment.'
+    ),
+    'valuesScore': (
+        'Dans quelle mesure mes actes d’aujourd’hui étaient-ils alignés avec mes valeurs ?',
+        '1/10 : mes actes étaient largement en contradiction avec mes valeurs.',
+        '10/10 : mes actes étaient pleinement cohérents avec les valeurs que je veux incarner.'
+    ),
+    'selfRelationScore': (
+        'Comment ai-je traité, parlé et réagi envers moi-même aujourd’hui ?',
+        '1/10 : je me suis jugé, dévalorisé ou maltraité intérieurement.',
+        '10/10 : je me suis traité avec respect, lucidité, exigence juste et bienveillance.'
+    ),
+}
+
+# Remove an earlier generated block before inserting the current version.
+start_marker = '<style id="v63-score-guidance-style">'
+end_marker = '</style>'
+start = s.find(start_marker)
+if start >= 0:
+    end = s.find(end_marker, start)
+    if end >= 0:
+        s = s[:start] + s[end + len(end_marker):]
+
+css = '''<style id="v63-score-guidance-style">
+.score-guidance{font-size:12px;line-height:1.4;color:#666;margin:-2px 0 9px}
+.score-guidance-question{font-weight:600;color:#333;margin-bottom:3px}
+.score-guidance-anchors{display:flex;flex-direction:column;gap:2px}
+.score-guidance-anchors span{display:block}
+.score-guidance-anchors .low{color:#8a5a00}
+.score-guidance-anchors .high{color:#26733d}
+@media(max-width:700px){.score-guidance{font-size:11.5px}}
 </style>'''
-js='''<script id="v63-resources-runtime">(function(){const ID="v63Resources";let resources=[],busy=false;const client=()=>typeof getSupabaseClient==="function"?getSupabaseClient():null;const esc=v=>String(v??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));function yt(u){try{const x=new URL(u);if(x.hostname.includes("youtu.be"))return x.pathname.slice(1).split("/")[0];if(x.hostname.includes("youtube.com"))return x.searchParams.get("v")||(x.pathname.startsWith("/shorts/")?x.pathname.split("/")[2]:null)||(x.pathname.startsWith("/embed/")?x.pathname.split("/")[2]:null)}catch(e){}return null}function build(){if(document.getElementById(ID))return;const top=document.getElementById("app")?.querySelector(".topbar"),nav=top?.querySelector(".nav-buttons");if(!top)return;if(nav&&!document.getElementById("resourcesNavButton")){const b=document.createElement("button");b.id="resourcesNavButton";b.type="button";b.className="secondary";b.textContent="🎧 Ressources";b.onclick=show;nav.appendChild(b)}const sec=document.createElement("div");sec.id=ID;sec.className="hidden";sec.innerHTML=`<div class="card"><h2 class="section-title">🎧 Mes ressources</h2><p>Ton espace personnel pour tes méditations, formations, coachings, vidéos et contenus YouTube.</p><div class="card" style="margin-top:15px;padding:18px"><h3>➕ Ajouter une ressource</h3><label>Titre</label><input id="v63Title" type="text"><label>Description</label><textarea id="v63Description" style="min-height:80px"></textarea><label>Catégorie</label><select id="v63Category"><option>Méditation</option><option>Formation</option><option>Coaching</option><option>Développement personnel</option><option>YouTube</option><option>Autre</option></select><label>Type</label><select id="v63Type" onchange="window.v63ToggleResourceInput()"><option value="audio">Audio</option><option value="video">Vidéo</option><option value="youtube">YouTube</option><option value="link">Lien web</option></select><div id="v63FileWrap"><label>Fichier audio / vidéo</label><input id="v63File" type="file" accept="audio/*,video/*"></div><div id="v63UrlWrap" class="hidden"><label>URL</label><input id="v63Url" type="url" placeholder="https://..."></div><button class="primary" type="button" onclick="window.v63AddResource()">➕ Ajouter</button><div id="v63ResourceStatus"></div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="section-title" style="margin:0">📚 Ma bibliothèque</h2><button class="secondary" type="button" onclick="window.v63LoadResources()">↻ Actualiser</button></div><div id="v63ResourceList" class="v63-resource-grid"></div></div>`;top.insertAdjacentElement("afterend",sec)}function show(){build();["programSection","journalSection","evolutionSection","v61Dashboard"].forEach(id=>document.getElementById(id)?.classList.add("hidden"));document.getElementById(ID)?.classList.remove("hidden");load()}window.v63ShowResources=show;window.v63ToggleResourceInput=function(){const t=document.getElementById("v63Type")?.value;document.getElementById("v63FileWrap")?.classList.toggle("hidden",t==="youtube"||t==="link");document.getElementById("v63UrlWrap")?.classList.toggle("hidden",!(t==="youtube"||t==="link"))};async function getUrl(r){if(r.url)return r.url;if(!r.storage_path)return "";try{const x=await client().storage.from("personal-resources").createSignedUrl(r.storage_path,3600);return x.data?.signedUrl||""}catch(e){return ""}}async function load(){if(busy)return;busy=true;build();try{const c=client();if(!c)throw Error("Supabase indisponible");const {data:{user}}=await c.auth.getUser();if(!user)throw Error("Connecte-toi pour utiliser les ressources.");const r=await c.from("personal_resources").select("*").eq("user_id",user.id).order("created_at",{ascending:false});if(r.error)throw r.error;resources=r.data||[];await render()}catch(e){document.getElementById("v63ResourceList").innerHTML='<div class="v63-resource-empty">Impossible de charger les ressources : '+esc(e.message||e)+"</div>"}finally{busy=false}}window.v63LoadResources=load;async function render(){const l=document.getElementById("v63ResourceList");if(!resources.length){l.innerHTML='<div class="v63-resource-empty">Aucune ressource pour le moment.</div>';return}l.innerHTML=resources.map(r=>`<article class="v63-resource-card" data-id="${esc(r.id)}"><h3>${esc(r.title)}</h3><div class="v63-resource-meta">${esc(r.category)} · ${esc(r.media_type)}</div><div>${esc(r.description||"")}</div><div class="v63-resource-actions"><button class="secondary" data-open="${esc(r.id)}">▶ Ouvrir</button><button class="danger" data-del="${esc(r.id)}">🗑 Supprimer</button></div><div data-preview="${esc(r.id)}"></div></article>`).join("");for(const r of resources){const card=l.querySelector(`[data-id="${CSS.escape(r.id)}"]`),pre=card?.querySelector(`[data-preview="${CSS.escape(r.id)}"]`),u=await getUrl(r),id=yt(r.url||"");if(id)pre.innerHTML=`<iframe class="v63-resource-preview" src="https://www.youtube.com/embed/${encodeURIComponent(id)}" allowfullscreen></iframe>`;else if(u&&r.media_type==="audio")pre.innerHTML=`<audio class="v63-resource-preview" controls src="${esc(u)}"></audio>`;else if(u&&r.media_type==="video")pre.innerHTML=`<video class="v63-resource-preview" controls src="${esc(u)}"></video>`}l.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.open),u=r&&await getUrl(r);if(u)window.open(u,"_blank","noopener")});l.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.del);if(!r||!confirm("Supprimer cette ressource ?"))return;const c=client();if(r.storage_path)await c.storage.from("personal-resources").remove([r.storage_path]);const x=await c.from("personal_resources").delete().eq("id",r.id);if(x.error)alert(x.error.message);else load()})}window.v63AddResource=async function(){const st=document.getElementById("v63ResourceStatus");try{const c=client();const {data:{user}}=await c.auth.getUser();const title=document.getElementById("v63Title").value.trim(),description=document.getElementById("v63Description").value.trim(),category=document.getElementById("v63Category").value,type=document.getElementById("v63Type").value;if(!title)throw Error("Le titre est obligatoire.");let url=null,storage_path=null;if(type==="youtube"||type==="link"){url=document.getElementById("v63Url").value.trim();if(!url)throw Error("L’URL est obligatoire.");new URL(url)}else{const f=document.getElementById("v63File").files[0];if(!f)throw Error("Choisis un fichier audio ou vidéo.");if(f.size>200*1024*1024)throw Error("Fichier trop volumineux (maximum 200 Mo).");storage_path=user.id+"/"+crypto.randomUUID()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");const u=await c.storage.from("personal-resources").upload(storage_path,f,{upsert:false,contentType:f.type||undefined});if(u.error)throw u.error}const x=await c.from("personal_resources").insert({user_id:user.id,title,description,category,media_type:type,url,storage_path});if(x.error)throw x.error;st.className="success";st.textContent="Ressource ajoutée.";load()}catch(e){st.className="error";st.textContent=e.message||String(e)}};function init(){build();v63ToggleResourceInput()}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init()})();</script>'''
-s=s.replace('</head>',css+'\n</head>',1);s=s.replace('</body>',js+'\n</body>',1);p.write_text(s,encoding='utf-8');print('V63 prepared')
+s = s.replace('</head>', css + '\n</head>', 1)
+
+for field_id, (question, low, high) in score_guidance.items():
+    marker = f'<select id="{field_id}">'
+    if marker not in s:
+        continue
+    # Insert only when the guidance block for this field is not already present.
+    if f'id="{field_id}-guidance"' not in s:
+        block = (
+            f'<div id="{field_id}-guidance" class="score-guidance">'
+            f'<div class="score-guidance-question">{question}</div>'
+            f'<div class="score-guidance-anchors">'
+            f'<span class="low">{low}</span>'
+            f'<span class="high">{high}</span>'
+            f'</div></div>'
+        )
+        s = s.replace(marker, block + '\n' + marker, 1)
+
+# Replace the English streak label wherever it appears in the V63 dashboard.
+s = s.replace('>Streak<', '>Série<')
+s = s.replace('>Streak en cours<', '>Série en cours<')
+s = s.replace('Streak en cours', 'Série en cours')
+
+p.write_text(s, encoding="utf-8")
+print("V63 score UI updated")
