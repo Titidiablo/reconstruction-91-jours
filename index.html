@@ -802,7 +802,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V86</div>
+  <div class="app-version-v18">V87</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3889,6 +3889,43 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     watch();
     setInterval(watch,700);
     window.addEventListener('load',()=>setTimeout(watch,500));
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+
+
+<style id="v87-media-filename-title">
+</style>
+<script id="v87-media-filename-title">
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function filenameWithoutExtension(name){
+    return String(name || '').replace(/\\.(mp3|mp4)$/i,'');
+  }
+  function bind(){
+    const audioFile=$('mediaAudioFile');
+    const audioTitle=$('mediaAudioTitle');
+    const videoFile=$('mediaVideoFile');
+    const videoTitle=$('mediaVideoTitle');
+    if(audioFile && audioTitle && !audioFile.dataset.v87Bound){
+      audioFile.dataset.v87Bound='1';
+      audioFile.addEventListener('change',()=>{
+        const file=audioFile.files?.[0];
+        if(file) audioTitle.value=filenameWithoutExtension(file.name);
+      });
+    }
+    if(videoFile && videoTitle && !videoFile.dataset.v87Bound){
+      videoFile.dataset.v87Bound='1';
+      videoFile.addEventListener('change',()=>{
+        const file=videoFile.files?.[0];
+        if(file) videoTitle.value=filenameWithoutExtension(file.name);
+      });
+    }
+  }
+  function init(){
+    bind();
+    setInterval(bind,700);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
