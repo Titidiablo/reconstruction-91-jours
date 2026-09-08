@@ -1,1 +1,1 @@
-V60 trigger
+V60 stable trigger 2
