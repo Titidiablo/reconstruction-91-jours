@@ -1,0 +1,61 @@
+name: Deploy V53 direct
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-v53:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore V53 index.html
+        shell: bash
+        run: |
+          if [[ "$(git log -1 --pretty=%B)" == *"Update index.html V53"* ]]; then
+            echo "Already V53 commit; nothing to do."
+            exit 0
+          fi
+          python - <<'PY2'
+          import base64, gzip
+          from pathlib import Path
+          data = """PLACEHOLDER_B64"""
+          Path('index.html').write_bytes(gzip.decompress(base64.b64decode(data)))
+          PY2
+
+      - name: Validate V53
+        shell: bash
+        run: |
+          grep -q '>V53</div>' index.html
+          grep -q 'id="unsavedChangesModal"' index.html
+          grep -q '.unsaved-modal-backdrop {' index.html
+          grep -q 'position: fixed;' index.html
+          grep -q 'z-index: 99999;' index.html
+          grep -q 'id="unsavedSaveBtn"' index.html
+          grep -q 'id="unsavedCancelBtn"' index.html
+          grep -q 'id="unsavedStayBtn"' index.html
+          python - <<'PY2'
+          from pathlib import Path
+          s=Path('index.html').read_text(encoding='utf-8')
+          assert s.count('>V53</div>') == 1
+          assert s.count('id="unsavedChangesModal"') == 1
+          assert s.count('.unsaved-modal-backdrop {') == 1
+          print('V53 validation OK')
+          PY2
+
+      - name: Commit V53
+        shell: bash
+        run: |
+          if [[ "$(git log -1 --pretty=%B)" == *"Update index.html V53"* ]]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Update index.html V53"
+          git push
