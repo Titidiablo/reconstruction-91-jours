@@ -801,7 +801,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V72</div>
+  <div class="app-version-v18">V73</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3381,19 +3381,23 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 })();
 </script>
 
-<style id="v72-dashboard-no-today-duplicates">
-/* V72 — Tableau de bord ne répète aucun élément du cockpit Aujourd'hui. */
-#v61Dashboard .v72-today-duplicate { display:none !important; }
+<style id="v73-dashboard-restore-header">
+/* V73 — conserver l'identité du Tableau de bord sans recopier les indicateurs d'Aujourd'hui. */
+#v61Dashboard .v73-dashboard-intro { margin-bottom:0; }
+#v61Dashboard .v73-dashboard-intro p { margin:6px 0 0; color:#555; }
 </style>
-<script id="v72-dashboard-no-today-duplicates">
+<script id="v73-dashboard-restore-header">
 (function(){
   function clean(){
     const dashboard=document.getElementById('v61Dashboard');
     if(!dashboard) return;
     const firstCard=dashboard.querySelector('.card');
-    if(firstCard && firstCard.querySelector('#v61Progress, #v61Score, #v61Streak, #v61Last')){
-      firstCard.classList.add('v72-today-duplicate');
-      firstCard.remove();
+    if(!firstCard) return;
+
+    // Rebuild only the dashboard identity/intro. The metrics belong exclusively to Aujourd'hui.
+    if(firstCard.querySelector('#v61Progress, #v61Score, #v61Streak, #v61Last')){
+      firstCard.innerHTML='<h2 class="section-title">🏠 Mon tableau de bord</h2><div class="v73-dashboard-intro"><p>Une vue d’analyse de ton parcours : tendances, points forts, points de vigilance et dernières journées.</p></div>';
+      firstCard.classList.add('v73-dashboard-intro');
     }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean);
