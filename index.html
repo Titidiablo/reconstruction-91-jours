@@ -520,7 +520,7 @@
       }
     }
   
-/* V41 - suppression tableau persistée immédiatement en BDD */
+/* V44 - protection contre les changements de jour avec modifications non sauvegardées */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V41</div>
+  <div class="app-version-v18">V44</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -989,6 +989,19 @@
     </div>
 
 
+
+    <div id="unsavedChangesModal" class="unsaved-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="unsavedChangesTitle">
+      <div class="unsaved-modal">
+        <h3 id="unsavedChangesTitle">⚠️ Modifications non sauvegardées</h3>
+        <p>Vous avez modifié cette journée sans la sauvegarder. Que souhaitez-vous faire ?</p>
+        <div class="unsaved-modal-actions">
+          <button type="button" class="primary" id="unsavedSaveBtn">💾 Sauvegarder et continuer</button>
+          <button type="button" class="secondary" id="unsavedCancelBtn">↩️ Annuler les modifications</button>
+          <button type="button" class="stay-btn" id="unsavedStayBtn">✕ Rester sur cette journée</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ======================================================= -->
     <!-- JOURNAL INTIME -->
     <!-- ======================================================= -->
@@ -1197,7 +1210,45 @@
   let scoreEvolutionChart = null;
   let chartRange = 90;
   let saveStatusTimer = null;
+  let isDirty = false;
+  let suppressDirty = false;
+  let pendingDay = null;
 
+
+
+
+  // V44 : toute modification de formulaire rend la journée "sale".
+  function installDirtyTracking() {
+    const root = document.getElementById("programSection");
+    if (!root || root.dataset.dirtyTrackingInstalled) return;
+    root.dataset.dirtyTrackingInstalled = "1";
+    root.addEventListener("input", markDirty, true);
+    root.addEventListener("change", markDirty, true);
+  }
+
+  function installUnsavedModalHandlers() {
+    const saveBtn = document.getElementById("unsavedSaveBtn");
+    const cancelBtn = document.getElementById("unsavedCancelBtn");
+    const stayBtn = document.getElementById("unsavedStayBtn");
+    if (saveBtn && !saveBtn.dataset.bound) {
+      saveBtn.dataset.bound = "1";
+      saveBtn.addEventListener("click", confirmSaveAndContinue);
+    }
+    if (cancelBtn && !cancelBtn.dataset.bound) {
+      cancelBtn.dataset.bound = "1";
+      cancelBtn.addEventListener("click", discardAndContinue);
+    }
+    if (stayBtn && !stayBtn.dataset.bound) {
+      stayBtn.dataset.bound = "1";
+      stayBtn.addEventListener("click", () => { pendingDay = null; closeUnsavedModal(); });
+    }
+  }
+
+  window.addEventListener("beforeunload", function(event) {
+    if (!isDirty) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
 
   /* ============================================================
      INSCRIPTION
@@ -1236,6 +1287,7 @@
 
       status.textContent =
         "Erreur : " + error.message;
+      return false;
 
     } else {
 
@@ -1295,6 +1347,8 @@
     document.getElementById("app").classList.remove("hidden");
 
     populateDaySelector();
+    installDirtyTracking();
+    installUnsavedModalHandlers();
 
     showSection("program");
 
@@ -1372,41 +1426,82 @@
   }
 
 
-  function goToSelectedDay() {
-
-    const selector =
-      document.getElementById("daySelector");
-
-    currentDay =
-      parseInt(selector.value);
-
-    loadDay(currentDay);
+  function markDirty() {
+    if (!suppressDirty) isDirty = true;
   }
 
+  function setDirtyState(dirty) {
+    isDirty = !!dirty;
+    const saveButton = document.querySelector('button[onclick="saveEntry()"]');
+    if (saveButton) saveButton.classList.toggle('unsaved-state', isDirty);
+  }
+
+  function syncDaySelector(day) {
+    const selector = document.getElementById("daySelector");
+    if (selector) selector.value = day;
+  }
+
+  async function requestDayChange(targetDay) {
+    targetDay = Number(targetDay);
+    if (!Number.isInteger(targetDay) || targetDay < 1 || targetDay > 91) return;
+    if (targetDay === currentDay) return;
+    if (!isDirty) {
+      await loadDay(targetDay);
+      return;
+    }
+    pendingDay = targetDay;
+    openUnsavedModal();
+  }
+
+  function openUnsavedModal() {
+    document.getElementById("unsavedChangesModal")?.classList.remove("hidden");
+  }
+
+  function closeUnsavedModal() {
+    document.getElementById("unsavedChangesModal")?.classList.add("hidden");
+  }
+
+  async function continuePendingDay() {
+    const target = pendingDay;
+    pendingDay = null;
+    closeUnsavedModal();
+    if (target != null) await loadDay(target);
+  }
+
+  async function confirmSaveAndContinue() {
+    const ok = await saveEntry();
+    if (ok) await continuePendingDay();
+  }
+
+  async function discardAndContinue() {
+    const target = pendingDay;
+    pendingDay = null;
+    closeUnsavedModal();
+    suppressDirty = true;
+    try {
+      if (target != null) await loadDay(target);
+    } finally {
+      suppressDirty = false;
+      setDirtyState(false);
+    }
+  }
+
+  function goToSelectedDay() {
+    const selector = document.getElementById("daySelector");
+    requestDayChange(parseInt(selector.value, 10));
+    syncDaySelector(currentDay);
+  }
 
   function previousDay() {
-
     if (currentDay <= 1) return;
-
-    currentDay--;
-
-    document.getElementById("daySelector").value =
-      currentDay;
-
-    loadDay(currentDay);
+    requestDayChange(currentDay - 1);
+    syncDaySelector(currentDay);
   }
 
-
   function nextDay() {
-
     if (currentDay >= 91) return;
-
-    currentDay++;
-
-    document.getElementById("daySelector").value =
-      currentDay;
-
-    loadDay(currentDay);
+    requestDayChange(currentDay + 1);
+    syncDaySelector(currentDay);
   }
 
 
@@ -1484,6 +1579,9 @@
 
 
     await loadExistingEntry(dayNumber);
+    currentDay = Number(dayNumber);
+    syncDaySelector(currentDay);
+    setDirtyState(false);
     renderScoreEvolutionChart();
   }
 
@@ -1619,7 +1717,7 @@
 
       alert("Tu dois être connecté.");
 
-      return;
+      return false;
     }
 
 
@@ -1708,9 +1806,8 @@
 
     } else {
 
-      // On réapplique immédiatement EXACTEMENT l'état qui vient d'être sauvegardé.
-      // Cela évite qu'un ancien contenu en mémoire ne réinjecte des lignes supprimées.
-      restoreControlTable(entry.exercise_response);
+      // Le DOM est déjà l'état courant. Ne reconstruis pas le tableau après l'UPDATE :
+      // cela évite toute réinjection d'un état précédent pendant une suppression.
       restoreWeeklyScores(entry.exercise_response);
       restoreInlineResponses(entry);
       await loadScoreHistory();
@@ -1723,6 +1820,8 @@
         status.className = "hidden";
         saveStatusTimer = null;
       }, 5000);
+      setDirtyState(false);
+      return true;
     }
   }
 
@@ -2460,7 +2559,7 @@
       <td><textarea placeholder="Préoccupation..." data-control-col="1"></textarea></td>
       <td><textarea placeholder="Préoccupation..." data-control-col="2"></textarea></td>
       <td class="control-delete-cell">
-        <button type="button" class="control-delete-button" title="Supprimer cette ligne" aria-label="Supprimer cette ligne" onclick="return deleteControlRow(this);">🗑️</button>
+        <button type="button" class="control-delete-button" data-delete-control-row title="Supprimer cette ligne" aria-label="Supprimer cette ligne">🗑️</button>
       </td>
     `;
     body.appendChild(row);
@@ -2470,24 +2569,35 @@
     });
   }
 
-  // Suppression d'une ligne : la seule écriture BDD passe par saveEntry(),
-  // comme pour le bouton principal. Cela évite toute course entre deux sauvegardes.
-  window.deleteControlRow = async function(button) {
+  // Suppression d'une ligne : modification locale uniquement.
+  // La BDD n'est modifiée que lorsque l'utilisateur clique sur
+  // « Sauvegarder ma journée ».
+  function deleteControlRow(button) {
     const row = button && button.closest ? button.closest("tr") : null;
-    if (!row) return false;
+    if (!row || !row.parentElement) return false;
     row.remove();
-    await saveEntry();
     return false;
-  };
+  }
 
-  // Délégation unique pour les lignes créées dynamiquement.
-  document.addEventListener("click", function(event) {
+  window.deleteControlRow = deleteControlRow;
+
+  // Capture au pointerdown : le clic est intercepté avant tout mécanisme de formulaire/navigation.
+  document.addEventListener("pointerdown", function(event) {
     const target = event.target && event.target.nodeType === 3 ? event.target.parentElement : event.target;
-    const button = target && target.closest ? target.closest(".control-delete-button") : null;
+    const button = target && target.closest ? target.closest("[data-delete-control-row]") : null;
     if (!button) return;
     event.preventDefault();
-    event.stopImmediatePropagation();
-    void window.deleteControlRow(button);
+    event.stopPropagation();
+    deleteControlRow(button);
+  }, true);
+
+  // Filet de sécurité pour clavier/clic sur les navigateurs qui ne déclenchent pas pointerdown.
+  document.addEventListener("click", function(event) {
+    const target = event.target && event.target.nodeType === 3 ? event.target.parentElement : event.target;
+    const button = target && target.closest ? target.closest("[data-delete-control-row]") : null;
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
   }, true);
 
   function removeControlRow() {
