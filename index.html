@@ -801,7 +801,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V70</div>
+  <div class="app-version-v18">V71</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3197,7 +3197,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if($('v64Dashboard'))return;
     const app=$('app'),top=app?.querySelector('.topbar');if(!top)return;
     const sec=document.createElement('section');sec.id='v64Dashboard';sec.className='hidden v64-dashboard';
-    sec.innerHTML=`<div class="v64-hero"><div class="v64-kicker">Ton parcours · 91 jours</div><h2 id="v64TodayTitle">Aujourd’hui</h2><p id="v64TodayText">Un pas concret, puis un autre.</p><div class="v64-progress-row"><span id="v64ProgressLabel">Progression du parcours</span><span id="v64ProgressValue">0 %</span></div><div class="v64-progress"><span id="v64ProgressBar"></span></div><div class="v64-actions"><button class="primary" type="button" id="v64Continue">▶ Continuer ma journée</button></div></div><div class="v64-dashboard-grid"><div class="v64-stat"><small>Jours réalisés</small><strong id="v64Done">0/91</strong><span>journées sauvegardées</span></div><div class="v64-stat"><small>Score du jour</small><strong id="v64TodayScore">—</strong><span id="v64TodayScoreNote">pas encore évalué</span></div><div class="v64-stat"><small>Série</small><strong id="v64Streak">0</strong><span>jours consécutifs</span></div><div class="v64-stat"><small>Dernier jour</small><strong id="v64LastDay">—</strong><span>du parcours</span></div></div><div class="v64-days-card"><div class="v64-days-head"><h3>🗓️ Les 91 jours</h3></div><div id="v64MiniDays" class="v64-days-grid"></div></div>`;
+    sec.innerHTML=`<div class="v64-hero"><div class="v64-kicker">Ton parcours · 91 jours</div><h2 id="v64TodayTitle">Aujourd’hui</h2><p id="v64TodayText">Un pas concret, puis un autre.</p><div class="v64-progress-row"><span id="v64ProgressLabel">Progression du parcours</span><span id="v64ProgressValue">0 %</span></div><div class="v64-progress"><span id="v64ProgressBar"></span></div><div class="v64-actions"><button class="primary" type="button" id="v64Continue">▶ Continuer ma journée</button></div></div><div class="v64-dashboard-grid"><div class="v64-stat"><small>Jours réalisés</small><strong id="v64Done">0/91</strong><span>journées sauvegardées</span></div><div class="v64-stat"><small>Score du jour</small><strong id="v64TodayScore">—</strong><span id="v64TodayScoreNote">pas encore évalué</span></div><div class="v64-stat"><small>Série</small><strong id="v64Streak">0</strong><span>jours consécutifs</span></div><div class="v64-stat"><small>Dernier jour</small><strong id="v64LastDay">—</strong><span>du parcours</span></div></div><div class="v64-days-card"><div class="v64-days-head"><h3></h3></div><div id="v64MiniDays" class="v64-days-grid"></div></div>`;
     top.insertAdjacentElement('afterend',sec);
     $('v64Continue').onclick=()=>{showSection('program');loadDay(currentDay)};
   }
@@ -3208,7 +3208,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     for(let d=1;d<=91;d++){const b=document.createElement('button');b.type='button';b.className='v64-day-btn'+(d===Number(currentDay)?' current':'')+(done.has(d)?' done':'');b.textContent='J'+d;b.title=done.has(d)?'Jour réalisé':'Jour non réalisé';b.onclick=async()=>{closeDays();await requestDayChange(d);showSection('program')};container.appendChild(b)}
   }
   function openDays(){
-    let m=$('v64DayModal');if(!m){m=document.createElement('div');m.id='v64DayModal';m.className='v64-day-modal hidden';m.innerHTML='<div class="v64-day-dialog"><div class="v64-days-head"><h2>🗓️ Les 91 jours</h2><button type="button" class="secondary" id="v64CloseDays">✕ Fermer</button></div><p>✓ = journée déjà sauvegardée. Le jour courant est encadré.</p><div id="v64AllDays" class="v64-days-grid"></div></div>';document.body.appendChild(m);$('v64CloseDays').onclick=closeDays;m.addEventListener('click',e=>{if(e.target===m)closeDays()})}renderDays($('v64AllDays'));m.classList.remove('hidden')}
+    let m=$('v64DayModal');if(!m){m=document.createElement('div');m.id='v64DayModal';m.className='v64-day-modal hidden';m.innerHTML='<div class="v64-day-dialog"><div class="v64-days-head"><h2></h2><button type="button" class="secondary" id="v64CloseDays">✕ Fermer</button></div><p>✓ = journée déjà sauvegardée. Le jour courant est encadré.</p><div id="v64AllDays" class="v64-days-grid"></div></div>';document.body.appendChild(m);$('v64CloseDays').onclick=closeDays;m.addEventListener('click',e=>{if(e.target===m)closeDays()})}renderDays($('v64AllDays'));m.classList.remove('hidden')}
   function closeDays(){$('v64DayModal')?.classList.add('hidden')}
   function loadEntries(){const c=client();if(!c)return Promise.resolve();return c.auth.getUser().then(({data:{user}})=>{if(!user)return;return c.from('daily_entries').select('day_number,presence,impulse_control,values_coherence,self_relation').eq('user_id',user.id).order('day_number',{ascending:true}).then(r=>{if(!r.error)entries=r.data||[]})}).then(()=>{renderDashboard();renderDays($('v64MiniDays'),true)}).catch(e=>console.warn('V64 dashboard',e))}
   function renderDashboard(){
@@ -3320,7 +3320,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if(!card){
       card=document.createElement('div');
       card.className='card v70-days-card';
-      card.innerHTML='<div class="v64-days-head"><h3>🗓️ Les 91 jours</h3></div><div id="v70DaysGrid" class="v70-days-grid"></div>';
+      card.innerHTML='<div class="v64-days-head"><h3></h3></div><div id="v70DaysGrid" class="v70-days-grid"></div>';
       dashboard.appendChild(card);
     }
     const target=document.getElementById('v70DaysGrid');
@@ -3355,6 +3355,29 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   else install();
   window.addEventListener('load',()=>setTimeout(install,700));
   new MutationObserver(()=>setTimeout(install,0)).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="v71-remove-day-grid">
+/* V71 — aucune grille des 91 jours dans l'interface */
+#v64Dashboard .v64-days-card,
+#v61Dashboard .v70-days-card,
+#v64DayModal,
+#v64OpenDays,
+#v64CompactDays,
+#daysNavButton { display:none !important; }
+</style>
+<script id="v71-remove-day-grid">
+(function(){
+  function removeDayGrid(){
+    document.querySelectorAll('.v64-days-card, .v70-days-card, #v64DayModal, #v64OpenDays, #v64CompactDays, #daysNavButton, .v64-day-modal').forEach(el=>el.remove());
+    document.querySelectorAll('.v64-day-btn').forEach(el=>el.remove());
+  }
+  function install(){ removeDayGrid(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,500));
+  new MutationObserver(install).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 
