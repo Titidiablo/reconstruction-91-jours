@@ -1,0 +1,128 @@
+name: Deploy V56
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch score chart
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          msg = __import__('subprocess').check_output(['git','log','-1','--pretty=%B'], text=True).strip()
+          if 'Update index.html V56' in msg:
+              raise SystemExit(0)
+
+          # Version
+          s2, n = re.subn(r'>V5[45]</div>', '>V56</div>', s, count=1)
+          if n != 1:
+              raise SystemExit('V54/V55 badge not found')
+          s = s2
+
+          # Replace chart toolbar with fixed cumulative ranges from day 1.
+          old_toolbar = '''<button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 derniers jours</button>
+          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 derniers jours</button>
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>'''
+          new_toolbar = '''<button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
+          <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
+          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
+          <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
+          <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
+          <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>'''
+          if old_toolbar not in s:
+              raise SystemExit('Chart toolbar not found')
+          s = s.replace(old_toolbar, new_toolbar, 1)
+
+          old_range = '''  function setChartRange(range) {
+    chartRange = range;
+
+    [7, 30, 90].forEach(r => {
+      const button = document.getElementById("chart" + r + "Button");
+      if (button) button.classList.toggle("active", r === range);
+    });
+
+    renderScoreEvolutionChart();
+  }'''
+          new_range = '''  function setChartRange(range) {
+    chartRange = range;
+
+    [7, 15, 30, 45, 60, 75, 90].forEach(r => {
+      const button = document.getElementById("chart" + r + "Button");
+      if (button) button.classList.toggle("active", r === range);
+    });
+
+    renderScoreEvolutionChart();
+  }'''
+          if old_range not in s:
+              raise SystemExit('setChartRange block not found')
+          s = s.replace(old_range, new_range, 1)
+
+          # Replace the beginning of renderScoreEvolutionChart's range calculation.
+          old_calc = '''    const endDay = Number(currentDay) || 1;
+
+    // Le graphique est également visible au Jour 1.
+    // La période commence simplement à J1 lorsqu'il n'existe pas encore de jours précédents.
+    const startDay = Math.max(1, endDay - chartRange + 1);
+    const rows = (dailyScoreHistory || [])
+      .filter(row => {
+        const d = Number(row.day_number);
+        return Number.isFinite(d) && d >= startDay && d <= endDay;
+      })
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));'''
+          new_calc = '''    // Les boutons représentent les N premiers jours du programme.
+    // Le jour courant n'influence jamais la période affichée.
+    const startDay = 1;
+    const endDay = Math.min(chartRange, 91);
+    const rows = (dailyScoreHistory || [])
+      .filter(row => {
+        const d = Number(row.day_number);
+        return Number.isFinite(d) && d >= startDay && d <= endDay;
+      })
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));'''
+          if old_calc not in s:
+              raise SystemExit('chart range calculation block not found')
+          s = s.replace(old_calc, new_calc, 1)
+
+          # Ensure missing days are explicit zeros (already handled by the existing map/scoreValue path).
+          marker = '/* V56 - graphique cumulatif depuis J1 : 7/15/30/45/60/75/90 */'
+          if marker not in s:
+              s = s.replace('</style>', marker + '\n</style>', 1)
+
+          checks = [
+              '>V56</div>', 'id="chart15Button"', 'id="chart45Button"',
+              'id="chart60Button"', 'id="chart75Button"',
+              '[7, 15, 30, 45, 60, 75, 90]',
+              'const startDay = 1;',
+              'const endDay = Math.min(chartRange, 91);'
+          ]
+          for c in checks:
+              if c not in s:
+                  raise SystemExit('Missing expected V56 content: ' + c)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          grep -q '>V56</div>' index.html
+          grep -q 'id="chart15Button"' index.html
+          grep -q 'id="chart45Button"' index.html
+          grep -q 'id="chart60Button"' index.html
+          grep -q 'id="chart75Button"' index.html
+          grep -q 'const startDay = 1;' index.html
+          grep -q 'const endDay = Math.min(chartRange, 91);' index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Update index.html V56'
+          git push
