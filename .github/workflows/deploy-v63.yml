@@ -1,4 +1,4 @@
-name: Deploy V65
+name: Deploy V66
 
 on:
   push:
@@ -28,7 +28,10 @@ jobs:
       - name: Apply V65 navigation
         run: python3 scripts/patch_v65_navigation.py
 
-      - name: Validate V65
+      - name: Apply V66 Program cleanup
+        run: python3 scripts/patch_v66_today_program.py
+
+      - name: Validate V66
         run: |
           grep -q '>V64</div>' index.html
           grep -q 'id="v63-resources-runtime"' index.html
@@ -36,10 +39,11 @@ jobs:
           grep -q 'id="v64-ux-runtime"' index.html
           grep -q 'id="v64-mobile-save-fix"' index.html
           grep -q 'id="v65-navigation-fix"' index.html
+          grep -q 'id="v66-today-program-fix"' index.html
           grep -q 'DEVENIR SOI' index.html
-          grep -q 'Mon parcours' index.html
           grep -q 'Pleine conscience' index.html
           grep -q 'Maîtrise des impulsions' index.html
+          grep -q 'Mon parcours' index.html
           grep -q '💾 Sauvegarder ma journée' index.html
           ! grep -q 'id="daysNavButton"' index.html
           ! grep -q 'id="v64OpenDays"' index.html
@@ -47,15 +51,15 @@ jobs:
           grep -q 'await requestDayChange(d)' index.html
           test "$(grep -o '>V64</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V65
+      - name: Commit V66
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V65 déjà présent"
+            echo "V66 déjà présent"
             exit 0
           fi
-          git commit -m "V65 - simplify day navigation"
+          git commit -m "V66 - clean Program page and save button"
           git pull --rebase origin main
           git push origin HEAD:main
