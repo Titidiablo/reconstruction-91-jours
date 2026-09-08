@@ -1,0 +1,38 @@
+name: Patch V48
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old='''  async function signIn() {\n\n    const email =\n      document.getElementById("email").value.trim();\n\n    const password =\n      document.getElementById("password").value;\n\n    const status =\n      document.getElementById("loginStatus");\n\n    const { error } =\n      await supabaseClient.auth.signInWithPassword({\n        email: email,\n        password: password\n      });\n\n    if (error) {\n\n      status.className = "error";\n\n      status.textContent =\n        "Erreur : " + error.message;\n\n      return;\n    }\n\n    status.textContent = "";\n\n    await showApplication();\n  }\n'''
+          new='''  async function signIn() {\n\n    const email =\n      document.getElementById("email").value.trim();\n\n    const password =\n      document.getElementById("password").value;\n\n    const status =\n      document.getElementById("loginStatus");\n\n    status.className = "";\n    status.textContent = "Connexion en cours…";\n\n    try {\n      if (!window.supabase || !window.supabase.createClient) {\n        throw new Error("La bibliothèque Supabase n'est pas chargée. Recharge la page avec Ctrl+F5.");\n      }\n\n      if (!supabaseClient) {\n        throw new Error("Le client Supabase n'est pas initialisé.");\n      }\n\n      if (!email || !password) {\n        status.className = "error";\n        status.textContent = "Indique ton e-mail et ton mot de passe.";\n        return;\n      }\n\n      const { error } =\n        await supabaseClient.auth.signInWithPassword({\n          email: email,\n          password: password\n        });\n\n      if (error) {\n        status.className = "error";\n        status.textContent =\n          "Erreur : " + error.message;\n        return;\n      }\n\n      status.textContent = "";\n      await showApplication();\n\n    } catch (error) {\n      console.error("Erreur de connexion", error);\n      status.className = "error";\n      status.textContent =\n        "Erreur de connexion : " + (error?.message || error);\n    }\n  }\n'''
+          if old not in s: raise SystemExit('signIn cible introuvable')
+          s=s.replace(old,new,1)
+          s=s.replace('/* V47 - restauration du tableau depuis la BDD, sans écrasement local */','/* V48 - connexion robuste + restauration du tableau depuis la BDD, sans écrasement local */')
+          s=s.replace('<div class="app-version-v18">V47</div>','<div class="app-version-v18">V48</div>')
+          s=s.replace('// V47 : toute modification de formulaire rend la journée "sale".','// V48 : toute modification de formulaire rend la journée "sale".')
+          p.write_text(s,encoding='utf-8')
+      - name: Validate markers
+        run: |
+          grep -q '<div class="app-version-v18">V48</div>' index.html
+          grep -q 'Connexion en cours' index.html
+          grep -q "La bibliothèque Supabase n'est pas chargée" index.html
+          grep -q 'const jsonPos = raw.lastIndexOf(jsonMarker);' index.html
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'V48 - corriger la connexion Supabase'
+          git push
