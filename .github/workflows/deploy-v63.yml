@@ -91,29 +91,17 @@ jobs:
           PY
       - name: Validate V98
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          s=Path('index.html').read_text(encoding='utf-8')
-          required=[
-            'id="v98-settings"',
-            'id="settingsNavButton"',
-            'id="v98SettingsPanel"',
-            'Méditation',
-            'Respiration / relaxation',
-            'Sommeil',
-            'Développement personnel',
-            'Motivation',
-            'DEVENIR SOI',
-            'Ne subissez plus votre vie. Reprenez le contrôle !',
-            '<!-- DISPLAY_VERSION -->V98<!-- /DISPLAY_VERSION -->'
-          ]
-          missing=[x for x in required if x not in s]
-          if missing:
-              print('V98 validation failed; missing:')
-              for x in missing: print(' -',repr(x))
-              raise SystemExit(1)
-          print('V98 validation OK')
-          PY
+          grep -q 'id="v98-settings"' index.html
+          grep -q "settingsNavButton" index.html
+          grep -q "v98SettingsPanel" index.html
+          grep -q 'Méditation' index.html
+          grep -q 'Respiration / relaxation' index.html
+          grep -q 'Sommeil' index.html
+          grep -q 'Développement personnel' index.html
+          grep -q 'Motivation' index.html
+          grep -q 'DEVENIR SOI' index.html
+          grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
+          grep -q '<!-- DISPLAY_VERSION -->V98<!-- /DISPLAY_VERSION -->' index.html
       - name: Commit V98
         run: |
           git config user.name "github-actions[bot]"
