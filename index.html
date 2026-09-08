@@ -520,7 +520,7 @@
       }
     }
   
-/* V47 - restauration du tableau depuis la BDD, sans écrasement local */
+/* V48 - connexion robuste + restauration du tableau depuis la BDD, sans écrasement local */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V47</div>
+  <div class="app-version-v18">V48</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1217,7 +1217,7 @@
 
 
 
-  // V47 : toute modification de formulaire rend la journée "sale".
+  // V48 : toute modification de formulaire rend la journée "sale".
   function installDirtyTracking() {
     const root = document.getElementById("programSection");
     if (!root || root.dataset.dirtyTrackingInstalled) return;
@@ -1314,25 +1314,46 @@
     const status =
       document.getElementById("loginStatus");
 
-    const { error } =
-      await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
+    status.className = "";
+    status.textContent = "Connexion en cours…";
 
-    if (error) {
+    try {
+      if (!window.supabase || !window.supabase.createClient) {
+        throw new Error("La bibliothèque Supabase n'est pas chargée. Recharge la page avec Ctrl+F5.");
+      }
 
+      if (!supabaseClient) {
+        throw new Error("Le client Supabase n'est pas initialisé.");
+      }
+
+      if (!email || !password) {
+        status.className = "error";
+        status.textContent = "Indique ton e-mail et ton mot de passe.";
+        return;
+      }
+
+      const { error } =
+        await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+      if (error) {
+        status.className = "error";
+        status.textContent =
+          "Erreur : " + error.message;
+        return;
+      }
+
+      status.textContent = "";
+      await showApplication();
+
+    } catch (error) {
+      console.error("Erreur de connexion", error);
       status.className = "error";
-
       status.textContent =
-        "Erreur : " + error.message;
-
-      return;
+        "Erreur de connexion : " + (error?.message || error);
     }
-
-    status.textContent = "";
-
-    await showApplication();
   }
 
 
