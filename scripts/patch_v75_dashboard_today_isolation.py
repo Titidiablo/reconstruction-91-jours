@@ -11,17 +11,26 @@ s = re.sub(r'\n<style id="v75-dashboard-today-isolation">.*?</style>\s*<script i
 
 patch = r'''
 <style id="v75-dashboard-today-isolation">
-/* V75 — Aujourd'hui et Tableau de bord sont deux écrans indépendants. */
+/* V75 — chaque écran est indépendant : le cockpit Aujourd'hui ne doit jamais apparaître dans Journal intime. */
 #v61Dashboard.v75-dashboard-visible { display:block !important; }
-#v61Dashboard.v75-dashboard-visible ~ #v64Dashboard { display:none !important; }
 #v64Dashboard.v75-today-visible { display:block !important; }
-#v61Dashboard.v75-dashboard-hidden { display:none !important; }
+#v61Dashboard.v75-dashboard-hidden,
+#v64Dashboard.v75-today-hidden { display:none !important; }
 </style>
 <script id="v75-dashboard-today-isolation">
 (function(){
   function setActive(id){
     document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
     document.getElementById(id)?.classList.add('nav-active');
+  }
+
+  function hideCockpit(){
+    const today=document.getElementById('v64Dashboard');
+    const dashboard=document.getElementById('v61Dashboard');
+    today?.classList.add('hidden','v75-today-hidden');
+    today?.classList.remove('v75-today-visible');
+    dashboard?.classList.add('hidden','v75-dashboard-hidden');
+    dashboard?.classList.remove('v75-dashboard-visible');
   }
 
   function showTodayScreen(){
@@ -34,7 +43,7 @@ patch = r'''
     [program,journal,evolution,dashboard].forEach(el=>el?.classList.add('hidden'));
     dashboard?.classList.remove('v75-dashboard-visible');
     dashboard?.classList.add('v75-dashboard-hidden');
-    today.classList.remove('hidden','v75-dashboard-hidden');
+    today.classList.remove('hidden','v75-today-hidden');
     today.classList.add('v75-today-visible');
     setActive('todayNavButton');
   }
@@ -44,36 +53,52 @@ patch = r'''
     const today=document.getElementById('v64Dashboard');
     if(!dashboard) return;
     ['programSection','journalSection','evolutionSection'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
-    today?.classList.add('hidden');
+    today?.classList.add('hidden','v75-today-hidden');
     today?.classList.remove('v75-today-visible');
     dashboard.classList.remove('hidden','v75-dashboard-hidden');
     dashboard.classList.add('v75-dashboard-visible');
     setActive('dashboardNavButton');
   }
 
+  function syncScreens(){
+    const todayBtn=document.getElementById('todayNavButton');
+    const dashboardBtn=document.getElementById('dashboardNavButton');
+    const journal=document.getElementById('journalSection');
+    const program=document.getElementById('programSection');
+    const evolution=document.getElementById('evolutionSection');
+    const today=document.getElementById('v64Dashboard');
+    const dashboard=document.getElementById('v61Dashboard');
+    if(!today || !dashboard) return;
+
+    if(todayBtn?.classList.contains('nav-active')){
+      showTodayScreen();
+      return;
+    }
+    if(dashboardBtn?.classList.contains('nav-active')){
+      showDashboardScreen();
+      return;
+    }
+
+    // Programme, Journal intime, Évolution des scores, Ressources, etc. :
+    // aucun de ces écrans ne doit afficher le cockpit ni le tableau de bord.
+    hideCockpit();
+  }
+
   function install(){
     const todayBtn=document.getElementById('todayNavButton');
     const dashboardBtn=document.getElementById('dashboardNavButton');
 
-    // IMPORTANT: ne pas remplacer onclick. Les boutons possèdent déjà leur logique
-    // (showToday/showSection/loadEntries). On ajoute seulement une synchronisation
-    // après cette logique afin de ne casser aucun chargement.
+    // Ne remplace pas onclick : les boutons gardent leur logique native.
     if(todayBtn && !todayBtn.dataset.v75Bound){
       todayBtn.dataset.v75Bound='1';
-      todayBtn.addEventListener('click',()=>setTimeout(showTodayScreen,0));
+      todayBtn.addEventListener('click',()=>setTimeout(syncScreens,0));
     }
     if(dashboardBtn && !dashboardBtn.dataset.v75Bound){
       dashboardBtn.dataset.v75Bound='1';
-      dashboardBtn.addEventListener('click',()=>setTimeout(showDashboardScreen,0));
+      dashboardBtn.addEventListener('click',()=>setTimeout(syncScreens,0));
     }
 
-    const today=document.getElementById('v64Dashboard');
-    const dashboard=document.getElementById('v61Dashboard');
-    if(today && dashboard && todayBtn?.classList.contains('nav-active')){
-      showTodayScreen();
-    } else if(today && dashboard && dashboardBtn?.classList.contains('nav-active')){
-      showDashboardScreen();
-    }
+    syncScreens();
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
@@ -86,4 +111,4 @@ patch = r'''
 s = s.replace('</body>', patch + '\n</body>', 1)
 
 p.write_text(s, encoding='utf-8')
-print('V75 Dashboard/Today isolation fixed without replacing navigation handlers')
+print('V75 Dashboard/Today isolation fixed: cockpit hidden from Journal intime and other screens')
