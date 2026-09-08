@@ -1,0 +1,63 @@
+name: Patch V47
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index.html
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = '''    document.getElementById("exerciseResponse").value =\n      data.exercise_response || "";\n'''
+          new = '''    const rawExerciseResponse = data.exercise_response || "";\n    // Ne jamais transporter les anciens blocs structurés dans le champ caché :\n    // sinon chaque sauvegarde les concatène à nouveau.\n    const hasStructuredBlocks = /(?:^|\\n)(?:PRATIQUE DU JOUR|TRACE ÉCRITE|TABLEAU CONTRÔLE \/ INFLUENCE \/ HORS CONTRÔLE|DÉCISION SANS VALIDATION|BILAN DE SEMAINE — SCORES)\\n/i.test(rawExerciseResponse);\n    document.getElementById("exerciseResponse").value = hasStructuredBlocks ? "" : rawExerciseResponse;\n'''
+          if old not in s:
+              raise SystemExit('loadExistingEntry target not found')
+          s = s.replace(old, new, 1)
+          old = '''    ["practiceResponse","traceResponse","actionResponseInline","eveningResponseInline"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });\n\n    document.getElementById("saveStatus").textContent = "";\n'''
+          new = '''    ["practiceResponse","traceResponse","actionResponseInline","eveningResponseInline"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });\n\n    const body = document.getElementById("controlTableBody");\n    if (body) {\n      body.innerHTML = "";\n      for (let i = 0; i < 3; i++) addControlRow();\n    }\n\n    document.getElementById("saveStatus").textContent = "";\n'''
+          if old not in s:
+              raise SystemExit('clearProgramJournal target not found')
+          s = s.replace(old, new, 1)
+          old = '''    const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";\n    const start = raw.indexOf(marker);\n\n    if (start < 0) {\n      for (let i = 0; i < 3; i++) addControlRow();\n      return;\n    }\n\n    let section = raw.slice(start + marker.length);\n    const endMarker = "\\n__FIN_TABLEAU_CONTROLE__";\n    const endPos = section.indexOf(endMarker);\n    if (endPos >= 0) section = section.slice(0, endPos).trim();\n\n    // Nouveau format : restauration EXACTE du tableau, y compris zéro ligne.\n    const jsonMarker = "__CONTROL_TABLE_JSON__";\n    const jsonPos = section.indexOf(jsonMarker);\n    if (jsonPos >= 0) {\n      const json = section.slice(jsonPos + jsonMarker.length).trim();\n      try {\n        const rows = JSON.parse(json);\n        if (Array.isArray(rows)) {\n          rows.slice(0, 15).forEach(values => {\n            if (Array.isArray(values)) addControlRow([values[0] || "", values[1] || "", values[2] || ""]);\n          });\n          return;\n        }\n      } catch (e) {\n        console.warn("Impossible de restaurer le tableau JSON", e);\n      }\n    }\n'''
+          new = '''    const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";\n    const jsonMarker = "__CONTROL_TABLE_JSON__";\n    const endMarker = "\\n__FIN_TABLEAU_CONTROLE__";\n\n    // La BDD peut contenir des sauvegardes historiques concaténées :\n    // le dernier bloc JSON est le plus récent et devient la source de vérité.\n    const jsonPos = raw.lastIndexOf(jsonMarker);\n    if (jsonPos >= 0) {\n      const jsonEnd = raw.indexOf(endMarker, jsonPos);\n      const json = raw.slice(jsonPos + jsonMarker.length, jsonEnd >= 0 ? jsonEnd : raw.length).trim();\n      try {\n        const rows = JSON.parse(json);\n        if (Array.isArray(rows)) {\n          rows.slice(0, 15).forEach(values => {\n            if (Array.isArray(values)) addControlRow([values[0] || "", values[1] || "", values[2] || ""]);\n          });\n          return;\n        }\n      } catch (e) {\n        console.warn("Impossible de restaurer le dernier tableau JSON", e);\n      }\n    }\n\n    // Compatibilité avec les anciennes sauvegardes sans JSON : dernier bloc.\n    const start = raw.lastIndexOf(marker);\n    if (start < 0) {\n      for (let i = 0; i < 3; i++) addControlRow();\n      return;\n    }\n\n    let section = raw.slice(start + marker.length);\n    const endPos = section.indexOf(endMarker);\n    if (endPos >= 0) section = section.slice(0, endPos).trim();\n'''
+          if old not in s:
+              raise SystemExit('restoreControlTable target not found')
+          s = s.replace(old, new, 1)
+          # bump version markers everywhere from V45 to V47
+          s = s.replace('/* V45 - protection contre les changements de jour avec modifications non sauvegardées */', '/* V47 - restauration du tableau depuis la BDD, sans écrasement local */')
+          s = s.replace('<div class="app-version-v18">V45</div>', '<div class="app-version-v18">V47</div>')
+          s = s.replace('// V45 : toute modification de formulaire rend la journée "sale".', '// V47 : toute modification de formulaire rend la journée "sale".')
+          p.write_text(s, encoding='utf-8')
+      - name: Validate JavaScript
+        run: node - <<'NODE'
+          const fs=require('fs');
+          const s=fs.readFileSync('index.html','utf8');
+          let re=/<script[^>]*>([\s\S]*?)<\/script>/gi,m,n=0;
+          while(m=re.exec(s)){ new Function(m[1]); n++; }
+          if(!s.includes('<div class="app-version-v18">V47</div>')) throw new Error('V47 marker missing');
+          console.log('Validated JS blocks:', n);
+        NODE
+      - name: Commit patched file
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then echo 'No changes'; exit 0; fi
+          git commit -m 'V47 - corriger restauration du tableau Supabase'
+          git push
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git rm -f .github/workflows/patch-v47.yml || true
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore: remove temporary V47 patch workflow'
+          git push
