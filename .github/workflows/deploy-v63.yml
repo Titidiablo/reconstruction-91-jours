@@ -22,12 +22,16 @@ jobs:
       - name: Prepare V64
         run: python3 scripts/deploy_v64.py
 
+      - name: Fix V64 mobile save button
+        run: python3 scripts/patch_v64_mobile.py
+
       - name: Validate V64
         run: |
           grep -q '>V64</div>' index.html
           grep -q 'id="v63-resources-runtime"' index.html
           grep -q 'id="v64-ux-style"' index.html
           grep -q 'id="v64-ux-runtime"' index.html
+          grep -q 'id="v64-mobile-save-fix"' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Aujourd’hui' index.html
           grep -q '91 jours' index.html
@@ -46,6 +50,6 @@ jobs:
             echo "V64 déjà présent"
             exit 0
           fi
-          git commit -m "Update index.html V64 - complete UX overhaul"
+          git commit -m "Fix V64 mobile save button overlap"
           git pull --rebase origin main
           git push origin HEAD:main
