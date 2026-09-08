@@ -1,6 +1,8 @@
 name: Deploy V63
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,25 +17,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Validate V63 workflow
+      - name: Prepare V63
+        run: python3 scripts/deploy_v63.py
+
+      - name: Validate V63
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import sys
+          grep -q '>V63</div>' index.html
+          grep -q 'id="v63-resources-runtime"' index.html
+          grep -q 'id="v63-resources-style"' index.html
+          grep -q 'personal_resources' index.html
+          grep -q 'personal-resources' index.html
+          test "$(grep -o '>V63</div>' index.html | wc -l)" -eq 1
 
-          p = Path("index.html")
-          s = p.read_text(encoding="utf-8")
-
-          # This workflow is intentionally kept as a manual V63 deployment.
-          # The previous version embedded a large Python triple-quoted HTML/JS
-          # payload directly in YAML. Its payload lines were not indented as
-          # YAML block content, which made the workflow itself invalid.
-          required = [
-              'id="v61-dashboard-runtime"',
-              'id="v61Dashboard"',
-          ]
-          missing = [x for x in required if x not in s]
-          if missing:
-              raise SystemExit("Missing required base markers: " + ", ".join(missing))
-          print("V63 workflow YAML is valid; base application markers found.")
-          PY
+      - name: Commit V63
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "V63 déjà présent"
+          else
+            git commit -m "Update index.html V63 - resources"
+            git push
+          fi
