@@ -3048,5 +3048,25 @@
   window.addEventListener("load",()=>setTimeout(()=>{make();load();},700));
 })();
 </script>
+<script id="v61-save-visibility">
+(function(){
+  function syncV61SaveVisibility(){
+    const program=document.getElementById("programSection");
+    const visible=!!program && !program.classList.contains("hidden");
+    document.querySelectorAll('button[onclick="saveEntry()"], #floatingSaveButton').forEach(btn=>{
+      btn.classList.toggle("hidden",!visible);
+    });
+  }
+  const previousShowSection=window.showSection;
+  window.showSection=function(){
+    const result=typeof previousShowSection==="function"?previousShowSection.apply(this,arguments):undefined;
+    setTimeout(syncV61SaveVisibility,0);
+    return result;
+  };
+  window.addEventListener("load",()=>setTimeout(syncV61SaveVisibility,750));
+  const program=document.getElementById("programSection");
+  if(program)new MutationObserver(syncV61SaveVisibility).observe(program,{attributes:true,attributeFilter:["class"]});
+})();
+</script>
 </body>
 </html>
