@@ -1,4 +1,4 @@
-name: Deploy V95
+name: Deploy V96
 
 on:
   push:
@@ -66,23 +66,25 @@ jobs:
         run: python3 scripts/patch_v94_evolution_scores.py
       - name: Apply V95 four-pillar bilan
         run: python3 scripts/patch_v95_bilan_piliers.py
+      - name: Apply V96 detailed Mes repères
+        run: python3 scripts/patch_v96_reperes_detail.py
 
-      - name: Set displayed version V95
+      - name: Set displayed version V96
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94'):
-              s = s.replace(f'>{old}</div>', '>V95</div>')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81','V82','V83','V84','V85','V86','V87','V88','V89','V90','V91','V92','V93','V94','V95'):
+              s = s.replace(f'>{old}</div>', '>V96</div>')
           s = s.replace('🗓️ Mon parcours', '')
           s = s.replace('🗓️ Les 91 jours', '')
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Validate V95
+      - name: Validate V96
         run: |
-          grep -q '>V95</div>' index.html
+          grep -q '>V96</div>' index.html
           grep -q 'id="v80-dashboard-navigation-fix"' index.html
           grep -q 'id="v81-media-menu"' index.html
           grep -q 'id="v85-media-program"' index.html
@@ -95,6 +97,7 @@ jobs:
           grep -q 'id="v93-zen-images"' index.html
           grep -q 'id="v94-evolution-scores"' index.html
           grep -q 'id="v95-bilan-piliers"' index.html
+          grep -q 'id="v96-reperes-detail"' index.html
           grep -q 'id="meditation"' index.html
           grep -q 'meditationMediaSelect' index.html
           grep -q 'MEDIA_MEDITATION_ID' index.html
@@ -108,19 +111,19 @@ jobs:
           grep -q 'bonheur' index.html
           ! grep -q 'id="v72-dashboard-no-today-duplicates"' index.html
           ! grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
-          test "$(grep -o '>V95</div>' index.html | wc -l)" -eq 1
+          test "$(grep -o '>V96</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V95
+      - name: Commit V96
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V95 déjà présent"
+            echo "V96 déjà présent"
             exit 0
           fi
-          git commit -m "V95 - detail four pillars in bilan"
+          git commit -m "V96 - detail Mes reperes"
           git pull --rebase origin main
           git push origin HEAD:main
 
-# V95 deployment trigger - 2026-09-08T13:35:00Z
+# V96 deployment trigger - 2026-09-08T13:45:00Z
