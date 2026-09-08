@@ -682,7 +682,7 @@
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V55</div>
+  <div class="app-version-v18">V56</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -833,11 +833,15 @@
         </div>
         <div id="scoreEvolutionBody" class="score-chart-body">
         <div class="score-chart-toolbar">
-          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 derniers jours</button>
-          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 derniers jours</button>
-          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 derniers jours</button>
-        </div>
-        <div class="score-chart-wrap">
+  <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
+  <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
+  <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
+  <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
+  <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
+  <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
+  <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
+</div>
+<div class="score-chart-wrap">
           <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>
         </div>
         <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
@@ -2738,32 +2742,29 @@
   }
 
   function setChartRange(range) {
-    chartRange = range;
+  chartRange = range;
 
-    [7, 30, 90].forEach(r => {
-      const button = document.getElementById("chart" + r + "Button");
-      if (button) button.classList.toggle("active", r === range);
-    });
+  [7, 15, 30, 45, 60, 75, 90].forEach(r => {
+    const button = document.getElementById("chart" + r + "Button");
+    if (button) button.classList.toggle("active", r === range);
+  });
 
-    renderScoreEvolutionChart();
-  }
+  renderScoreEvolutionChart();
+}
 
   function renderScoreEvolutionChart() {
     const container = document.getElementById("scoreEvolutionChartContainer");
     const status = document.getElementById("chartStatus");
     if (!container) return;
 
-    const endDay = Number(currentDay) || 1;
-
-    // Le graphique est également visible au Jour 1.
-    // La période commence simplement à J1 lorsqu'il n'existe pas encore de jours précédents.
-    const startDay = Math.max(1, endDay - chartRange + 1);
-    const rows = (dailyScoreHistory || [])
-      .filter(row => {
-        const d = Number(row.day_number);
-        return Number.isFinite(d) && d >= startDay && d <= endDay;
-      })
-      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
+    const startDay = 1;
+  const endDay = Math.min(chartRange, 91);
+  const rows = (dailyScoreHistory || [])
+    .filter(row => {
+      const d = Number(row.day_number);
+      return Number.isFinite(d) && d >= startDay && d <= endDay;
+    })
+    .sort((a,b) => Number(a.day_number) - Number(b.day_number));
 
     const map = new Map(rows.map(row => [Number(row.day_number), row]));
     const scoreValue = (row, key) => {
