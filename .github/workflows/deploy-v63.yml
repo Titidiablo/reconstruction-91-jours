@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Prepare V63
         run: python3 scripts/deploy_v63.py
@@ -36,7 +38,8 @@ jobs:
           git add index.html
           if git diff --cached --quiet; then
             echo "V63 déjà présent"
-          else
-            git commit -m "Update index.html V63 - resources"
-            git push
+            exit 0
           fi
+          git commit -m "Update index.html V63 - resources"
+          git pull --rebase origin main
+          git push origin HEAD:main
