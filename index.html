@@ -938,7 +938,14 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         ⚙️ Paramètres
       </button>
 
-      <button
+      <div id="optionalModulesNav" class="optional-modules-nav" aria-label="Modules optionnels">
+      <button id="moduleMeditationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('meditation')">🧘 Méditation</button>
+      <button id="moduleBreathingBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('breathing')">🌿 Respiration / relaxation</button>
+      <button id="moduleSleepBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('sleep')">😴 Sommeil</button>
+      <button id="modulePersonalBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('personal')">🧠 Développement personnel</button>
+      <button id="moduleMotivationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('motivation')">💪 Motivation</button>
+    </div>
+<button
         class="secondary"
         onclick="logout()">
         Se déconnecter
@@ -950,13 +957,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     <!-- MODULES OPTIONNELS -->
     <!-- ======================================================= -->
 
-    <div id="optionalModulesNav" class="optional-modules-nav" aria-label="Modules optionnels">
-      <button id="moduleMeditationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('meditation')">🧘 Méditation</button>
-      <button id="moduleBreathingBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('breathing')">🌿 Respiration / relaxation</button>
-      <button id="moduleSleepBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('sleep')">😴 Sommeil</button>
-      <button id="modulePersonalBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('personal')">🧠 Développement personnel</button>
-      <button id="moduleMotivationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('motivation')">💪 Motivation</button>
-    </div>
+    
 
     <!-- Conteneur des modules optionnels : le contenu détaillé sera défini ensuite. -->
     <div id="optionalModulesContent">
@@ -4519,9 +4520,9 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
   else applySettings();
 })();
 </script>
+<script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>
 </body>
 </html>
-<script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>
 
 
 
