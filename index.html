@@ -802,7 +802,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V88</div>
+  <div class="app-version-v18">V89</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -3952,6 +3952,28 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 /* Le sélecteur audio reste visuellement dans le bloc Méditation, sous son texte explicatif. */
 .meditation-media-picker { margin-top:12px; margin-bottom:16px; }
 </style>
+
+
+<style id="v89-meditation-picker-exact-position">
+#meditation + .meditation-media-picker { margin-top:12px; margin-bottom:16px; }
+</style>
+<script id="v89-meditation-picker-exact-position">
+(function(){
+  function movePicker(){
+    const picker=document.getElementById('meditationMediaPicker');
+    const meditation=document.getElementById('meditation');
+    if(!picker || !meditation) return;
+    if(meditation.nextElementSibling !== picker){
+      meditation.insertAdjacentElement('afterend', picker);
+    }
+  }
+  function init(){
+    movePicker();
+    setInterval(movePicker,700);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
 
 </body>
 </html>
