@@ -735,6 +735,18 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 @media(max-width:800px){.v64-dashboard-grid{grid-template-columns:1fr 1fr}.v64-days-grid{grid-template-columns:repeat(7,minmax(34px,1fr))}.v64-evolution-summary{grid-template-columns:1fr 1fr}.v64-control-help{grid-template-columns:1fr}.v64-save-main{bottom:64px}}
 @media(max-width:520px){body{padding:10px}.app-brand h1{font-size:24px}.v64-dashboard-grid{grid-template-columns:1fr 1fr}.v64-days-grid{grid-template-columns:repeat(7,1fr);gap:4px}.v64-day-btn{font-size:11px;padding:7px 2px!important}.v64-stepper{grid-template-columns:1fr 1fr}.v64-step:last-child{grid-column:1/-1}.v64-save-main{flex-direction:column;align-items:stretch}.v64-save-main button{width:100%}.score-grid{grid-template-columns:1fr!important}.day-navigation{position:sticky;bottom:0;background:#f3f1ec;padding:8px 0;z-index:40}}
 </style>
+
+<style id="v64-mobile-save-fix">
+@media (max-width: 520px) {
+  /* Le bouton de sauvegarde ne doit jamais recouvrir la grille "Mon parcours". */
+  .v64-save-main {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    margin-bottom: 14px !important;
+  }
+}
+</style>
 </head>
 
 <body>
