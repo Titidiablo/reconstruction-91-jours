@@ -683,7 +683,7 @@
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V58</div>
+  <div class="app-version-v18">V59</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -760,6 +760,13 @@
           📔 Mon journal intime
         </button>
 
+        <button
+          id="evolutionNavButton"
+          class="secondary"
+          onclick="showSection('evolution')">
+          📈 Évolution des scores
+        </button>
+
       </div>
 
       <button
@@ -824,29 +831,6 @@
           Jour suivant →
         </button>
 
-      </div>
-
-      <!-- Évolution des scores -->
-      <div class="card chart-card score-chart-card">
-        <div class="score-chart-header" onclick="toggleScoreEvolution()" role="button" tabindex="0" onkeydown="if(event.key==="Enter"||event.key===" "){toggleScoreEvolution();}">
-          <h2 class="section-title">📈 Évolution de mes scores</h2>
-          <button id="scoreEvolutionToggle" class="score-chart-toggle" type="button" aria-expanded="true" aria-controls="scoreEvolutionBody" onclick="event.stopPropagation(); toggleScoreEvolution();">▼</button>
-        </div>
-        <div id="scoreEvolutionBody" class="score-chart-body">
-        <div class="score-chart-toolbar">
-          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
-          <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
-          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
-          <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
-          <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
-          <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
-          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
-        </div>
-        <div class="score-chart-wrap">
-          <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>
-        </div>
-        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
-        </div>
       </div>
 
       <!-- Contenu du jour -->
@@ -1030,6 +1014,35 @@
           <button type="button" class="stay-btn" id="unsavedStayBtn">✕ Rester sur cette journée</button>
         </div>
       </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- ÉVOLUTION DES SCORES -->
+    <!-- ======================================================= -->
+
+    <div id="evolutionSection" class="hidden">
+
+      <div class="card">
+        <h2 class="section-title">📈 Évolution de mes scores</h2>
+        <p>Visualise ma progression au fil des 91 jours.</p>
+      </div>
+
+      <div class="card score-chart-card">
+        <div class="score-chart-toolbar">
+          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
+          <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
+          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
+          <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
+          <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
+          <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
+        </div>
+        <div class="score-chart-wrap">
+          <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>
+        </div>
+        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
+      </div>
+
     </div>
 
     <!-- ======================================================= -->
@@ -1395,38 +1408,34 @@
 
   function showSection(section) {
 
-    const program =
-      document.getElementById("programSection");
+    const program = document.getElementById("programSection");
+    const journal = document.getElementById("journalSection");
+    const evolution = document.getElementById("evolutionSection");
 
-    const journal =
-      document.getElementById("journalSection");
+    const programButton = document.getElementById("programNavButton");
+    const journalButton = document.getElementById("journalNavButton");
+    const evolutionButton = document.getElementById("evolutionNavButton");
 
-    const programButton =
-      document.getElementById("programNavButton");
+    [program, journal, evolution].forEach(el => { if (el) el.classList.add("hidden"); });
+    [programButton, journalButton, evolutionButton].forEach(btn => { if (btn) btn.classList.remove("nav-active"); });
 
-    const journalButton =
-      document.getElementById("journalNavButton");
-
-    if (section === "program") {
-
-      program.classList.remove("hidden");
-      journal.classList.add("hidden");
-
-      programButton.classList.add("nav-active");
-      journalButton.classList.remove("nav-active");
-
-    } else {
-
-      program.classList.add("hidden");
+    if (section === "journal") {
       journal.classList.remove("hidden");
-
-      programButton.classList.remove("nav-active");
       journalButton.classList.add("nav-active");
-
       loadJournalEntries();
+      return;
     }
-  }
 
+    if (section === "evolution") {
+      evolution.classList.remove("hidden");
+      evolutionButton.classList.add("nav-active");
+      renderScoreEvolutionChart();
+      return;
+    }
+
+    program.classList.remove("hidden");
+    programButton.classList.add("nav-active");
+  }
 
   /* ============================================================
      SELECTEUR DES 91 JOURS
@@ -2703,20 +2712,6 @@
   /* ============================================================
      GRAPHIQUE ÉVOLUTION DES SCORES
      ============================================================ */
-
-  function toggleScoreEvolution() {
-    const body = document.getElementById("scoreEvolutionBody");
-    const button = document.getElementById("scoreEvolutionToggle");
-    if (!body || !button) return;
-
-    const collapsed = body.classList.toggle("collapsed");
-    button.textContent = collapsed ? "▶" : "▼";
-    button.setAttribute("aria-expanded", String(!collapsed));
-
-    if (!collapsed && scoreEvolutionChart) {
-      setTimeout(() => scoreEvolutionChart.resize(), 50);
-    }
-  }
 
   async function loadScoreHistory() {
     const {
