@@ -3408,65 +3408,75 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </script>
 
 
+
 <style id="v75-dashboard-today-isolation">
 /* V75 — Aujourd'hui et Tableau de bord sont deux écrans indépendants. */
-#v61Dashboard.v75-dashboard-visible + #v64Dashboard,
-#v64Dashboard.v75-dashboard-hidden { display:none !important; }
+#v61Dashboard.v75-dashboard-visible { display:block !important; }
+#v61Dashboard.v75-dashboard-visible ~ #v64Dashboard { display:none !important; }
+#v64Dashboard.v75-today-visible { display:block !important; }
+#v61Dashboard.v75-dashboard-hidden { display:none !important; }
 </style>
 <script id="v75-dashboard-today-isolation">
 (function(){
-  function sync(){
+  function setActive(id){
+    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+    document.getElementById(id)?.classList.add('nav-active');
+  }
+
+  function showTodayScreen(){
+    const program=document.getElementById('programSection');
+    const journal=document.getElementById('journalSection');
+    const evolution=document.getElementById('evolutionSection');
     const dashboard=document.getElementById('v61Dashboard');
     const today=document.getElementById('v64Dashboard');
-    if(!dashboard || !today) return;
+    if(!today) return;
 
-    const dashboardBtn=document.getElementById('dashboardNavButton');
-    const todayBtn=document.getElementById('todayNavButton');
-    const dashboardActive=!!dashboardBtn?.classList.contains('nav-active');
-    const todayActive=!!todayBtn?.classList.contains('nav-active');
+    [program,journal,evolution,dashboard].forEach(el=>el?.classList.add('hidden'));
+    dashboard?.classList.remove('v75-dashboard-visible');
+    dashboard?.classList.add('v75-dashboard-hidden');
+    today.classList.remove('hidden','v75-dashboard-hidden');
+    today.classList.add('v75-today-visible');
+    setActive('todayNavButton');
+  }
 
-    if(dashboardActive){
-      dashboard.classList.add('v75-dashboard-visible');
-      dashboard.classList.remove('hidden');
-      today.classList.add('hidden','v75-dashboard-hidden');
-      return;
-    }
-    if(todayActive){
-      dashboard.classList.add('hidden');
-      dashboard.classList.remove('v75-dashboard-visible');
-      today.classList.remove('hidden','v75-dashboard-hidden');
-      return;
-    }
+  function showDashboardScreen(){
+    const dashboard=document.getElementById('v61Dashboard');
+    const today=document.getElementById('v64Dashboard');
+    if(!dashboard) return;
+
+    ['programSection','journalSection','evolutionSection'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+    today?.classList.add('hidden');
+    today?.classList.remove('v75-today-visible');
+    dashboard.classList.remove('hidden','v75-dashboard-hidden');
+    dashboard.classList.add('v75-dashboard-visible');
+    setActive('dashboardNavButton');
   }
 
   function install(){
-    const oldShowSection=window.showSection;
-    if(typeof oldShowSection==='function' && !oldShowSection.__v75Wrapped){
-      const wrapped=function(){
-        const result=oldShowSection.apply(this,arguments);
-        setTimeout(sync,0);
-        return result;
-      };
-      wrapped.__v75Wrapped=true;
-      window.showSection=wrapped;
+    const todayBtn=document.getElementById('todayNavButton');
+    const dashboardBtn=document.getElementById('dashboardNavButton');
+    if(todayBtn && !todayBtn.dataset.v75Bound){
+      todayBtn.dataset.v75Bound='1';
+      todayBtn.onclick=showTodayScreen;
+    }
+    if(dashboardBtn && !dashboardBtn.dataset.v75Bound){
+      dashboardBtn.dataset.v75Bound='1';
+      dashboardBtn.onclick=showDashboardScreen;
     }
 
-    const oldShowToday=window.showToday;
-    if(typeof oldShowToday==='function' && !oldShowToday.__v75Wrapped){
-      const wrapped=function(){
-        const result=oldShowToday.apply(this,arguments);
-        setTimeout(sync,0);
-        return result;
-      };
-      wrapped.__v75Wrapped=true;
-      window.showToday=wrapped;
+    // Si l'utilisateur arrive sur Aujourd'hui après le chargement,
+    // conserver l'écran courant sans laisser le Tableau de bord recouvrir le cockpit.
+    const today=document.getElementById('v64Dashboard');
+    const dashboard=document.getElementById('v61Dashboard');
+    if(today && dashboard && document.getElementById('todayNavButton')?.classList.contains('nav-active')){
+      showTodayScreen();
     }
-    sync();
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
   else install();
-  window.addEventListener('load',()=>setTimeout(install,1000));
+  window.addEventListener('load',()=>setTimeout(install,1200));
+  new MutationObserver(()=>setTimeout(install,0)).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 
