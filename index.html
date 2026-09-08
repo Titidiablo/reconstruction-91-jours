@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V49</div>
+  <div class="app-version-v18">V50</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1226,7 +1226,7 @@
 
 
 
-  // V49 : initialisation Supabase différée pour que le bouton de connexion reste fonctionnel.
+  // V50 : correction de la connexion Supabase avec initialisation différée.
   function installDirtyTracking() {
     const root = document.getElementById("programSection");
     if (!root || root.dataset.dirtyTrackingInstalled) return;
@@ -1331,9 +1331,7 @@
         throw new Error("La bibliothèque Supabase n'est pas chargée. Recharge la page avec Ctrl+F5.");
       }
 
-      if (!supabaseClient) {
-        throw new Error("Le client Supabase n'est pas initialisé.");
-      }
+      // getSupabaseClient() initialise le client à la demande.
 
       if (!email || !password) {
         status.className = "error";
