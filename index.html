@@ -709,6 +709,15 @@
 .v63-upload-note{font-size:12px;color:#777;margin:8px 0 12px}
 @media(max-width:700px){.v63-resource-grid{grid-template-columns:1fr}}
 </style>
+<style id="v63-score-guidance-style">
+.score-guidance{font-size:12px;line-height:1.4;color:#666;margin:-2px 0 9px}
+.score-guidance-question{font-weight:600;color:#333;margin-bottom:3px}
+.score-guidance-anchors{display:flex;flex-direction:column;gap:2px}
+.score-guidance-anchors span{display:block}
+.score-guidance-anchors .low{color:#8a5a00}
+.score-guidance-anchors .high{color:#26733d}
+@media(max-width:700px){.score-guidance{font-size:11.5px}}
+</style>
 </head>
 
 <body>
@@ -952,8 +961,9 @@
 
         <div class="score-grid">
           <div class="score-item">
-            <label for="presenceScore">🧘 Présence</label>
-            <select id="presenceScore">
+            <label for="presenceScore">🧘 Pleine conscience</label>
+            <div id="presenceScore-guidance" class="score-guidance"><div class="score-guidance-question">Qu’ai-je réellement observé et vécu avec attention aujourd’hui ?</div><div class="score-guidance-anchors"><span class="low">1/10 : j’étais presque entièrement en pilote automatique.</span><span class="high">10/10 : j’ai été pleinement attentif à ce que je vivais, pensais et ressentais.</span></div></div>
+<select id="presenceScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -969,8 +979,9 @@
           </div>
 
           <div class="score-item">
-            <label for="impulseScore">🛑 Maîtrise de l'impulsion</label>
-            <select id="impulseScore">
+            <label for="impulseScore">🔥 Maîtrise des impulsions</label>
+            <div id="impulseScore-guidance" class="score-guidance"><div class="score-guidance-question">Dans quelle mesure ai-je choisi ma réponse plutôt que de suivre une impulsion ?</div><div class="score-guidance-anchors"><span class="low">1/10 : j’ai presque toujours réagi sous le coup de l’impulsion.</span><span class="high">10/10 : j’ai laissé un espace entre l’impulsion et ma réponse, puis choisi consciemment.</span></div></div>
+<select id="impulseScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -987,7 +998,8 @@
 
           <div class="score-item">
             <label for="valuesScore">🧭 Cohérence avec mes valeurs</label>
-            <select id="valuesScore">
+            <div id="valuesScore-guidance" class="score-guidance"><div class="score-guidance-question">Dans quelle mesure mes actes d’aujourd’hui étaient-ils alignés avec mes valeurs ?</div><div class="score-guidance-anchors"><span class="low">1/10 : mes actes étaient largement en contradiction avec mes valeurs.</span><span class="high">10/10 : mes actes étaient pleinement cohérents avec les valeurs que je veux incarner.</span></div></div>
+<select id="valuesScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -1004,7 +1016,8 @@
 
           <div class="score-item">
             <label for="selfRelationScore">❤️ Relation à moi-même</label>
-            <select id="selfRelationScore">
+            <div id="selfRelationScore-guidance" class="score-guidance"><div class="score-guidance-question">Comment ai-je traité, parlé et réagi envers moi-même aujourd’hui ?</div><div class="score-guidance-anchors"><span class="low">1/10 : je me suis jugé, dévalorisé ou maltraité intérieurement.</span><span class="high">10/10 : je me suis traité avec respect, lucidité, exigence juste et bienveillance.</span></div></div>
+<select id="selfRelationScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -3014,7 +3027,7 @@
       const b=document.createElement("button");b.id="dashboardNavButton";b.className="secondary";b.type="button";b.textContent="🏠 Tableau de bord";b.onclick=()=>window.showSection("dashboard");nav.insertBefore(b,nav.firstChild);
     }
     const sec=document.createElement("div");sec.id="v61Dashboard";sec.className="hidden v61-dashboard";
-    sec.innerHTML='<div class="card"><h2 class="section-title">🏠 Mon tableau de bord</h2><p id="v61Welcome">Ton parcours en un coup d’œil.</p><div class="v61-progress"><span id="v61Bar"></span></div><div class="v61-grid"><div class="v61-stat"><span class="v61-label">Progression</span><strong id="v61Progress" class="v61-value">—</strong><span class="v61-note">jours du programme</span></div><div class="v61-stat"><span class="v61-label">Score global</span><strong id="v61Score" class="v61-value">—</strong><span id="v61ScoreNote" class="v61-note">sur 10</span></div><div class="v61-stat"><span class="v61-label">Streak</span><strong id="v61Streak" class="v61-value">—</strong><span class="v61-note">jours consécutifs</span></div><div class="v61-stat"><span class="v61-label">Dernière journée notée</span><strong id="v61Last" class="v61-value">—</strong><span class="v61-note">avec un score</span></div></div></div><div class="card"><h2 class="section-title">🧠 Analyse de mon évolution</h2><div class="v61-insights"><div class="v61-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div><div class="v61-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strong">—</p></div><div class="v61-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weak">—</p></div><div class="v61-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div></div></div><div class="card"><h2 class="section-title">🗓️ Mes dernières journées</h2><div id="v61RecentList"></div></div>';
+    sec.innerHTML='<div class="card"><h2 class="section-title">🏠 Mon tableau de bord</h2><p id="v61Welcome">Ton parcours en un coup d’œil.</p><div class="v61-progress"><span id="v61Bar"></span></div><div class="v61-grid"><div class="v61-stat"><span class="v61-label">Progression</span><strong id="v61Progress" class="v61-value">—</strong><span class="v61-note">jours du programme</span></div><div class="v61-stat"><span class="v61-label">Score global</span><strong id="v61Score" class="v61-value">—</strong><span id="v61ScoreNote" class="v61-note">sur 10</span></div><div class="v61-stat"><span class="v61-label">Série</span><strong id="v61Streak" class="v61-value">—</strong><span class="v61-note">jours consécutifs</span></div><div class="v61-stat"><span class="v61-label">Dernière journée notée</span><strong id="v61Last" class="v61-value">—</strong><span class="v61-note">avec un score</span></div></div></div><div class="card"><h2 class="section-title">🧠 Analyse de mon évolution</h2><div class="v61-insights"><div class="v61-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div><div class="v61-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strong">—</p></div><div class="v61-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weak">—</p></div><div class="v61-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div></div></div><div class="card"><h2 class="section-title">🗓️ Mes dernières journées</h2><div id="v61RecentList"></div></div>';
     top.insertAdjacentElement("afterend",sec);
   }
   async function load(){
