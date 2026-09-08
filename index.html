@@ -520,7 +520,7 @@
       }
     }
   
-/* V52 - base V45 + initialisation Supabase robuste */
+/* V55 - bouton sauvegarde fixe + graphique 7/30/90 complet avec zeros */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -654,11 +654,35 @@
   margin-bottom: 8px !important;
 }
 </style>
+
+<style id="v55-save-floating-css">
+#floatingSaveButton {
+  position: fixed;
+  left: 18px;
+  top: 45%;
+  z-index: 9990;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #222;
+  color: #fff;
+  box-shadow: 0 5px 18px rgba(0,0,0,.20);
+  font-weight: bold;
+  border: 0;
+  cursor: pointer;
+}
+#floatingSaveButton.dirty {
+  box-shadow: 0 0 0 4px rgba(34,34,34,.14), 0 5px 18px rgba(0,0,0,.20);
+}
+@media (max-width: 700px) {
+  #floatingSaveButton { left: 12px; right: 12px; bottom: 12px; top: auto; width: calc(100% - 24px); }
+}
+</style>
 <style id="v53-unsaved-modal">.unsaved-modal-backdrop{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.55)}.unsaved-modal-backdrop.hidden{display:none!important}.unsaved-modal{width:min(560px,100%);background:#fff;border-radius:16px;padding:26px;box-shadow:0 18px 60px rgba(0,0,0,.30);border:1px solid rgba(0,0,0,.08);text-align:left;animation:unsavedModalIn .16s ease-out}.unsaved-modal h3{margin:0 0 12px;font-size:21px}.unsaved-modal p{margin:0 0 20px;color:#555;line-height:1.5}.unsaved-modal-actions{display:flex;flex-direction:column;gap:9px}.unsaved-modal-actions button{width:100%;margin:0}.unsaved-modal-actions .stay-btn{background:#f0eee9;color:#222;border:1px solid #d6d2ca}.unsaved-modal-actions .stay-btn:hover{background:#e8e5df}@keyframes unsavedModalIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}</style>
 </head>
 
 <body>
-  <div class="app-version-v18">V54</div>
+  <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
+  <div class="app-version-v18">V55</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -696,7 +720,7 @@
       placeholder="Ton mot de passe"
     >
 
-    <button class="primary" onclick="signIn()">
+    <button id="signInBtn" type="button" class="primary" onclick="signIn()">
       Se connecter
     </button>
 
@@ -2631,10 +2655,9 @@
     const endPos = section.indexOf(endMarker);
     if (endPos >= 0) section = section.slice(0, endPos).trim();
 
-    // Nouveau format : restauration EXACTE du tableau, y compris zéro ligne.
     const jsonMarker = "__CONTROL_TABLE_JSON__";
     const jsonPos = raw.lastIndexOf(jsonMarker);
-    if (jsonPos >= 0) {
+    if (jsonPos >= start) {
       const jsonEnd = raw.indexOf(endMarker, jsonPos);
       const json = raw.slice(jsonPos + jsonMarker.length, jsonEnd >= 0 ? jsonEnd : raw.length).trim();
       try {
@@ -2646,34 +2669,23 @@
           return;
         }
       } catch (e) {
-        console.warn("Impossible de restaurer le tableau JSON", e);
+        console.warn("Impossible de restaurer le dernier tableau JSON", e);
       }
     }
 
-    // Compatibilité avec les anciennes sauvegardes.
-    const nextMarkers = [
-      "\nDÉCISION SANS VALIDATION\n",
-      "\nBILAN DE SEMAINE — SCORES\n"
-    ];
+    const nextMarkers = ["\nDÉCISION SANS VALIDATION\n", "\nBILAN DE SEMAINE — SCORES\n"];
     let legacySection = section;
     if (endPos < 0) {
       let end = legacySection.length;
-      nextMarkers.forEach(m => {
-        const idx = legacySection.indexOf(m);
-        if (idx >= 0 && idx < end) end = idx;
-      });
+      nextMarkers.forEach(m => { const idx = legacySection.indexOf(m); if (idx >= 0 && idx < end) end = idx; });
       legacySection = legacySection.slice(0, end).trim();
     }
-
     const rows = legacySection ? legacySection.split("\n") : [];
     rows.forEach(line => {
       const m = line.match(/^\d+\.\s*Contrôle:\s*(.*?)\s*\|\s*Influence:\s*(.*?)\s*\|\s*Hors contrôle:\s*(.*)$/);
       if (m) addControlRow([m[1], m[2], m[3]]);
     });
-
-    if (!rows.length) {
-      for (let i = 0; i < 3; i++) addControlRow();
-    }
+    if (!rows.length) for (let i = 0; i < 3; i++) addControlRow();
   }
 
   function parseScore(id) {
@@ -2754,6 +2766,10 @@
       .sort((a,b) => Number(a.day_number) - Number(b.day_number));
 
     const map = new Map(rows.map(row => [Number(row.day_number), row]));
+    const scoreValue = (row, key) => {
+      const value = Number(row?.[key]);
+      return Number.isFinite(value) ? Math.max(0, Math.min(10, value)) : 0;
+    };
     const days = [];
     for (let d = startDay; d <= endDay; d++) days.push(d);
 
@@ -2764,15 +2780,9 @@
       ["self_relation", "Relation à moi-même"]
     ];
 
-    const hasScores = rows.some(row =>
-      keys.some(([k]) => row[k] !== null && row[k] !== undefined && row[k] !== "")
-    );
-
-    if (!hasScores) {
-      container.innerHTML = '<div class="chart-empty">Aucun score enregistré sur cette période.</div>';
-      if (status) { status.textContent = ""; status.classList.add("hidden"); }
-      return;
-    }
+    // Toujours afficher toute la période sélectionnée.
+    // Une journée sans score est représentée par 0 pour chacune des 4 mesures.
+    if (status) { status.textContent = ""; status.classList.add("hidden"); }
 
     // SVG autonome : aucun CDN, aucun canvas, aucun problème de hauteur.
     const W = 900, H = 360, L = 58, R = 20, T = 20, B = 48;
@@ -2784,8 +2794,10 @@
       key, label,
       points: days.map((d,i) => {
         const row = map.get(d);
-        const v = row && row[key] !== null && row[key] !== undefined && row[key] !== "" ? Number(row[key]) : null;
-        return v !== null && Number.isFinite(v) ? {x:x(i), y:y(v), v, d} : null;
+        const raw = row?.[key];
+        const parsed = Number(raw);
+        const v = Number.isFinite(parsed) ? Math.max(0, Math.min(10, parsed)) : 0;
+        return {x:x(i), y:y(v), v, d};
       })
     }));
 
@@ -2897,10 +2909,7 @@
       if (session) await showApplication();
     } catch (error) {
       console.warn("Session non disponible au démarrage", error);
-      if (status) {
-        status.className = "error";
-        status.textContent = "Connexion prête : " + (error?.message || error);
-      }
+      if (status) { status.className = "error"; status.textContent = "Connexion prête : " + (error?.message || error); }
     }
   }
 
@@ -2913,5 +2922,18 @@
 
 </script>
 
+
+<script id="v55-save-floating-js">
+(function(){
+  const btn = document.getElementById("floatingSaveButton");
+  if (!btn) return;
+  function sync(){
+    try { btn.classList.toggle("dirty", !!window.isDirty); } catch(e) {}
+  }
+  document.addEventListener("input", sync, true);
+  document.addEventListener("change", sync, true);
+  setInterval(sync, 500);
+})();
+</script>
 </body>
 </html>
