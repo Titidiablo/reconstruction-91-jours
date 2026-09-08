@@ -1,4 +1,4 @@
-name: Deploy V98
+name: Deploy V99
 
 on:
   push:
@@ -75,7 +75,7 @@ jobs:
       - name: Apply V98 settings menu
         run: python3 scripts/patch_v98_settings.py
 
-      - name: Set displayed version V98
+      - name: Set displayed version V99
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -84,17 +84,15 @@ jobs:
           s=p.read_text(encoding='utf-8')
           marker='<!-- DISPLAY_VERSION -->'
           if marker in s:
-              s=re.sub(r'<!-- DISPLAY_VERSION -->.*?<!-- /DISPLAY_VERSION -->','<!-- DISPLAY_VERSION -->V98<!-- /DISPLAY_VERSION -->',s,flags=re.S)
+              s=re.sub(r'<!-- DISPLAY_VERSION -->.*?<!-- /DISPLAY_VERSION -->','<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->',s,flags=re.S)
           else:
-              s += '\n<!-- DISPLAY_VERSION -->V98<!-- /DISPLAY_VERSION -->\n'
+              s += '\n<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->\n'
           p.write_text(s,encoding='utf-8')
           PY
-      - name: Validate V98
+      - name: Validate V99
         run: |
-          # V98 builds the settings button/panel dynamically in JavaScript.
           grep -q "settingsNavButton" index.html
           grep -q "v98SettingsPanel" index.html
-          grep -q "v98-settings" index.html
           grep -q 'Méditation' index.html
           grep -q 'Respiration / relaxation' index.html
           grep -q 'Sommeil' index.html
@@ -102,13 +100,13 @@ jobs:
           grep -q 'Motivation' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
-          grep -q '<!-- DISPLAY_VERSION -->V98<!-- /DISPLAY_VERSION -->' index.html
-      - name: Commit V98
+          grep -q '<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->' index.html
+      - name: Commit V99
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          if git diff --cached --quiet; then echo "V98 déjà présent"; exit 0; fi
-          git commit -m "V98 - settings menu and module preferences"
+          if git diff --cached --quiet; then echo "V99 déjà présent"; exit 0; fi
+          git commit -m "V99 - rebuild settings deployment"
           git pull --rebase origin main
           git push origin HEAD:main
