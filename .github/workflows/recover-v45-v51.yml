@@ -39,7 +39,7 @@ jobs:
               'const jsonPos = raw.lastIndexOf(jsonMarker);',
               'function signIn() {',
               'await supabaseClient.auth.signInWithPassword',
-              'document.addEventListener("beforeunload"',
+              'window.addEventListener("beforeunload"',
             ];
             for (const x of required) if (!s.includes(x)) throw new Error('V51 validation failed: '+x);
             await github.rest.repos.createOrUpdateFileContents({owner,repo,path:'index.html',message:'V51 - base V45',content:Buffer.from(s,'utf8').toString('base64'),sha:(await github.rest.repos.getContent({owner,repo,path:'index.html',ref:'main'})).data.sha,branch:'main'});
