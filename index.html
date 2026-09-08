@@ -520,7 +520,7 @@
       }
     }
   
-/* V45 - protection contre les changements de jour avec modifications non sauvegardées */
+/* V47 - restauration du tableau depuis la BDD, sans écrasement local */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V45</div>
+  <div class="app-version-v18">V47</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1217,7 +1217,7 @@
 
 
 
-  // V45 : toute modification de formulaire rend la journée "sale".
+  // V47 : toute modification de formulaire rend la journée "sale".
   function installDirtyTracking() {
     const root = document.getElementById("programSection");
     if (!root || root.dataset.dirtyTrackingInstalled) return;
@@ -1626,8 +1626,11 @@
     document.getElementById("meditationNotes").value =
       data.meditation_notes || "";
 
-    document.getElementById("exerciseResponse").value =
-      data.exercise_response || "";
+    const rawExerciseResponse = data.exercise_response || "";
+    // Ne jamais transporter les anciens blocs structurés dans le champ caché :
+    // sinon chaque sauvegarde les concatène à nouveau.
+    const hasStructuredBlocks = /(?:^|\n)(?:PRATIQUE DU JOUR|TRACE ÉCRITE|TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE|DÉCISION SANS VALIDATION|BILAN DE SEMAINE — SCORES)\n/i.test(rawExerciseResponse);
+    document.getElementById("exerciseResponse").value = hasStructuredBlocks ? "" : rawExerciseResponse;
 
     restoreWeeklyScores(data.exercise_response || "");
     restoreControlTable(data.exercise_response || "");
@@ -1845,6 +1848,12 @@
     document.getElementById("valuesScore").value = "";
     document.getElementById("selfRelationScore").value = "";
     ["practiceResponse","traceResponse","actionResponseInline","eveningResponseInline"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+
+    const body = document.getElementById("controlTableBody");
+    if (body) {
+      body.innerHTML = "";
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
 
     document.getElementById("saveStatus").textContent = "";
   }
@@ -2619,23 +2628,15 @@
     body.innerHTML = "";
     const raw = String(text || "");
     const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";
-    const start = raw.indexOf(marker);
-
-    if (start < 0) {
-      for (let i = 0; i < 3; i++) addControlRow();
-      return;
-    }
-
-    let section = raw.slice(start + marker.length);
-    const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
-    const endPos = section.indexOf(endMarker);
-    if (endPos >= 0) section = section.slice(0, endPos).trim();
-
-    // Nouveau format : restauration EXACTE du tableau, y compris zéro ligne.
     const jsonMarker = "__CONTROL_TABLE_JSON__";
-    const jsonPos = section.indexOf(jsonMarker);
+    const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
+
+    // La BDD peut contenir des sauvegardes historiques concaténées :
+    // le dernier bloc JSON est le plus récent et devient la source de vérité.
+    const jsonPos = raw.lastIndexOf(jsonMarker);
     if (jsonPos >= 0) {
-      const json = section.slice(jsonPos + jsonMarker.length).trim();
+      const jsonEnd = raw.indexOf(endMarker, jsonPos);
+      const json = raw.slice(jsonPos + jsonMarker.length, jsonEnd >= 0 ? jsonEnd : raw.length).trim();
       try {
         const rows = JSON.parse(json);
         if (Array.isArray(rows)) {
@@ -2645,9 +2646,20 @@
           return;
         }
       } catch (e) {
-        console.warn("Impossible de restaurer le tableau JSON", e);
+        console.warn("Impossible de restaurer le dernier tableau JSON", e);
       }
     }
+
+    // Compatibilité avec les anciennes sauvegardes sans JSON : dernier bloc.
+    const start = raw.lastIndexOf(marker);
+    if (start < 0) {
+      for (let i = 0; i < 3; i++) addControlRow();
+      return;
+    }
+
+    let section = raw.slice(start + marker.length);
+    const endPos = section.indexOf(endMarker);
+    if (endPos >= 0) section = section.slice(0, endPos).trim();
 
     // Compatibilité avec les anciennes sauvegardes.
     const nextMarkers = [
