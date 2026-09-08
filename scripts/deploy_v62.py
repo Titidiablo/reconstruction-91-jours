@@ -23,14 +23,13 @@ if '>V62</div>' not in html:
 # Explicit V62 marker for auditability.
 marker = '<script id="v62-save-button-cleanup">'
 if marker not in html:
-    html = html.replace(
-        '</body>',
-        '''<script id="v62-save-button-cleanup">
-window.v62SaveButtonCleanup = true;
-</script>
-</body>''',
-        1,
-    )
+    cleanup = '<script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>\n'
+    if '</body>' in html:
+        html = html.replace('</body>', cleanup + '</body>', 1)
+    elif '</html>' in html:
+        html = html.replace('</html>', cleanup + '</html>', 1)
+    else:
+        html += '\n' + cleanup
 
 # Final checks: requested change + version + existing floating save control.
 if '>V62</div>' not in html:
