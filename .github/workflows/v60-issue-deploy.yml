@@ -1,0 +1,199 @@
+name: Deploy V60 from issue
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  deploy:
+    if: github.event.issue.title == 'DEPLOY V60'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch V60
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Version: visible badge only.
+          if '>V60</div>' not in s:
+              if '>V59</div>' not in s:
+                  raise SystemExit('V59 badge not found')
+              s = s.replace('>V59</div>', '>V60</div>', 1)
+
+          # Exact unsaved-changes wording requested by the app spec.
+          s = s.replace('↩️ Annuler et continuer', '↩️ Annuler les modifications')
+
+          # Summary below the score graph.
+          chart_marker = '        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>'
+          if 'id="scoreEvolutionSummary"' not in s:
+              summary = '''        <div id="scoreEvolutionSummary" class="score-evolution-summary" aria-live="polite">
+          <div class="score-summary-item">
+            <span class="score-summary-label">Progression depuis J1</span>
+            <strong id="scoreSummaryProgression">—</strong>
+          </div>
+          <div class="score-summary-item">
+            <span class="score-summary-label">Dimension la plus forte</span>
+            <strong id="scoreSummaryStrongest">—</strong>
+          </div>
+          <div class="score-summary-item">
+            <span class="score-summary-label">Dimension à travailler</span>
+            <strong id="scoreSummaryWeakest">—</strong>
+          </div>
+          <p id="scoreSummaryContext" class="score-summary-context">Les indicateurs portent sur la période affichée.</p>
+        </div>'''
+              if chart_marker not in s:
+                  raise SystemExit('chart marker not found')
+              s = s.replace(chart_marker, chart_marker + '\n' + summary, 1)
+
+          if 'id="v60-evolution-summary"' not in s:
+              css = '''<style id="v60-evolution-summary">
+          .score-evolution-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+          .score-summary-item{background:#f7f5f1;border:1px solid #ddd9d1;border-radius:10px;padding:12px;min-width:0}
+          .score-summary-label{display:block;color:#777;font-size:12px;margin-bottom:4px}
+          .score-summary-item strong{display:block;font-size:16px;line-height:1.3}
+          .score-summary-context{grid-column:1/-1;margin:0;color:#777;font-size:12px}
+          @media (max-width:700px){.score-evolution-summary{grid-template-columns:1fr}.score-summary-context{grid-column:auto}}
+          </style>\n'''
+              s = s.replace('</head>', css + '</head>', 1)
+
+          if 'function renderScoreEvolutionSummary()' not in s:
+              js = '''
+  function renderScoreEvolutionSummary() {
+    const progressEl = document.getElementById("scoreSummaryProgression");
+    const strongestEl = document.getElementById("scoreSummaryStrongest");
+    const weakestEl = document.getElementById("scoreSummaryWeakest");
+    const contextEl = document.getElementById("scoreSummaryContext");
+    if (!progressEl || !strongestEl || !weakestEl) return;
+
+    const endDay = Math.min(chartRange, 91);
+    const rows = (dailyScoreHistory || [])
+      .filter(row => {
+        const d = Number(row.day_number);
+        return Number.isFinite(d) && d >= 1 && d <= endDay;
+      })
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
+
+    const dimensions = [
+      ["presence", "Présence"],
+      ["impulse_control", "Maîtrise de l'impulsion"],
+      ["values_coherence", "Cohérence avec mes valeurs"],
+      ["self_relation", "Relation à moi-même"]
+    ];
+
+    const validScore = value => {
+      const n = Number(value);
+      return Number.isFinite(n) && n >= 1 && n <= 10 ? n : null;
+    };
+
+    const averageRow = row => {
+      const values = dimensions.map(([key]) => validScore(row?.[key])).filter(v => v !== null);
+      return values.length ? values.reduce((a,b) => a+b, 0) / values.length : null;
+    };
+
+    const scoredRows = rows.filter(row => averageRow(row) !== null);
+    if (!scoredRows.length) {
+      progressEl.textContent = "—";
+      strongestEl.textContent = "—";
+      weakestEl.textContent = "—";
+      if (contextEl) contextEl.textContent = "Aucun score enregistré sur la période affichée.";
+      return;
+    }
+
+    const first = averageRow(scoredRows[0]);
+    const last = averageRow(scoredRows[scoredRows.length - 1]);
+    const delta = last - first;
+    progressEl.textContent = (delta >= 0 ? "+" : "") + delta.toFixed(1) + " point" + (Math.abs(delta) >= 2 ? "s" : "");
+
+    const dimensionAverages = dimensions.map(([key,label]) => {
+      const values = rows.map(row => validScore(row?.[key])).filter(v => v !== null);
+      return {label, average: values.length ? values.reduce((a,b) => a+b, 0) / values.length : null};
+    }).filter(item => item.average !== null).sort((a,b) => b.average - a.average);
+
+    strongestEl.textContent = dimensionAverages[0] ? dimensionAverages[0].label + " · " + dimensionAverages[0].average.toFixed(1) + "/10" : "—";
+    weakestEl.textContent = dimensionAverages.length ? dimensionAverages[dimensionAverages.length - 1].label + " · " + dimensionAverages[dimensionAverages.length - 1].average.toFixed(1) + "/10" : "—";
+
+    if (contextEl) {
+      contextEl.textContent = "Comparaison du premier score enregistré (J" + Number(scoredRows[0].day_number) + ") au dernier (J" + Number(scoredRows[scoredRows.length - 1].day_number) + "). Les deux autres indicateurs sont calculés sur la période affichée.";
+    }
+  }
+'''
+              marker = '\n  /* ============================================================\n     FORMATAGE PROGRAMME'
+              if marker not in s:
+                  raise SystemExit('JS insertion marker not found')
+              s = s.replace(marker, js + marker, 1)
+
+          if 'renderScoreEvolutionSummary();' not in s:
+              marker = '    if (status) { status.textContent = ""; status.classList.add("hidden"); }\n  }\n\n  /* ============================================================\n     FORMATAGE PROGRAMME'
+              if marker not in s:
+                  raise SystemExit('chart end marker not found')
+              replacement = '    if (status) { status.textContent = ""; status.classList.add("hidden"); }\n    renderScoreEvolutionSummary();\n  }\n\n  /* ============================================================\n     FORMATAGE PROGRAMME'
+              s = s.replace(marker, replacement, 1)
+
+          # Verify ALL V60 requirements before commit.
+          checks = [
+              '>V60</div>',
+              'id="scoreEvolutionSummary"',
+              'function renderScoreEvolutionSummary()',
+              'renderScoreEvolutionSummary();',
+              'const keys = [',
+              '"Moyenne générale"',
+              'const averageColor = "#f59e0b"',
+              'id="chart7Button"', 'id="chart15Button"', 'id="chart30Button"',
+              'id="chart45Button"', 'id="chart60Button"', 'id="chart75Button"', 'id="chart90Button"',
+              '__CONTROL_TABLE_JSON__', '__FIN_TABLEAU_CONTROLE__',
+              '↩️ Annuler les modifications'
+          ]
+          for item in checks:
+              if item not in s:
+                  raise SystemExit('Missing required V60 content: ' + item)
+
+          if s.count('id="scoreEvolutionSummary"') != 1:
+              raise SystemExit('Summary container count invalid')
+          if len(re.findall(r'function renderScoreEvolutionSummary\(\)', s)) != 1:
+              raise SystemExit('Summary function count invalid')
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validate generated HTML
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          s = Path('index.html').read_text(encoding='utf-8')
+          checks = [
+              '>V60</div>', 'id="scoreEvolutionSummary"',
+              'function renderScoreEvolutionSummary()', 'renderScoreEvolutionSummary();',
+              'const keys = [', 'const averageColor = "#f59e0b"',
+              'id="chart90Button"', '__CONTROL_TABLE_JSON__', '__FIN_TABLEAU_CONTROLE__',
+              '↩️ Annuler les modifications'
+          ]
+          for item in checks:
+              assert item in s, item
+          assert s.count('id="scoreEvolutionSummary"') == 1
+          assert len(re.findall(r'function renderScoreEvolutionSummary\(\)', s)) == 1
+
+      - name: Commit V60
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Update index.html V60'
+          git push
+
+      - name: Close trigger issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, state: 'closed', state_reason: 'completed'});
