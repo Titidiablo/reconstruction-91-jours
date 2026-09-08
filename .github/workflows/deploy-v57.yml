@@ -1,4 +1,4 @@
-name: Deploy V57
+name: Deploy V58 stable
 
 on:
   push:
@@ -18,39 +18,144 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
 
-          if '>V57</div>' in s:
-              print('V57 already installed')
+          if '>V58</div>' in s:
+              print('V58 already installed')
               raise SystemExit(0)
 
-          if '>V56</div>' not in s:
-              raise SystemExit('V56 badge not found')
+          if '>V57</div>' not in s:
+              raise SystemExit('V57 badge not found')
 
-          s = s.replace('>V56</div>', '>V57</div>', 1)
+          s = s.replace('>V57</div>', '>V58</div>', 1)
 
-          declaration = '  let dailyScoreHistory = [];'
-          if 'let dailyScoreHistory = [];' not in s:
-              anchor = '  let allDailyEntries = [];\n'
-              if anchor not in s:
-                  raise SystemExit('Variable anchor not found')
-              s = s.replace(anchor, anchor + declaration + '\n', 1)
+          old_show = '    await loadJournalEntries();\n    await loadScoreHistory();\n  }'
+          new_show = '    await loadJournalEntries();\n    await loadScoreHistory();\n    renderScoreEvolutionChart();\n    setTimeout(renderScoreEvolutionChart, 0);\n  }'
+          if old_show in s:
+              s = s.replace(old_show, new_show, 1)
+
+          old_css = '.chart-legend-item { display:inline-flex; align-items:center; gap:6px; }\n.chart-legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }'
+          new_css = '.chart-legend-item { display:inline-flex; align-items:center; gap:7px; }\n.chart-legend-dot { width:14px; height:4px; border-radius:999px; display:inline-block; }'
+          if old_css in s:
+              s = s.replace(old_css, new_css, 1)
+
+          start = s.find('  function renderScoreEvolutionChart() {')
+          marker = '\n  /* ============================================================\n     FORMATAGE PROGRAMME'
+          end = s.find(marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit('Chart function boundaries not found')
+
+          chart = r'''  function renderScoreEvolutionChart() {
+    const container = document.getElementById("scoreEvolutionChartContainer");
+    const status = document.getElementById("chartStatus");
+    if (!container) return;
+
+    // Périodes cumulées : J1 -> JN.
+    const startDay = 1;
+    const endDay = Math.min(Number(chartRange) || 90, 91);
+    const days = [];
+    for (let d = startDay; d <= endDay; d++) days.push(d);
+
+    const rows = (dailyScoreHistory || [])
+      .filter(row => {
+        const d = Number(row.day_number);
+        return Number.isFinite(d) && d >= startDay && d <= endDay;
+      })
+      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
+
+    if (!rows.length) {
+      container.innerHTML = '<div class="chart-empty">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>';
+      if (status) { status.textContent = ""; status.classList.add("hidden"); }
+      return;
+    }
+
+    const map = new Map(rows.map(row => [Number(row.day_number), row]));
+    const scoreValue = (row, key) => {
+      const value = Number(row?.[key]);
+      return Number.isFinite(value) ? Math.max(0, Math.min(10, value)) : 0;
+    };
+
+    const keys = [
+      ["presence", "Présence", "#2563eb"],
+      ["impulse_control", "Maîtrise de l'impulsion", "#dc2626"],
+      ["values_coherence", "Cohérence avec mes valeurs", "#059669"],
+      ["self_relation", "Relation à moi-même", "#9333ea"]
+    ];
+
+    const W = 960, H = 400, L = 58, R = 24, T = 22, B = 56;
+    const PW = W - L - R, PH = H - T - B;
+    const x = i => L + (days.length === 1 ? PW / 2 : i * PW / (days.length - 1));
+    const y = v => T + PH - (Number(v) / 10) * PH;
+
+    let svg = '';
+
+    for (let n = 0; n <= 10; n++) {
+      const yy = y(n);
+      svg += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e5e7eb" stroke-width="1"/>`;
+      svg += `<text x="${L-10}" y="${yy+4}" text-anchor="end" font-size="11" fill="#6b7280">${n}</text>`;
+    }
+
+    const xStep = days.length <= 10 ? 1 : Math.ceil(days.length / 10);
+    days.forEach((d, i) => {
+      if (i % xStep === 0 || i === days.length - 1) {
+        svg += `<text x="${x(i)}" y="${H-18}" text-anchor="middle" font-size="11" fill="#6b7280">J${d}</text>`;
+      }
+    });
+
+    svg += `<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#9ca3af"/>`;
+    svg += `<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#9ca3af"/>`;
+
+    // Quatre courbes colorées, une par dimension.
+    keys.forEach(([key, label, color]) => {
+      const points = days.map((d, i) => {
+        const row = map.get(d);
+        return { x: x(i), y: y(scoreValue(row, key)), d, v: scoreValue(row, key) };
+      });
+      const polyline = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      svg += `<polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+      points.forEach(p => {
+        svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${color}" data-day="${p.d}" data-score="${p.v}"><title>J${p.d} — ${p.v}/10</title></circle>`;
+      });
+    });
+
+    const legend = keys.map(([, label, color]) =>
+      `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${color}"></span>${escapeHtml(label)}</span>`
+    ).join('');
+
+    container.innerHTML = `
+      <div class="score-svg-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution des scores du Jour ${startDay} au Jour ${endDay}">
+          ${svg}
+        </svg>
+      </div>
+      <div class="chart-legend">${legend}</div>
+    `;
+
+    if (status) {
+      status.textContent = '';
+      status.classList.add('hidden');
+    }
+  }
+'''
+          s = s[:start] + chart + s[end:]
 
           required = [
-              '>V57</div>',
-              'let dailyScoreHistory = [];',
-              'id="chart15Button"',
-              'id="chart45Button"',
-              'id="chart60Button"',
-              'id="chart75Button"',
+              '>V58</div>',
+              'renderScoreEvolutionChart();\n    setTimeout(renderScoreEvolutionChart, 0);',
               'const startDay = 1;',
-              'const endDay = Math.min(chartRange, 91);',
-              'id="floatingSaveButton"'
+              'const endDay = Math.min(Number(chartRange) || 90, 91);',
+              '["presence", "Présence", "#2563eb"]',
+              '["impulse_control", "Maîtrise de l\'impulsion", "#dc2626"]',
+              '["values_coherence", "Cohérence avec mes valeurs", "#059669"]',
+              '["self_relation", "Relation à moi-même", "#9333ea"]',
+              '<polyline points=',
+              'chart-legend-dot'
           ]
           for item in required:
               if item not in s:
-                  raise SystemExit('Missing V57 content: ' + item)
+                  raise SystemExit('Missing V58 element: ' + item)
 
           p.write_text(s, encoding='utf-8')
           PY
@@ -58,19 +163,17 @@ jobs:
       - name: Validate and commit
         shell: bash
         run: |
-          grep -q '>V57</div>' index.html
-          grep -q 'let dailyScoreHistory = \[\];' index.html
-          grep -q 'id="chart15Button"' index.html
-          grep -q 'id="chart45Button"' index.html
-          grep -q 'id="chart60Button"' index.html
-          grep -q 'id="chart75Button"' index.html
-          grep -q 'const startDay = 1;' index.html
-          grep -q 'const endDay = Math.min(chartRange, 91);' index.html
-          grep -q 'id="floatingSaveButton"' index.html
-
+          grep -q '>V58</div>' index.html
+          grep -q '<polyline points=' index.html
+          grep -q '"#2563eb"' index.html
+          grep -q '"#dc2626"' index.html
+          grep -q '"#059669"' index.html
+          grep -q '"#9333ea"' index.html
+          grep -q 'chart-legend-dot' index.html
+          grep -q 'setTimeout(renderScoreEvolutionChart, 0)' index.html
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Update index.html V57'
+          git commit -m 'Update index.html V58 colored chart'
           git push
