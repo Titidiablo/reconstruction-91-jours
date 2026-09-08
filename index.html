@@ -697,6 +697,27 @@
 @media(max-width:700px){.v61-grid{grid-template-columns:1fr 1fr}.v61-insights{grid-template-columns:1fr}}
 @media(max-width:480px){.v61-grid{grid-template-columns:1fr}}
 </style>
+<style id="v63-resources-style">
+.v63-resource-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.v63-resource-card{border:1px solid #ddd9d1;border-radius:12px;padding:15px;background:#faf9f6}
+.v63-resource-card h3{margin:0 0 5px;font-size:17px}
+.v63-resource-meta{font-size:12px;color:#777;margin-bottom:10px}
+.v63-resource-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.v63-resource-preview{width:100%;border-radius:9px;margin-top:10px}
+.v63-resource-preview iframe{width:100%;height:280px;border:0;border-radius:9px}
+.v63-resource-empty{color:#777;text-align:center;padding:30px 10px}
+.v63-upload-note{font-size:12px;color:#777;margin:8px 0 12px}
+@media(max-width:700px){.v63-resource-grid{grid-template-columns:1fr}}
+</style>
+<style id="v63-score-guidance-style">
+.score-guidance{font-size:12px;line-height:1.4;color:#666;margin:-2px 0 9px}
+.score-guidance-question{font-weight:600;color:#333;margin-bottom:3px}
+.score-guidance-anchors{display:flex;flex-direction:column;gap:2px}
+.score-guidance-anchors span{display:block}
+.score-guidance-anchors .low{color:#8a5a00}
+.score-guidance-anchors .high{color:#26733d}
+@media(max-width:700px){.score-guidance{font-size:11.5px}}
+</style>
 
 <style id="v64-ux-style">
 /* V64 — DEVENIR SOI : refonte UX complète */
@@ -781,7 +802,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V62</div>
+  <div class="app-version-v18">V96</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1018,8 +1039,9 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
         <div class="score-grid">
           <div class="score-item">
-            <label for="presenceScore">🧘 Présence</label>
-            <select id="presenceScore">
+            <label for="presenceScore">🧘 Pleine conscience</label>
+            <div id="presenceScore-guidance" class="score-guidance"><div class="score-guidance-question">Qu’ai-je réellement observé et vécu avec attention aujourd’hui ?</div><div class="score-guidance-anchors"><span class="low">1/10 : j’étais presque entièrement en pilote automatique.</span><span class="high">10/10 : j’ai été pleinement attentif à ce que je vivais, pensais et ressentais.</span></div></div>
+<select id="presenceScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -1035,8 +1057,9 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
           </div>
 
           <div class="score-item">
-            <label for="impulseScore">🛑 Maîtrise de l'impulsion</label>
-            <select id="impulseScore">
+            <label for="impulseScore">🔥 Maîtrise des impulsions</label>
+            <div id="impulseScore-guidance" class="score-guidance"><div class="score-guidance-question">Dans quelle mesure ai-je choisi ma réponse plutôt que de suivre une impulsion ?</div><div class="score-guidance-anchors"><span class="low">1/10 : j’ai presque toujours réagi sous le coup de l’impulsion.</span><span class="high">10/10 : j’ai laissé un espace entre l’impulsion et ma réponse, puis choisi consciemment.</span></div></div>
+<select id="impulseScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -1053,7 +1076,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
           <div class="score-item">
             <label for="valuesScore">🧭 Cohérence avec mes valeurs</label>
-            <select id="valuesScore">
+            <div id="valuesScore-guidance" class="score-guidance"><div class="score-guidance-question">Dans quelle mesure mes actes d’aujourd’hui étaient-ils alignés avec mes valeurs ?</div><div class="score-guidance-anchors"><span class="low">1/10 : mes actes étaient largement en contradiction avec mes valeurs.</span><span class="high">10/10 : mes actes étaient pleinement cohérents avec les valeurs que je veux incarner.</span></div></div>
+<select id="valuesScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -1070,7 +1094,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
           <div class="score-item">
             <label for="selfRelationScore">❤️ Relation à moi-même</label>
-            <select id="selfRelationScore">
+            <div id="selfRelationScore-guidance" class="score-guidance"><div class="score-guidance-question">Comment ai-je traité, parlé et réagi envers moi-même aujourd’hui ?</div><div class="score-guidance-anchors"><span class="low">1/10 : je me suis jugé, dévalorisé ou maltraité intérieurement.</span><span class="high">10/10 : je me suis traité avec respect, lucidité, exigence juste et bienveillance.</span></div></div>
+<select id="selfRelationScore">
               <option value="">— / 10</option>
               <option value="1">1 / 10</option>
               <option value="2">2 / 10</option>
@@ -1089,6 +1114,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         <button
           class="primary"
           onclick="saveEntry()">
+          💾 Sauvegarder la journée
         </button>
 
         <div id="saveStatus"></div>
@@ -2864,8 +2890,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     for (let d = startDay; d <= endDay; d++) days.push(d);
 
     const keys = [
-      ["presence", "Présence", "#3b82f6"],
-      ["impulse_control", "Maîtrise de l'impulsion", "#ef4444"],
+      ["presence", "Pleine conscience", "#3b82f6"],
+      ["impulse_control", "Maîtrise des impulsions", "#ef4444"],
       ["values_coherence", "Cohérence avec mes valeurs", "#10b981"],
       ["self_relation", "Relation à moi-même", "#8b5cf6"]
     ];
@@ -3068,7 +3094,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 (function(){
   const originalShowSection=window.showSection;
   let entries=[];
-  const dims=[["presence","Présence"],["impulse_control","Maîtrise de l’impulsion"],["values_coherence","Cohérence avec mes valeurs"],["self_relation","Relation à moi-même"]];
+  const dims=[["presence","Présence"],["impulse_control","Maîtrise des impulsions"],["values_coherence","Cohérence avec mes valeurs"],["self_relation","Relation à moi-même"]];
   function score(v){const n=Number(v);return Number.isFinite(n)&&n>=1&&n<=10?n:null;}
   function avg(r){const v=dims.map(x=>score(r&&r[x[0]])).filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
   function rows(){return entries.filter(r=>Number.isFinite(Number(r.day_number))).sort((a,b)=>Number(a.day_number)-Number(b.day_number));}
@@ -3080,7 +3106,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
       const b=document.createElement("button");b.id="dashboardNavButton";b.className="secondary";b.type="button";b.textContent="🏠 Tableau de bord";b.onclick=()=>window.showSection("dashboard");nav.insertBefore(b,nav.firstChild);
     }
     const sec=document.createElement("div");sec.id="v61Dashboard";sec.className="hidden v61-dashboard";
-    sec.innerHTML='<div class="card"><h2 class="section-title">🏠 Mon tableau de bord</h2><p id="v61Welcome">Ton parcours en un coup d’œil.</p><div class="v61-progress"><span id="v61Bar"></span></div><div class="v61-grid"><div class="v61-stat"><span class="v61-label">Progression</span><strong id="v61Progress" class="v61-value">—</strong><span class="v61-note">jours du programme</span></div><div class="v61-stat"><span class="v61-label">Score global</span><strong id="v61Score" class="v61-value">—</strong><span id="v61ScoreNote" class="v61-note">sur 10</span></div><div class="v61-stat"><span class="v61-label">Streak</span><strong id="v61Streak" class="v61-value">—</strong><span class="v61-note">jours consécutifs</span></div><div class="v61-stat"><span class="v61-label">Dernière journée notée</span><strong id="v61Last" class="v61-value">—</strong><span class="v61-note">avec un score</span></div></div></div><div class="card"><h2 class="section-title">🧠 Analyse de mon évolution</h2><div class="v61-insights"><div class="v61-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div><div class="v61-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strong">—</p></div><div class="v61-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weak">—</p></div><div class="v61-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div></div></div><div class="card"><h2 class="section-title">🗓️ Mes dernières journées</h2><div id="v61RecentList"></div></div>';
+    sec.innerHTML='<div class="card"><h2 class="section-title">🏠 Mon tableau de bord</h2><p id="v61Welcome">Ton parcours en un coup d’œil.</p><div class="v61-progress"><span id="v61Bar"></span></div><div class="v61-grid"><div class="v61-stat"><span class="v61-label">Progression</span><strong id="v61Progress" class="v61-value">—</strong><span class="v61-note">jours du programme</span></div><div class="v61-stat"><span class="v61-label">Score global</span><strong id="v61Score" class="v61-value">—</strong><span id="v61ScoreNote" class="v61-note">sur 10</span></div><div class="v61-stat"><span class="v61-label">Série</span><strong id="v61Streak" class="v61-value">—</strong><span class="v61-note">jours consécutifs</span></div><div class="v61-stat"><span class="v61-label">Dernière journée notée</span><strong id="v61Last" class="v61-value">—</strong><span class="v61-note">avec un score</span></div></div></div><div class="card"><h2 class="section-title">🧠 Analyse de mon évolution</h2><div class="v61-insights"><div class="v61-insight"><h3>📈 Progression depuis J1</h3><p id="v61Delta">—</p></div><div class="v61-insight"><h3>💪 Dimension qui progresse le plus</h3><p id="v61Strong">—</p></div><div class="v61-insight"><h3>🎯 Dimension à surveiller</h3><p id="v61Weak">—</p></div><div class="v61-insight"><h3>🔎 Lecture récente</h3><p id="v61Recent">—</p></div></div></div><div class="card"><h2 class="section-title">🗓️ Mes dernières journées</h2><div id="v61RecentList"></div></div>';
     top.insertAdjacentElement("afterend",sec);
   }
   async function load(){
@@ -3144,6 +3170,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   if(program)new MutationObserver(syncV61SaveVisibility).observe(program,{attributes:true,attributeFilter:["class"]});
 })();
 </script>
+<script id="v63-resources-runtime">(function(){const ID="v63Resources";let resources=[],busy=false;const client=()=>typeof getSupabaseClient==="function"?getSupabaseClient():null;const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c]));function yt(u){try{const x=new URL(u);if(x.hostname.includes("youtu.be"))return x.pathname.slice(1).split("/")[0];if(x.hostname.includes("youtube.com"))return x.searchParams.get("v")||(x.pathname.startsWith("/shorts/")?x.pathname.split("/")[2]:null)||(x.pathname.startsWith("/embed/")?x.pathname.split("/")[2]:null)}catch(e){}return null}function build(){if(document.getElementById(ID))return;const top=document.getElementById("app")?.querySelector(".topbar"),nav=top?.querySelector(".nav-buttons");if(!top)return;if(nav&&!document.getElementById("resourcesNavButton")){const b=document.createElement("button");b.id="resourcesNavButton";b.type="button";b.className="secondary";b.textContent="🎧 Ressources";b.onclick=show;nav.appendChild(b)}const sec=document.createElement("div");sec.id=ID;sec.className="hidden";sec.innerHTML=`<div class="card"><h2 class="section-title">🎧 Mes ressources</h2><p>Ton espace personnel pour tes méditations, formations, coachings, vidéos et contenus YouTube.</p><div class="card" style="margin-top:15px;padding:18px"><h3>➕ Ajouter une ressource</h3><label>Titre</label><input id="v63Title" type="text"><label>Description</label><textarea id="v63Description" style="min-height:80px"></textarea><label>Catégorie</label><select id="v63Category"><option>Méditation</option><option>Formation</option><option>Coaching</option><option>Développement personnel</option><option>YouTube</option><option>Autre</option></select><label>Type</label><select id="v63Type" onchange="window.v63ToggleResourceInput()"><option value="audio">Audio</option><option value="video">Vidéo</option><option value="youtube">YouTube</option><option value="link">Lien web</option></select><div id="v63FileWrap"><label>Fichier audio / vidéo</label><input id="v63File" type="file" accept="audio/*,video/*"></div><div id="v63UrlWrap" class="hidden"><label>URL</label><input id="v63Url" type="url" placeholder="https://..."></div><button class="primary" type="button" onclick="window.v63AddResource()">➕ Ajouter</button><div id="v63ResourceStatus"></div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="section-title" style="margin:0">📚 Ma bibliothèque</h2><button class="secondary" type="button" onclick="window.v63LoadResources()">↻ Actualiser</button></div><div id="v63ResourceList" class="v63-resource-grid"></div></div>`;top.insertAdjacentElement("afterend",sec)}function show(){build();["programSection","journalSection","evolutionSection","v61Dashboard"].forEach(id=>document.getElementById(id)?.classList.add("hidden"));document.getElementById(ID)?.classList.remove("hidden");load()}window.v63ShowResources=show;window.v63ToggleResourceInput=function(){const t=document.getElementById("v63Type")?.value;document.getElementById("v63FileWrap")?.classList.toggle("hidden",t==="youtube"||t==="link");document.getElementById("v63UrlWrap")?.classList.toggle("hidden",!(t==="youtube"||t==="link"))};async function getUrl(r){if(r.url)return r.url;if(!r.storage_path)return "";try{const x=await client().storage.from("personal-resources").createSignedUrl(r.storage_path,3600);return x.data?.signedUrl||""}catch(e){return ""}}async function load(){if(busy)return;busy=true;build();try{const c=client();if(!c)throw Error("Supabase indisponible");const {data:{user}}=await c.auth.getUser();if(!user)throw Error("Connecte-toi pour utiliser les ressources.");const r=await c.from("personal_resources").select("*").eq("user_id",user.id).order("created_at",{ascending:false});if(r.error)throw r.error;resources=r.data||[];await render()}catch(e){document.getElementById("v63ResourceList").innerHTML='<div class="v63-resource-empty">Impossible de charger les ressources : '+esc(e.message||e)+"</div>"}finally{busy=false}}window.v63LoadResources=load;async function render(){const l=document.getElementById("v63ResourceList");if(!resources.length){l.innerHTML='<div class="v63-resource-empty">Aucune ressource pour le moment.</div>';return}l.innerHTML=resources.map(r=>`<article class="v63-resource-card" data-id="${esc(r.id)}"><h3>${esc(r.title)}</h3><div class="v63-resource-meta">${esc(r.category)} · ${esc(r.media_type)}</div><div>${esc(r.description||"")}</div><div class="v63-resource-actions"><button class="secondary" data-open="${esc(r.id)}">▶ Ouvrir</button><button class="danger" data-del="${esc(r.id)}">🗑 Supprimer</button></div><div data-preview="${esc(r.id)}"></div></article>`).join("");for(const r of resources){const card=l.querySelector(`[data-id="${CSS.escape(r.id)}"]`),pre=card?.querySelector(`[data-preview="${CSS.escape(r.id)}"]`),u=await getUrl(r),id=yt(r.url||"");if(id)pre.innerHTML=`<iframe class="v63-resource-preview" src="https://www.youtube.com/embed/${encodeURIComponent(id)}" allowfullscreen></iframe>`;else if(u&&r.media_type==="audio")pre.innerHTML=`<audio class="v63-resource-preview" controls src="${esc(u)}"></audio>`;else if(u&&r.media_type==="video")pre.innerHTML=`<video class="v63-resource-preview" controls src="${esc(u)}"></video>`}l.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.open),u=r&&await getUrl(r);if(u)window.open(u,"_blank","noopener")});l.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.del);if(!r||!confirm("Supprimer cette ressource ?"))return;const c=client();if(r.storage_path)await c.storage.from("personal-resources").remove([r.storage_path]);const x=await c.from("personal_resources").delete().eq("id",r.id);if(x.error)alert(x.error.message);else load()})}window.v63AddResource=async function(){const st=document.getElementById("v63ResourceStatus");try{const c=client();const {data:{user}}=await c.auth.getUser();const title=document.getElementById("v63Title").value.trim(),description=document.getElementById("v63Description").value.trim(),category=document.getElementById("v63Category").value,type=document.getElementById("v63Type").value;if(!title)throw Error("Le titre est obligatoire.");let url=null,storage_path=null;if(type==="youtube"||type==="link"){url=document.getElementById("v63Url").value.trim();if(!url)throw Error("L’URL est obligatoire.");new URL(url)}else{const f=document.getElementById("v63File").files[0];if(!f)throw Error("Choisis un fichier audio ou vidéo.");if(f.size>200*1024*1024)throw Error("Fichier trop volumineux (maximum 200 Mo).");storage_path=user.id+"/"+crypto.randomUUID()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");const u=await c.storage.from("personal-resources").upload(storage_path,f,{upsert:false,contentType:f.type||undefined});if(u.error)throw u.error}const x=await c.from("personal_resources").insert({user_id:user.id,title,description,category,media_type:type,url,storage_path});if(x.error)throw x.error;st.className="success";st.textContent="Ressource ajoutée.";load()}catch(e){st.className="error";st.textContent=e.message||String(e)}};function init(){build();v63ToggleResourceInput()}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init()})();</script>
 
 <script id="v64-ux-runtime">
 (function(){
@@ -3169,7 +3196,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if($('v64Dashboard'))return;
     const app=$('app'),top=app?.querySelector('.topbar');if(!top)return;
     const sec=document.createElement('section');sec.id='v64Dashboard';sec.className='hidden v64-dashboard';
-    sec.innerHTML=`<div class="v64-hero"><div class="v64-kicker">Ton parcours · 91 jours</div><h2 id="v64TodayTitle">Aujourd’hui</h2><p id="v64TodayText">Un pas concret, puis un autre.</p><div class="v64-progress-row"><span id="v64ProgressLabel">Progression du parcours</span><span id="v64ProgressValue">0 %</span></div><div class="v64-progress"><span id="v64ProgressBar"></span></div><div class="v64-actions"><button class="primary" type="button" id="v64Continue">▶ Continuer ma journée</button></div></div><div class="v64-dashboard-grid"><div class="v64-stat"><small>Jours réalisés</small><strong id="v64Done">0/91</strong><span>journées sauvegardées</span></div><div class="v64-stat"><small>Score du jour</small><strong id="v64TodayScore">—</strong><span id="v64TodayScoreNote">pas encore évalué</span></div><div class="v64-stat"><small>Série</small><strong id="v64Streak">0</strong><span>jours consécutifs</span></div><div class="v64-stat"><small>Dernier jour</small><strong id="v64LastDay">—</strong><span>du parcours</span></div></div><div class="v64-days-card"><div class="v64-days-head"><h3>🗓️ Mon parcours</h3></div><div id="v64MiniDays" class="v64-days-grid"></div></div>`;
+    sec.innerHTML=`<div class="v64-hero"><div class="v64-kicker">Ton parcours · 91 jours</div><h2 id="v64TodayTitle">Aujourd’hui</h2><p id="v64TodayText">Un pas concret, puis un autre.</p><div class="v64-progress-row"><span id="v64ProgressLabel">Progression du parcours</span><span id="v64ProgressValue">0 %</span></div><div class="v64-progress"><span id="v64ProgressBar"></span></div><div class="v64-actions"><button class="primary" type="button" id="v64Continue">▶ Continuer ma journée</button></div></div><div class="v64-dashboard-grid"><div class="v64-stat"><small>Jours réalisés</small><strong id="v64Done">0/91</strong><span>journées sauvegardées</span></div><div class="v64-stat"><small>Score du jour</small><strong id="v64TodayScore">—</strong><span id="v64TodayScoreNote">pas encore évalué</span></div><div class="v64-stat"><small>Série</small><strong id="v64Streak">0</strong><span>jours consécutifs</span></div><div class="v64-stat"><small>Dernier jour</small><strong id="v64LastDay">—</strong><span>du parcours</span></div></div><div class="v64-days-card"><div class="v64-days-head"><h3></h3></div><div id="v64MiniDays" class="v64-days-grid"></div></div>`;
     top.insertAdjacentElement('afterend',sec);
     $('v64Continue').onclick=()=>{showSection('program');loadDay(currentDay)};
   }
@@ -3180,7 +3207,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     for(let d=1;d<=91;d++){const b=document.createElement('button');b.type='button';b.className='v64-day-btn'+(d===Number(currentDay)?' current':'')+(done.has(d)?' done':'');b.textContent='J'+d;b.title=done.has(d)?'Jour réalisé':'Jour non réalisé';b.onclick=async()=>{closeDays();await requestDayChange(d);showSection('program')};container.appendChild(b)}
   }
   function openDays(){
-    let m=$('v64DayModal');if(!m){m=document.createElement('div');m.id='v64DayModal';m.className='v64-day-modal hidden';m.innerHTML='<div class="v64-day-dialog"><div class="v64-days-head"><h2>🗓️ Les 91 jours</h2><button type="button" class="secondary" id="v64CloseDays">✕ Fermer</button></div><p>✓ = journée déjà sauvegardée. Le jour courant est encadré.</p><div id="v64AllDays" class="v64-days-grid"></div></div>';document.body.appendChild(m);$('v64CloseDays').onclick=closeDays;m.addEventListener('click',e=>{if(e.target===m)closeDays()})}renderDays($('v64AllDays'));m.classList.remove('hidden')}
+    let m=$('v64DayModal');if(!m){m=document.createElement('div');m.id='v64DayModal';m.className='v64-day-modal hidden';m.innerHTML='<div class="v64-day-dialog"><div class="v64-days-head"><h2></h2><button type="button" class="secondary" id="v64CloseDays">✕ Fermer</button></div><p>✓ = journée déjà sauvegardée. Le jour courant est encadré.</p><div id="v64AllDays" class="v64-days-grid"></div></div>';document.body.appendChild(m);$('v64CloseDays').onclick=closeDays;m.addEventListener('click',e=>{if(e.target===m)closeDays()})}renderDays($('v64AllDays'));m.classList.remove('hidden')}
   function closeDays(){$('v64DayModal')?.classList.add('hidden')}
   function loadEntries(){const c=client();if(!c)return Promise.resolve();return c.auth.getUser().then(({data:{user}})=>{if(!user)return;return c.from('daily_entries').select('day_number,presence,impulse_control,values_coherence,self_relation').eq('user_id',user.id).order('day_number',{ascending:true}).then(r=>{if(!r.error)entries=r.data||[]})}).then(()=>{renderDashboard();renderDays($('v64MiniDays'),true)}).catch(e=>console.warn('V64 dashboard',e))}
   function renderDashboard(){
@@ -3292,7 +3319,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     if(!card){
       card=document.createElement('div');
       card.className='card v70-days-card';
-      card.innerHTML='<div class="v64-days-head"><h3>🗓️ Les 91 jours</h3></div><div id="v70DaysGrid" class="v70-days-grid"></div>';
+      card.innerHTML='<div class="v64-days-head"><h3></h3></div><div id="v70DaysGrid" class="v70-days-grid"></div>';
       dashboard.appendChild(card);
     }
     const target=document.getElementById('v70DaysGrid');
@@ -3330,7 +3357,6 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 })();
 </script>
 
-
 <style id="v71-remove-day-grid">
 /* V71 — aucune grille des 91 jours dans l'interface */
 #v64Dashboard .v64-days-card,
@@ -3353,6 +3379,41 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   new MutationObserver(install).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+
+<style id="v73-dashboard-restore-header">
+/* V73 — conserver l'identité du Tableau de bord sans recopier les indicateurs d'Aujourd'hui. */
+#v61Dashboard .v73-dashboard-intro { margin-bottom:0; }
+#v61Dashboard .v73-dashboard-intro p { margin:6px 0 0; color:#555; }
+</style>
+<script id="v73-dashboard-restore-header">
+(function(){
+  function clean(){
+    const dashboard=document.getElementById('v61Dashboard');
+    if(!dashboard) return;
+    const firstCard=dashboard.querySelector('.card');
+    if(!firstCard) return;
+
+    // Rebuild only the dashboard identity/intro. The metrics belong exclusively to Aujourd'hui.
+    if(firstCard.querySelector('#v61Progress, #v61Score, #v61Streak, #v61Last')){
+      firstCard.innerHTML='<h2 class="section-title">🏠 Mon tableau de bord</h2><div class="v73-dashboard-intro"><p>Une vue d’analyse de ton parcours : tendances, points forts, points de vigilance et dernières journées.</p></div>';
+      firstCard.classList.add('v73-dashboard-intro');
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',clean);
+  else clean();
+  window.addEventListener('load',()=>setTimeout(clean,1000));
+  new MutationObserver(()=>setTimeout(clean,0)).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+
+
+
+
+
+
+
+
 
 
 <style id="v80-dashboard-navigation-fix">
@@ -4282,183 +4343,6 @@ input,textarea,select{background:#fffdf9!important;color:var(--zen-brown)!import
 }
 </style>
 
-
-<style id="v97-evolution-mobile-no-overlap">
-/* V97 — remise à plat du flux mobile de toute la section Évolution. */
-#evolutionSection{display:block !important;width:100% !important;min-width:0 !important;overflow:visible !important}
-#evolutionSection>.card{position:relative !important;display:block !important;width:100% !important;min-width:0 !important;height:auto !important;min-height:0 !important;overflow:visible !important;clear:both !important;margin-bottom:16px !important}
-#evolutionSection .v94-score-cards,
-#evolutionSection .v94-grid,
-#evolutionSection .v94-periods,
-#evolutionSection .v94-records,
-#evolutionSection .v96-record-details{position:relative !important;width:100% !important;height:auto !important;min-height:0 !important;display:grid !important;clear:both !important}
-#evolutionSection .v94-analysis,
-#evolutionSection .v94-score-card,
-#evolutionSection .v94-period,
-#evolutionSection .v94-record,
-#evolutionSection .v96-record-detail{position:relative !important;float:none !important;display:block !important;width:auto !important;height:auto !important;min-height:0 !important;box-sizing:border-box !important;clear:none !important;overflow:visible !important}
-#evolutionSection .v94-score-card .label,
-#evolutionSection .v94-score-card .value,
-#evolutionSection .v94-score-card .delta,
-#evolutionSection .v94-analysis h3,
-#evolutionSection .v94-analysis p,
-#evolutionSection .v94-period span,
-#evolutionSection .v94-record strong,
-#evolutionSection .v94-record span,
-#evolutionSection .v96-record-detail h3,
-#evolutionSection .v96-record-detail p{position:static !important;overflow-wrap:anywhere !important;word-break:normal !important}
-@media(max-width:700px){
-#evolutionSection>.card{margin-left:0 !important;margin-right:0 !important;padding:14px !important}
-#evolutionSection .v94-score-cards{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v94-grid{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v94-periods{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v94-records{grid-template-columns:1fr !important;gap:12px !important}
-#evolutionSection .v96-record-details{grid-template-columns:1fr !important;gap:12px !important;margin-top:12px !important}
-#evolutionSection .v94-score-card,
-#evolutionSection .v94-analysis,
-#evolutionSection .v94-period,
-#evolutionSection .v94-record,
-#evolutionSection .v96-record-detail{margin:0 !important;padding:14px !important}
-#evolutionSection .v94-score-card .label{line-height:1.4 !important}
-#evolutionSection .v94-score-card .value{line-height:1.25 !important;margin-top:6px !important}
-#evolutionSection .v94-score-card .delta{line-height:1.4 !important;margin-top:5px !important}
-#evolutionSection .v94-analysis h3{line-height:1.35 !important;margin-bottom:8px !important}
-#evolutionSection .v94-analysis p{line-height:1.55 !important}
-#evolutionSection .v94-record-detail h3{line-height:1.35 !important}
-#evolutionSection .score-chart-wrap{position:relative !important;width:100% !important;height:300px !important;min-height:300px !important;overflow:hidden !important}
-#evolutionSection #scoreEvolutionChartContainer{position:relative !important;width:100% !important;height:100% !important;min-height:0 !important;overflow:hidden !important}
-}
-@media(max-width:380px){
-#evolutionSection>.card{padding:12px !important}
-#evolutionSection .v94-score-card,
-#evolutionSection .v94-analysis,
-#evolutionSection .v94-period,
-#evolutionSection .v94-record,
-#evolutionSection .v96-record-detail{padding:12px !important}
-#evolutionSection .score-chart-wrap{height:260px !important;min-height:260px !important}
-}
-</style>
-
-
-<style id="v98-settings">
-.v98-settings-panel{max-width:900px;margin:0 auto}
-.v98-settings-intro{margin:0 0 18px;color:#666}
-.v98-settings-group{background:#fff;border:1px solid #ddd8cf;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
-.v98-settings-group h3{margin:0 0 5px;font-size:18px}
-.v98-settings-group>p{margin:0 0 14px;color:#666;font-size:14px}
-.v98-setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid #eee9e1}
-.v98-setting-row:first-of-type{border-top:0}
-.v98-setting-label{display:flex;align-items:center;gap:10px;font-weight:700}
-.v98-setting-help{display:block;font-size:12px;font-weight:400;color:#777;margin-top:2px}
-.v98-switch{position:relative;width:48px;height:28px;flex:0 0 48px}
-.v98-switch input{opacity:0;width:0;height:0;position:absolute}
-.v98-slider{position:absolute;inset:0;background:#d8d4cc;border-radius:30px;cursor:pointer;transition:.18s}
-.v98-slider:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.18s}
-.v98-switch input:checked+.v98-slider{background:#222}
-.v98-switch input:checked+.v98-slider:before{transform:translateX(20px)}
-.v98-disabled{opacity:.55}
-.v98-back{margin-bottom:14px}
-@media(max-width:600px){.v98-settings-group{padding:14px}.v98-setting-row{align-items:flex-start}.v98-setting-label{line-height:1.35}}
-</style>
-<script id="v98-settings">
-(function(){
-  const KEY='devenir-soi-settings-v1';
-  const defaults={meditation:true,breathing:true,sleep:true,development:true,motivation:true};
-  function getSettings(){
-    try{return {...defaults,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch(e){return {...defaults}}
-  }
-  function saveSettings(settings){localStorage.setItem(KEY,JSON.stringify(settings));}
-  window.getDevenirSoiSettings=getSettings;
-  window.showSettings=function(){
-    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard','v63Resources'];
-    ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('hidden')});
-    const panel=document.getElementById('v98SettingsPanel');
-    if(!panel)return;
-    panel.classList.remove('hidden');
-    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
-    const btn=document.getElementById('settingsNavButton');
-    if(btn)btn.classList.add('nav-active');
-    renderSettings();
-    window.scrollTo({top:0,behavior:'smooth'});
-  };
-  function renderSettings(){
-    const panel=document.getElementById('v98SettingsPanel'); if(!panel)return;
-    const st=getSettings();
-    panel.querySelectorAll('input[data-module]').forEach(input=>{input.checked=!!st[input.dataset.module]});
-  }
-  function toggleModule(key,value){const st=getSettings();st[key]=!!value;saveSettings(st);}
-  function install(){
-    if(!document.getElementById('settingsNavButton')){
-      const nav=document.querySelector('.nav-buttons');
-      if(nav){
-        const b=document.createElement('button');
-        b.id='settingsNavButton'; b.type='button'; b.textContent='⚙️ Paramètres';
-        b.addEventListener('click',window.showSettings);
-        nav.appendChild(b);
-      }
-    }
-    if(!document.getElementById('v98SettingsPanel')){
-      const panel=document.createElement('section');
-      panel.id='v98SettingsPanel'; panel.className='hidden v98-settings-panel';
-      panel.innerHTML=`
-        <div class="v98-back"><button type="button" class="secondary" id="v98BackToday">← Retour à Aujourd'hui</button></div>
-        <div class="card">
-          <h2>⚙️ Paramètres</h2>
-          <p class="v98-settings-intro">Personnalise ton expérience et choisis ce que tu veux retrouver sur ta page Aujourd'hui.</p>
-        </div>
-        <div class="v98-settings-group">
-          <h3>🧰 Mes modules</h3>
-          <p>Active ou désactive les modules complémentaires. Ton choix est mémorisé sur cet appareil.</p>
-          ${row('meditation','🧘','Méditation','Pratiques de présence et de pleine conscience')}
-          ${row('breathing','🌿','Respiration / relaxation','Calme, détente et retour à l'équilibre')}
-          ${row('sleep','😴','Sommeil','Routines et exercices pour mieux récupérer')}
-          ${row('development','🧠','Développement personnel','Réflexion, compréhension de soi et évolution')}
-          ${row('motivation','💪','Motivation','Passage à l'action, discipline et petits défis')}
-        </div>
-        <div class="v98-settings-group">
-          <h3>🎨 Apparence</h3>
-          <p>Les options d'apparence pourront être personnalisées ici.</p>
-          <div class="v98-setting-row v98-disabled"><span>Mode sombre / clair</span><span>À venir</span></div>
-        </div>
-        <div class="v98-settings-group">
-          <h3>🔔 Rappels</h3>
-          <p>Les rappels quotidiens pourront être configurés ici.</p>
-          <div class="v98-setting-row v98-disabled"><span>Rappels du parcours</span><span>À venir</span></div>
-        </div>
-        <div class="v98-settings-group">
-          <h3>📅 Mon parcours</h3>
-          <p>Gestion du jour courant et des options du parcours 91 jours.</p>
-          <div class="v98-setting-row v98-disabled"><span>Gestion avancée du parcours</span><span>À venir</span></div>
-        </div>
-        <div class="v98-settings-group">
-          <h3>💾 Mes données</h3>
-          <p>Les fonctions de sauvegarde et d'export seront regroupées ici.</p>
-          <div class="v98-setting-row v98-disabled"><span>Export / import</span><span>À venir</span></div>
-        </div>
-        <div class="v98-settings-group">
-          <h3>ℹ️ À propos</h3>
-          <p><strong>DEVENIR SOI</strong> — Parcours de transformation personnelle sur 91 jours.</p>
-        </div>`;
-      document.body.appendChild(panel);
-      panel.querySelectorAll('input[data-module]').forEach(input=>input.addEventListener('change',()=>toggleModule(input.dataset.module,input.checked)));
-      document.getElementById('v98BackToday')?.addEventListener('click',()=>{
-        panel.classList.add('hidden');
-        if(typeof window.showToday==='function') window.showToday();
-        else document.getElementById('todayNavButton')?.click();
-      });
-    }
-    renderSettings();
-  }
-  function row(key,emoji,title,help){return `<div class="v98-setting-row"><div class="v98-setting-label"><span>${emoji}</span><span>${title}<span class="v98-setting-help">${help}</span></span></div><label class="v98-switch"><input type="checkbox" data-module="${key}"><span class="v98-slider"></span></label></div>`}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
-  window.addEventListener('load',()=>setTimeout(install,500));
-})();
-</script>
-
 </body>
 </html>
 <script id="v62-save-button-cleanup">window.v62SaveButtonCleanup = true;</script>
-
-
-
-<!-- DISPLAY_VERSION -->V99<!-- /DISPLAY_VERSION -->
