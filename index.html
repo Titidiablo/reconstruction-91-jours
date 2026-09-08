@@ -520,7 +520,7 @@
       }
     }
   
-/* V52 - base V45 + initialisation Supabase robuste */
+/* V51 - base V45 + restauration fiable du tableau depuis la BDD */
 #scoreEvolutionChartContainer { width:100%; min-height:360px; }
 .score-svg-wrap { width:100%; overflow-x:auto; }
 .score-svg-wrap svg { width:100%; min-width:620px; height:360px; display:block; }
@@ -657,7 +657,7 @@
 </head>
 
 <body>
-  <div class="app-version-v18">V52</div>
+  <div class="app-version-v18">V51</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1190,16 +1190,11 @@
   const SUPABASE_KEY =
     "sb_publishable_NPauAhlEI3TJKIUNSLywGQ_k6FGMs2a";
 
-  let supabaseClient = null;
-
-  function getSupabaseClient() {
-    if (supabaseClient) return supabaseClient;
-    if (!window.supabase || typeof window.supabase.createClient !== "function") {
-      throw new Error("Supabase n'est pas chargé. Vérifie ta connexion Internet puis recharge la page.");
-    }
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    return supabaseClient;
-  }
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
 
 
   /* ============================================================
@@ -1222,7 +1217,7 @@
 
 
 
-  // V52 : base V45 ; initialisation Supabase différée pour ne pas bloquer la page.
+  // V51 : base V45 conservée ; seul le correctif de restauration BDD est appliqué.
   function installDirtyTracking() {
     const root = document.getElementById("programSection");
     if (!root || root.dataset.dirtyTrackingInstalled) return;
@@ -1309,31 +1304,37 @@
      ============================================================ */
 
   async function signIn() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const status = document.getElementById("loginStatus");
-    status.className = "";
-    status.textContent = "Connexion en cours…";
-    if (!email || !password) {
+
+    const email =
+      document.getElementById("email").value.trim();
+
+    const password =
+      document.getElementById("password").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+
       status.className = "error";
-      status.textContent = "Indique ton e-mail et ton mot de passe.";
+
+      status.textContent =
+        "Erreur : " + error.message;
+
       return;
     }
-    try {
-      const { error } = await getSupabaseClient().auth.signInWithPassword({email, password});
-      if (error) {
-        status.className = "error";
-        status.textContent = "Erreur : " + error.message;
-        return;
-      }
-      status.textContent = "";
-      await showApplication();
-    } catch (error) {
-      console.error("Erreur de connexion", error);
-      status.className = "error";
-      status.textContent = "Erreur de connexion : " + (error?.message || error);
-    }
+
+    status.textContent = "";
+
+    await showApplication();
   }
+
 
   /* ============================================================
      AFFICHER APPLICATION
@@ -1625,8 +1626,9 @@
     document.getElementById("meditationNotes").value =
       data.meditation_notes || "";
 
-    document.getElementById("exerciseResponse").value =
-      data.exercise_response || "";
+    const rawExerciseResponse = data.exercise_response || "";
+    const hasStructuredBlocks = /(?:^|\n)(?:PRATIQUE DU JOUR|TRACE ÉCRITE|TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE|DÉCISION SANS VALIDATION|BILAN DE SEMAINE — SCORES)\n/i.test(rawExerciseResponse);
+    document.getElementById("exerciseResponse").value = hasStructuredBlocks ? "" : rawExerciseResponse;
 
     restoreWeeklyScores(data.exercise_response || "");
     restoreControlTable(data.exercise_response || "");
@@ -1844,6 +1846,12 @@
     document.getElementById("valuesScore").value = "";
     document.getElementById("selfRelationScore").value = "";
     ["practiceResponse","traceResponse","actionResponseInline","eveningResponseInline"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
+
+    const body = document.getElementById("controlTableBody");
+    if (body) {
+      body.innerHTML = "";
+      for (let i = 0; i < 3; i++) addControlRow();
+    }
 
     document.getElementById("saveStatus").textContent = "";
   }
@@ -2618,20 +2626,11 @@
     body.innerHTML = "";
     const raw = String(text || "");
     const marker = "TABLEAU CONTRÔLE / INFLUENCE / HORS CONTRÔLE";
-    const start = raw.indexOf(marker);
-
-    if (start < 0) {
-      for (let i = 0; i < 3; i++) addControlRow();
-      return;
-    }
-
-    let section = raw.slice(start + marker.length);
-    const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
-    const endPos = section.indexOf(endMarker);
-    if (endPos >= 0) section = section.slice(0, endPos).trim();
-
-    // Nouveau format : restauration EXACTE du tableau, y compris zéro ligne.
     const jsonMarker = "__CONTROL_TABLE_JSON__";
+    const endMarker = "\n__FIN_TABLEAU_CONTROLE__";
+
+    // La BDD peut contenir d'anciennes sauvegardes concaténées.
+    // Le dernier JSON est l'état le plus récent et doit être restauré.
     const jsonPos = raw.lastIndexOf(jsonMarker);
     if (jsonPos >= 0) {
       const jsonEnd = raw.indexOf(endMarker, jsonPos);
@@ -2645,11 +2644,20 @@
           return;
         }
       } catch (e) {
-        console.warn("Impossible de restaurer le tableau JSON", e);
+        console.warn("Impossible de restaurer le dernier tableau JSON", e);
       }
     }
 
-    // Compatibilité avec les anciennes sauvegardes.
+    const start = raw.lastIndexOf(marker);
+    if (start < 0) {
+      for (let i = 0; i < 3; i++) addControlRow();
+      return;
+    }
+
+    let section = raw.slice(start + marker.length);
+    const endPos = section.indexOf(endMarker);
+    if (endPos >= 0) section = section.slice(0, endPos).trim();
+
     const nextMarkers = [
       "\nDÉCISION SANS VALIDATION\n",
       "\nBILAN DE SEMAINE — SCORES\n"
@@ -2890,16 +2898,18 @@
      ============================================================ */
 
   async function checkSession() {
-    const status = document.getElementById("loginStatus");
-    try {
-      const { data: { session } } = await getSupabaseClient().auth.getSession();
-      if (session) await showApplication();
-    } catch (error) {
-      console.warn("Session non disponible au démarrage", error);
-      if (status) {
-        status.className = "error";
-        status.textContent = "Connexion prête : " + (error?.message || error);
+
+    const {
+      data: {
+        session
       }
+    } =
+      await supabaseClient.auth.getSession();
+
+
+    if (session) {
+
+      await showApplication();
     }
   }
 
