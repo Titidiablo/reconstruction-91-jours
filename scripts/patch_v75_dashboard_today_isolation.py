@@ -4,26 +4,28 @@ import re
 p = Path('index.html')
 s = p.read_text(encoding='utf-8')
 
-for version in ('v72','v74','v75','v76','v78'):
+for version in ('v72','v74','v75','v76','v78','v79','v80'):
     s = re.sub(rf'\n<style id="{version}-dashboard[^\"]*">.*?</style>\s*<script id="{version}-dashboard[^\"]*">.*?</script>\s*', '\n', s, flags=re.S)
 
 patch = r'''
-<style id="v78-dashboard-today-isolation">
-/* V78 — Programme ne montre jamais le Tableau de bord ni le cockpit Aujourd'hui. */
-#v61Dashboard.v78-dashboard-visible { display:block !important; }
-#v64Dashboard.v78-today-visible { display:block !important; }
-#v61Dashboard.v78-dashboard-hidden,
-#v64Dashboard.v78-today-hidden { display:none !important; }
+<style id="v80-dashboard-navigation-fix">
+/* V80 — séparation stricte sans observer de classes : évite toute boucle qui bloque les clics. */
+#v61Dashboard.v80-dashboard-visible { display:block !important; }
+#v64Dashboard.v80-today-visible { display:block !important; }
+#v61Dashboard.v80-dashboard-hidden,
+#v64Dashboard.v80-today-hidden { display:none !important; }
 </style>
-<script id="v78-dashboard-today-isolation">
+<script id="v80-dashboard-navigation-fix">
 (function(){
   function hide(el){
-    el?.classList.add('hidden','v78-dashboard-hidden');
-    el?.classList.remove('v78-dashboard-visible');
+    if(!el) return;
+    el.classList.add('hidden','v80-dashboard-hidden');
+    el.classList.remove('v80-dashboard-visible','v80-today-visible');
   }
-  function show(el){
-    el?.classList.remove('hidden','v78-dashboard-hidden');
-    el?.classList.add('v78-dashboard-visible');
+  function show(el, today){
+    if(!el) return;
+    el.classList.remove('hidden','v80-dashboard-hidden','v80-today-hidden');
+    el.classList.add(today ? 'v80-today-visible' : 'v80-dashboard-visible');
   }
   function sync(){
     const program=document.getElementById('programSection');
@@ -33,8 +35,6 @@ patch = r'''
     const dashboardBtn=document.getElementById('dashboardNavButton');
     if(!today || !dashboard) return;
 
-    // Programme visible = priorité absolue. Même si l'ancien bouton Tableau de bord
-    // est encore marqué actif, son contenu doit rester caché.
     if(program && !program.classList.contains('hidden')){
       hide(today);
       hide(dashboard);
@@ -42,26 +42,23 @@ patch = r'''
     }
     if(todayBtn?.classList.contains('nav-active')){
       hide(dashboard);
-      show(today);
+      show(today, true);
       return;
     }
     if(dashboardBtn?.classList.contains('nav-active')){
       hide(today);
-      show(dashboard);
+      show(dashboard, false);
       return;
     }
-    // Journal intime, Évolution des scores, Ressources, etc.
     hide(today);
     hide(dashboard);
   }
   function install(){
     sync();
-    ['programSection','journalSection','evolutionSection','v61Dashboard','v64Dashboard'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el && !el.dataset.v78Observed){
-        el.dataset.v78Observed='1';
-        new MutationObserver(sync).observe(el,{attributes:true,attributeFilter:['class']});
-      }
+    document.querySelectorAll('.nav-buttons button').forEach(btn=>{
+      if(btn.dataset.v80Bound) return;
+      btn.dataset.v80Bound='1';
+      btn.addEventListener('click',()=>setTimeout(sync,0));
     });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
@@ -73,4 +70,4 @@ patch = r'''
 '''
 s = s.replace('</body>', patch + '\n</body>', 1)
 p.write_text(s, encoding='utf-8')
-print('V78 Programme cleanup applied')
+print('V80 navigation fix applied')
