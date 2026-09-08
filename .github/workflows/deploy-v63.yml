@@ -1,4 +1,4 @@
-name: Deploy V81
+name: Deploy V82
 
 on:
   push:
@@ -40,30 +40,29 @@ jobs:
         run: python3 scripts/patch_v75_dashboard_today_isolation.py
       - name: Apply V81 Media menu
         run: python3 scripts/patch_v81_media.py
+      - name: Apply V82 tagline
+        run: python3 scripts/patch_v82_subtitle.py
 
-      - name: Set displayed version V81
+      - name: Set displayed version V82
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80'):
-              s = s.replace(f'>{old}</div>', '>V81</div>')
+          for old in ('V64','V67','V68','V69','V70','V71','V72','V73','V74','V75','V76','V77','V78','V79','V80','V81'):
+              s = s.replace(f'>{old}</div>', '>V82</div>')
           s = s.replace('🗓️ Mon parcours', '')
           s = s.replace('🗓️ Les 91 jours', '')
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Validate V81
+      - name: Validate V82
         run: |
-          grep -q '>V81</div>' index.html
+          grep -q '>V82</div>' index.html
           grep -q 'id="v80-dashboard-navigation-fix"' index.html
           grep -q 'id="v81-media-menu"' index.html
-          grep -q 'mediaAudioFile' index.html
-          grep -q 'mediaVideoFile' index.html
-          grep -q 'mediaYoutubeUrl' index.html
-          grep -q 'personal_resources' index.html
-          grep -q 'personal-resources' index.html
+          grep -q 'id="v64-ux-style"' index.html
+          grep -q 'Ne subissez plus votre vie. Reprenez le contrôle !' index.html
           grep -q 'DEVENIR SOI' index.html
           grep -q 'Mon tableau de bord' index.html
           grep -q 'Analyse de mon évolution' index.html
@@ -71,19 +70,19 @@ jobs:
           grep -q '💾 Sauvegarder' index.html
           ! grep -q 'id="v72-dashboard-no-today-duplicates"' index.html
           ! grep -q 'id="v74-remove-today-cockpit-from-dashboard"' index.html
-          test "$(grep -o '>V81</div>' index.html | wc -l)" -eq 1
+          test "$(grep -o '>V82</div>' index.html | wc -l)" -eq 1
 
-      - name: Commit V81
+      - name: Commit V82
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
-            echo "V81 déjà présent"
+            echo "V82 déjà présent"
             exit 0
           fi
-          git commit -m "V81 - add media menu"
+          git commit -m "V82 - update tagline"
           git pull --rebase origin main
           git push origin HEAD:main
 
-# V81 deployment trigger - 2026-09-08T11:00:00Z
+# V82 deployment trigger - 2026-09-08T12:00:00Z
