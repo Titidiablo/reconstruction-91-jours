@@ -1,4 +1,4 @@
-name: Deploy V58 stable
+name: Deploy V59 dedicated
 
 on:
   push:
@@ -12,168 +12,136 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Patch index.html
+      - name: Apply V59
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-
-          if '>V58</div>' in s:
-              print('V58 already installed')
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if '>V59</div>' in s and 'id="evolutionNavButton"' in s and 'id="evolutionSection"' in s:
+              print('V59 already installed')
               raise SystemExit(0)
+          if '>V58</div>' not in s:
+              raise SystemExit('V58 badge not found')
+          s=s.replace('>V58</div>','>V59</div>',1)
 
-          if '>V57</div>' not in s:
-              raise SystemExit('V57 badge not found')
+          nav='''        <button
+          id="journalNavButton"
+          class="secondary"
+          onclick="showSection('journal')">
+          📔 Mon journal intime
+        </button>'''
+          if 'id="evolutionNavButton"' not in s:
+              if nav not in s: raise SystemExit('Journal nav not found')
+              s=s.replace(nav, nav+'''\n\n        <button
+          id="evolutionNavButton"
+          class="secondary"
+          onclick="showSection('evolution')">
+          📈 Évolution des scores
+        </button>''',1)
 
-          s = s.replace('>V57</div>', '>V58</div>', 1)
+          # Remove the existing chart block from Program.
+          a=s.find('      <!-- Évolution des scores -->')
+          b=s.find('      <!-- Contenu du jour -->',a)
+          if a<0 or b<0: raise SystemExit('Program chart block not found')
+          s=s[:a]+s[b:]
 
-          old_show = '    await loadJournalEntries();\n    await loadScoreHistory();\n  }'
-          new_show = '    await loadJournalEntries();\n    await loadScoreHistory();\n    renderScoreEvolutionChart();\n    setTimeout(renderScoreEvolutionChart, 0);\n  }'
-          if old_show in s:
-              s = s.replace(old_show, new_show, 1)
+          evolution='''    <!-- ======================================================= -->
+    <!-- ÉVOLUTION DES SCORES -->
+    <!-- ======================================================= -->
 
-          old_css = '.chart-legend-item { display:inline-flex; align-items:center; gap:6px; }\n.chart-legend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }'
-          new_css = '.chart-legend-item { display:inline-flex; align-items:center; gap:7px; }\n.chart-legend-dot { width:14px; height:4px; border-radius:999px; display:inline-block; }'
-          if old_css in s:
-              s = s.replace(old_css, new_css, 1)
+    <div id="evolutionSection" class="hidden">
 
-          start = s.find('  function renderScoreEvolutionChart() {')
-          marker = '\n  /* ============================================================\n     FORMATAGE PROGRAMME'
-          end = s.find(marker, start)
-          if start < 0 or end < 0:
-              raise SystemExit('Chart function boundaries not found')
+      <div class="card">
+        <h2 class="section-title">📈 Évolution de mes scores</h2>
+        <p>Visualise ma progression au fil des 91 jours.</p>
+      </div>
 
-          chart = r'''  function renderScoreEvolutionChart() {
-    const container = document.getElementById("scoreEvolutionChartContainer");
-    const status = document.getElementById("chartStatus");
-    if (!container) return;
+      <div class="card score-chart-card">
+        <div class="score-chart-toolbar">
+          <button id="chart7Button" class="secondary" onclick="setChartRange(7)">7 jours</button>
+          <button id="chart15Button" class="secondary" onclick="setChartRange(15)">15 jours</button>
+          <button id="chart30Button" class="secondary" onclick="setChartRange(30)">30 jours</button>
+          <button id="chart45Button" class="secondary" onclick="setChartRange(45)">45 jours</button>
+          <button id="chart60Button" class="secondary" onclick="setChartRange(60)">60 jours</button>
+          <button id="chart75Button" class="secondary" onclick="setChartRange(75)">75 jours</button>
+          <button id="chart90Button" class="secondary active" onclick="setChartRange(90)">90 jours</button>
+        </div>
+        <div class="score-chart-wrap">
+          <div id="scoreEvolutionChartContainer" aria-label="Graphique d’évolution des scores"></div>
+        </div>
+        <div id="chartStatus" class="empty hidden">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>
+      </div>
 
-    // Périodes cumulées : J1 -> JN.
-    const startDay = 1;
-    const endDay = Math.min(Number(chartRange) || 90, 91);
-    const days = [];
-    for (let d = startDay; d <= endDay; d++) days.push(d);
+    </div>
 
-    const rows = (dailyScoreHistory || [])
-      .filter(row => {
-        const d = Number(row.day_number);
-        return Number.isFinite(d) && d >= startDay && d <= endDay;
-      })
-      .sort((a,b) => Number(a.day_number) - Number(b.day_number));
+'''
+          marker='    <!-- ======================================================= -->\n    <!-- JOURNAL INTIME -->'
+          if marker not in s: raise SystemExit('Journal section marker not found')
+          s=s.replace(marker,evolution+marker,1)
 
-    if (!rows.length) {
-      container.innerHTML = '<div class="chart-empty">Aucun score enregistré sur cette période — le graphique se remplira au fur et à mesure.</div>';
-      if (status) { status.textContent = ""; status.classList.add("hidden"); }
+          start=s.find('  function showSection(section) {')
+          end=s.find('\n  /* ============================================================\n     SELECTEUR',start)
+          if start<0 or end<0: raise SystemExit('showSection boundaries not found')
+          new_show='''  function showSection(section) {
+
+    const program = document.getElementById("programSection");
+    const journal = document.getElementById("journalSection");
+    const evolution = document.getElementById("evolutionSection");
+
+    const programButton = document.getElementById("programNavButton");
+    const journalButton = document.getElementById("journalNavButton");
+    const evolutionButton = document.getElementById("evolutionNavButton");
+
+    [program, journal, evolution].forEach(el => { if (el) el.classList.add("hidden"); });
+    [programButton, journalButton, evolutionButton].forEach(btn => { if (btn) btn.classList.remove("nav-active"); });
+
+    if (section === "journal") {
+      journal.classList.remove("hidden");
+      journalButton.classList.add("nav-active");
+      loadJournalEntries();
       return;
     }
 
-    const map = new Map(rows.map(row => [Number(row.day_number), row]));
-    const scoreValue = (row, key) => {
-      const value = Number(row?.[key]);
-      return Number.isFinite(value) ? Math.max(0, Math.min(10, value)) : 0;
-    };
-
-    const keys = [
-      ["presence", "Présence", "#2563eb"],
-      ["impulse_control", "Maîtrise de l'impulsion", "#dc2626"],
-      ["values_coherence", "Cohérence avec mes valeurs", "#059669"],
-      ["self_relation", "Relation à moi-même", "#9333ea"]
-    ];
-
-    const W = 960, H = 400, L = 58, R = 24, T = 22, B = 56;
-    const PW = W - L - R, PH = H - T - B;
-    const x = i => L + (days.length === 1 ? PW / 2 : i * PW / (days.length - 1));
-    const y = v => T + PH - (Number(v) / 10) * PH;
-
-    let svg = '';
-
-    for (let n = 0; n <= 10; n++) {
-      const yy = y(n);
-      svg += `<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e5e7eb" stroke-width="1"/>`;
-      svg += `<text x="${L-10}" y="${yy+4}" text-anchor="end" font-size="11" fill="#6b7280">${n}</text>`;
+    if (section === "evolution") {
+      evolution.classList.remove("hidden");
+      evolutionButton.classList.add("nav-active");
+      renderScoreEvolutionChart();
+      return;
     }
 
-    const xStep = days.length <= 10 ? 1 : Math.ceil(days.length / 10);
-    days.forEach((d, i) => {
-      if (i % xStep === 0 || i === days.length - 1) {
-        svg += `<text x="${x(i)}" y="${H-18}" text-anchor="middle" font-size="11" fill="#6b7280">J${d}</text>`;
-      }
-    });
-
-    svg += `<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#9ca3af"/>`;
-    svg += `<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#9ca3af"/>`;
-
-    // Quatre courbes colorées, une par dimension.
-    keys.forEach(([key, label, color]) => {
-      const points = days.map((d, i) => {
-        const row = map.get(d);
-        return { x: x(i), y: y(scoreValue(row, key)), d, v: scoreValue(row, key) };
-      });
-      const polyline = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-      svg += `<polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
-      points.forEach(p => {
-        svg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${color}" data-day="${p.d}" data-score="${p.v}"><title>J${p.d} — ${p.v}/10</title></circle>`;
-      });
-    });
-
-    const legend = keys.map(([, label, color]) =>
-      `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${color}"></span>${escapeHtml(label)}</span>`
-    ).join('');
-
-    container.innerHTML = `
-      <div class="score-svg-wrap">
-        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution des scores du Jour ${startDay} au Jour ${endDay}">
-          ${svg}
-        </svg>
-      </div>
-      <div class="chart-legend">${legend}</div>
-    `;
-
-    if (status) {
-      status.textContent = '';
-      status.classList.add('hidden');
-    }
+    program.classList.remove("hidden");
+    programButton.classList.add("nav-active");
   }
 '''
-          s = s[:start] + chart + s[end:]
+          s=s[:start]+new_show+s[end:]
 
-          required = [
-              '>V58</div>',
-              'renderScoreEvolutionChart();\n    setTimeout(renderScoreEvolutionChart, 0);',
-              'const startDay = 1;',
-              'const endDay = Math.min(Number(chartRange) || 90, 91);',
-              '["presence", "Présence", "#2563eb"]',
-              '["impulse_control", "Maîtrise de l\'impulsion", "#dc2626"]',
-              '["values_coherence", "Cohérence avec mes valeurs", "#059669"]',
-              '["self_relation", "Relation à moi-même", "#9333ea"]',
-              '<polyline points=',
-              'chart-legend-dot'
-          ]
-          for item in required:
-              if item not in s:
-                  raise SystemExit('Missing V58 element: ' + item)
-
-          p.write_text(s, encoding='utf-8')
+          required=['>V59</div>','id="evolutionNavButton"','id="evolutionSection"','if (section === "evolution")','id="scoreEvolutionChartContainer"','const averageColor = "#f59e0b"','chart-legend-dashed']
+          for x in required:
+              if x not in s: raise SystemExit('Missing V59 content: '+x)
+          prog=s[s.index('<div id="programSection">'):s.index('<div id="journalSection"')]
+          if 'scoreEvolutionChartContainer' in prog: raise SystemExit('Chart still in Program')
+          if s.count('id="scoreEvolutionChartContainer"') != 1: raise SystemExit('Chart container count invalid')
+          p.write_text(s,encoding='utf-8')
           PY
-
-      - name: Validate and commit
+      - name: Verify V59
         shell: bash
         run: |
-          grep -q '>V58</div>' index.html
-          grep -q '<polyline points=' index.html
-          grep -q '"#2563eb"' index.html
-          grep -q '"#dc2626"' index.html
-          grep -q '"#059669"' index.html
-          grep -q '"#9333ea"' index.html
-          grep -q 'chart-legend-dot' index.html
-          grep -q 'setTimeout(renderScoreEvolutionChart, 0)' index.html
+          grep -q '>V59</div>' index.html
+          grep -q 'id="evolutionNavButton"' index.html
+          grep -q 'id="evolutionSection"' index.html
+          grep -q 'if (section === "evolution")' index.html
+          grep -q 'const averageColor = "#f59e0b"' index.html
+          grep -q 'chart-legend-dashed' index.html
+          test "$(grep -o 'id=\"scoreEvolutionChartContainer\"' index.html | wc -l)" -eq 1
+      - name: Commit V59
+        shell: bash
+        run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Update index.html V58 colored chart'
+          git commit -m 'V59 - dedicated score evolution page'
           git push
