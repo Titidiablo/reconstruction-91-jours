@@ -853,11 +853,16 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </style>
 
 
-<style id="v100-optional-module-focus">
-  .optional-modules-nav button.module-active,
+<style id="v101-optional-module-focus">
+  .optional-modules-nav button.module-active {
+    outline: 3px solid rgba(34,34,34,.32) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 2px rgba(34,34,34,.10) !important;
+  }
+  .optional-modules-nav button:focus,
   .optional-modules-nav button:focus-visible {
-    outline: 3px solid rgba(34,34,34,.22);
-    outline-offset: 2px;
+    outline: 3px solid rgba(34,34,34,.32) !important;
+    outline-offset: 2px !important;
   }
 </style>
 
@@ -865,7 +870,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V100</div>
+  <div class="app-version-v18">V101</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1339,7 +1344,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         <div class="settings-section">
           <h3>ℹ️ À propos</h3>
           <p><strong>Reconstruction — 91 jours</strong><br>Une démarche quotidienne de connaissance de soi, de maîtrise de soi et de transformation.</p>
-          <p class="small">Version : V100</p>
+          <p class="small">Version : V101</p>
         </div>
 
         <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px"><button class="secondary" type="button" onclick="closeModuleSettings()">Fermer</button></div>
@@ -6178,7 +6183,7 @@ populateDaySelector();
 
 })();
 </script>
-<script id="optional-modules-settings-v2-js">
+<script id="optional-modules-settings-v3-js">
 (function(){
   const STORAGE_KEY = 'reconstruction91_optional_modules_v1';
   const MODULES = {
@@ -6190,37 +6195,50 @@ populateDaySelector();
   };
 
   function readSettings(){
-    const defaults = { meditation:false, breathing:false, sleep:false, personal:false, motivation:false };
-    try { return Object.assign(defaults, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')); }
-    catch(e) { return defaults; }
+    const defaults={meditation:false,breathing:false,sleep:false,personal:false,motivation:false};
+    try{return Object.assign(defaults,JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'))}
+    catch(e){return defaults}
   }
 
-  function saveSettings(settings){
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch(e) {}
+  function saveSettings(s){
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(s))}catch(e){}
   }
 
-  function clearModuleSection(cfg){
-    const section=document.getElementById(cfg.section);
-    if(!section) return;
-    // Pour l'instant, chaque module reste volontairement vide,
-    // avec uniquement son titre. Aucun contenu d'un autre module ne doit y être injecté.
-    section.innerHTML='<h2 class="section-title">'+cfg.title+'</h2>';
-    section.classList.add('hidden');
+  function emptySection(cfg){
+    const el=document.getElementById(cfg.section);
+    if(!el)return;
+    // IMPORTANT : les modules optionnels sont volontairement VIDES.
+    // On ne copie ni le contenu du programme ni celui d'un autre module.
+    el.replaceChildren();
+    const h=document.createElement('h2');
+    h.className='section-title';
+    h.textContent=cfg.title;
+    el.appendChild(h);
+    el.classList.add('hidden');
+  }
+
+  function hideApplicationSections(){
+    [
+      'programSection','journalSection','evolutionSection','v61Dashboard',
+      'v64Dashboard','v63Resources','mediaSection'
+    ].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+    document.querySelectorAll('.nav-buttons button').forEach(b=>{
+      b.classList.remove('nav-active');
+    });
   }
 
   function applySettings(){
-    const settings=readSettings();
+    const s=readSettings();
     Object.entries(MODULES).forEach(([key,cfg])=>{
-      const enabled=!!settings[key];
-      const button=document.getElementById(cfg.button);
+      const b=document.getElementById(cfg.button);
       const input=document.getElementById(cfg.setting);
-      if(button){
-        button.classList.toggle('module-hidden',!enabled);
-        button.classList.remove('module-active');
-        button.removeAttribute('aria-current');
+      if(b){
+        b.classList.toggle('module-hidden',!s[key]);
+        b.classList.remove('module-active');
+        b.removeAttribute('aria-current');
       }
-      if(input) input.checked=enabled;
-      clearModuleSection(cfg);
+      if(input)input.checked=!!s[key];
+      emptySection(cfg);
     });
   }
 
@@ -6234,32 +6252,40 @@ populateDaySelector();
   };
 
   window.toggleOptionalModule=function(key,enabled){
-    const cfg=MODULES[key];
-    if(!cfg) return;
-    const settings=readSettings();
-    settings[key]=!!enabled;
-    saveSettings(settings);
+    if(!MODULES[key])return;
+    const s=readSettings();
+    s[key]=!!enabled;
+    saveSettings(s);
     applySettings();
   };
 
   window.showOptionalModule=function(key){
     const cfg=MODULES[key];
-    if(!cfg) return;
-    const settings=readSettings();
-    if(!settings[key]) return;
+    if(!cfg)return;
+    const s=readSettings();
+    if(!s[key])return;
 
-    // Masquer les autres sections et remettre leur contenu à l'état vide.
+    hideApplicationSections();
+
     Object.entries(MODULES).forEach(([name,other])=>{
       const section=document.getElementById(other.section);
       const button=document.getElementById(other.button);
+
       if(section){
-        section.innerHTML='<h2 class="section-title">'+other.title+'</h2>';
+        // Chaque affichage repart d'une coquille vide.
+        section.replaceChildren();
+        const h=document.createElement('h2');
+        h.className='section-title';
+        h.textContent=other.title;
+        section.appendChild(h);
         section.classList.toggle('hidden',name!==key);
       }
+
       if(button){
         const active=name===key;
         button.classList.toggle('module-active',active);
-        if(active) button.setAttribute('aria-current','page');
+        button.setAttribute('aria-pressed',active?'true':'false');
+        if(active)button.setAttribute('aria-current','page');
         else button.removeAttribute('aria-current');
       }
     });
@@ -6267,20 +6293,25 @@ populateDaySelector();
     const target=document.getElementById(cfg.section);
     const button=document.getElementById(cfg.button);
 
-    // Focus clavier/souris explicite sur le bouton sélectionné.
-    if(button){
-      button.focus({preventScroll:true});
-    }
     if(target){
+      target.classList.remove('hidden');
       target.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    // Focus après le rendu/scroll : le bouton reste réellement focusé.
+    if(button){
+      requestAnimationFrame(()=>{
+        button.focus({preventScroll:true});
+        setTimeout(()=>button.focus({preventScroll:true}),80);
+      });
     }
   };
 
-  document.addEventListener('keydown',function(event){
-    if(event.key==='Escape') window.closeModuleSettings();
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape')window.closeModuleSettings();
   });
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',applySettings);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',applySettings);
   else applySettings();
 })();
 </script>
@@ -6332,7 +6363,6 @@ populateDaySelector();
 </script>
 </body>
 </html>
-
 
 
 
