@@ -874,18 +874,158 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   }
 </style>
 
+
+<style id="v106-button-sizing">
+/* V114 — boutons de navigation dimensionnés sur leur texte, sans troncature */
+.nav-buttons {
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  gap:6px !important;
+  overflow-x:auto !important;
+  overflow-y:visible !important;
+  scrollbar-width:thin !important;
+  width:100% !important;
+}
+.nav-buttons > button,
+.nav-buttons > .modules-menu {
+  flex:0 0 auto !important;
+  min-width:max-content !important;
+  width:auto !important;
+}
+.nav-buttons > button {
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  padding:9px 12px !important;
+  font-size:14px !important;
+}
+.modules-menu {
+  min-width:max-content !important;
+}
+.modules-menu-button {
+  width:auto !important;
+  min-width:max-content !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  padding:9px 12px !important;
+  font-size:14px !important;
+}
+@media (max-width:700px) {
+  .nav-buttons { gap:5px !important; }
+  .nav-buttons > button, .modules-menu-button {
+    min-width:max-content !important;
+    padding:8px 10px !important;
+    font-size:13px !important;
+  }
+}
+</style>
+
+<style id="v108-navigation-visibility-fix">
+/* V114 — navigation lisible et menu Modules réellement visible */
+.topbar { position:relative !important; overflow:visible !important; }
+.nav-buttons {
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  gap:6px !important;
+  width:100% !important;
+  overflow:visible !important;
+}
+.nav-buttons > button,
+.nav-buttons > .modules-menu {
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+}
+.nav-buttons > button {
+  white-space:nowrap !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  word-break:normal !important;
+  padding:9px 12px !important;
+  font-size:14px !important;
+  line-height:1.25 !important;
+}
+.modules-menu {
+  position:relative !important;
+  min-width:0 !important;
+  overflow:visible !important;
+}
+.modules-menu-button {
+  white-space:nowrap !important;
+  min-width:0 !important;
+  width:auto !important;
+  margin:0 !important;
+}
+.modules-menu-panel {
+  display:none !important;
+  position:absolute !important;
+  top:calc(100% + 6px) !important;
+  right:0 !important;
+  left:auto !important;
+  z-index:10000 !important;
+  width:280px !important;
+  max-width:min(280px, calc(100vw - 24px)) !important;
+  padding:8px !important;
+  background:#fff !important;
+  border:1px solid #d8d4cd !important;
+  border-radius:12px !important;
+  box-shadow:0 10px 28px rgba(0,0,0,.18) !important;
+}
+.modules-menu.open .modules-menu-panel { display:block !important; }
+.optional-modules-nav {
+  display:flex !important;
+  flex-direction:column !important;
+  gap:6px !important;
+  margin:0 !important;
+}
+.optional-modules-nav button {
+  display:block !important;
+  width:100% !important;
+  margin:0 !important;
+  text-align:left !important;
+  white-space:normal !important;
+  line-height:1.3 !important;
+  padding:10px 12px !important;
+  box-sizing:border-box !important;
+}
+.optional-modules-nav button.module-hidden { display:none !important; }
+@media (max-width:700px) {
+  .nav-buttons { gap:5px !important; }
+  .nav-buttons > button, .modules-menu-button {
+    padding:8px 10px !important;
+    font-size:13px !important;
+  }
+  .modules-menu-panel {
+    position:fixed !important;
+    top:auto !important;
+    right:12px !important;
+    left:12px !important;
+    width:auto !important;
+    max-width:none !important;
+  }
+}
+</style>
 </head>
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V101</div>
+  <div class="app-version-v18">V129</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
   <!-- ========================================================= -->
 
   <div class="devenir-soi-header">
-    <h1>Devenir Soi</h1>
+    <div class="devenir-soi-title-row">
+      <h1>Devenir Soi</h1>
+      <div class="account-actions" aria-label="Compte">
+        <button id="settingsNavButton" class="icon-action" type="button" title="Paramètres" aria-label="Paramètres" onclick="openModuleSettings()">⚙️</button>
+        <button id="logoutNavButton" class="icon-action logout-action" type="button" title="Se déconnecter" aria-label="Se déconnecter" onclick="logout()">⏻</button>
+      </div>
+    </div>
     <div id="dailyQuote" class="daily-quote" aria-live="polite"></div>
   </div>
 
@@ -971,53 +1111,25 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     <!-- Navigation principale -->
 
     <div class="topbar">
-
-      <div class="nav-buttons">
-
-        <button
-          id="programNavButton"
-          class="primary nav-active"
-          onclick="showSection('program')">
-          📅 Programme
-        </button>
-
-        <button
-          id="journalNavButton"
-          class="secondary"
-          onclick="showSection('journal')">
-          📔 Mon journal intime
-        </button>
-
-        <button
-          id="evolutionNavButton"
-          class="secondary"
-          onclick="showSection('evolution')">
-          📈 Évolution des scores
-        </button>
-
-      </div>
-
-      <button
-        id="settingsNavButton"
-        class="secondary"
-        type="button"
-        onclick="openModuleSettings()">
-        ⚙️ Paramètres
-      </button>
-
-      <div id="optionalModulesNav" class="optional-modules-nav" aria-label="Modules optionnels">
-      <button id="moduleMeditationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('meditation')">🧘 Méditation</button>
-      <button id="moduleBreathingBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('breathing')">🌿 Respiration / relaxation</button>
-      <button id="moduleSleepBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('sleep')">😴 Sommeil</button>
-      <button id="modulePersonalBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('personal')">🧠 Développement personnel</button>
-      <button id="moduleMotivationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('motivation')">💪 Motivation</button>
-    </div>
-<button
-        class="secondary"
-        onclick="logout()">
-        Se déconnecter
-      </button>
-
+      <nav class="nav-buttons" aria-label="Navigation principale">
+        <button id="todayNavButton" class="secondary" type="button" onclick="showToday()">🏠 Aujourd’hui</button>
+        <button id="dashboardNavButton" class="secondary" type="button" onclick="showSection('dashboard')">📊 Tableau de bord</button>
+        <button id="programNavButton" class="secondary" type="button" onclick="showSection('program')">📅 Programme</button>
+        <button id="journalNavButton" class="secondary" type="button" onclick="showSection('journal')">📔 Mon journal intime</button>
+        <button id="evolutionNavButton" class="secondary" type="button" onclick="showSection('evolution')">📈 Évolution des scores</button>
+        <div class="modules-menu" id="modulesMenu">
+          <button id="modulesMenuButton" class="secondary modules-menu-button" type="button" aria-expanded="false" aria-haspopup="true" onclick="toggleModulesMenu(event)">🧩 Mes modules ▾</button>
+          <div id="modulesMenuPanel" class="modules-menu-panel" role="menu">
+            <div id="optionalModulesNav" class="optional-modules-nav" aria-label="Modules optionnels">
+              <button id="moduleMeditationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('meditation')">🧘 Méditation</button>
+              <button id="moduleBreathingBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('breathing')">🌿 Respiration / relaxation</button>
+              <button id="moduleSleepBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('sleep')">😴 Sommeil</button>
+              <button id="modulePersonalBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('personal')">🧠 Développement personnel</button>
+              <button id="moduleMotivationBtn" class="secondary module-hidden" type="button" onclick="showOptionalModule('motivation')">💪 Motivation</button>
+            </div>
+          </div>
+        </div>
+      </nav>
     </div>
 
     <!-- ======================================================= -->
@@ -1352,7 +1464,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         <div class="settings-section">
           <h3>ℹ️ À propos</h3>
           <p><strong>Reconstruction — 91 jours</strong><br>Une démarche quotidienne de connaissance de soi, de maîtrise de soi et de transformation.</p>
-          <p class="small">Version : V102</p>
+          <p class="small">Version : V127</p>
         </div>
 
         <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px"><button class="secondary" type="button" onclick="closeModuleSettings()">Fermer</button></div>
@@ -3404,7 +3516,12 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   if(program)new MutationObserver(syncV61SaveVisibility).observe(program,{attributes:true,attributeFilter:["class"]});
 })();
 </script>
-<script id="v63-resources-runtime">(function(){const ID="v63Resources";let resources=[],busy=false;const client=()=>typeof getSupabaseClient==="function"?getSupabaseClient():null;const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c]));function yt(u){try{const x=new URL(u);if(x.hostname.includes("youtu.be"))return x.pathname.slice(1).split("/")[0];if(x.hostname.includes("youtube.com"))return x.searchParams.get("v")||(x.pathname.startsWith("/shorts/")?x.pathname.split("/")[2]:null)||(x.pathname.startsWith("/embed/")?x.pathname.split("/")[2]:null)}catch(e){}return null}function build(){if(document.getElementById(ID))return;const top=document.getElementById("app")?.querySelector(".topbar"),nav=top?.querySelector(".nav-buttons");if(!top)return;if(nav&&!document.getElementById("resourcesNavButton")){const b=document.createElement("button");b.id="resourcesNavButton";b.type="button";b.className="secondary";b.textContent="🎧 Ressources";b.onclick=show;nav.appendChild(b)}const sec=document.createElement("div");sec.id=ID;sec.className="hidden";sec.innerHTML=`<div class="card"><h2 class="section-title">🎧 Mes ressources</h2><p>Ton espace personnel pour tes méditations, formations, coachings, vidéos et contenus YouTube.</p><div class="card" style="margin-top:15px;padding:18px"><h3>➕ Ajouter une ressource</h3><label>Titre</label><input id="v63Title" type="text"><label>Description</label><textarea id="v63Description" style="min-height:80px"></textarea><label>Catégorie</label><select id="v63Category"><option>Méditation</option><option>Formation</option><option>Coaching</option><option>Développement personnel</option><option>YouTube</option><option>Autre</option></select><label>Type</label><select id="v63Type" onchange="window.v63ToggleResourceInput()"><option value="audio">Audio</option><option value="video">Vidéo</option><option value="youtube">YouTube</option><option value="link">Lien web</option></select><div id="v63FileWrap"><label>Fichier audio / vidéo</label><input id="v63File" type="file" accept="audio/*,video/*"></div><div id="v63UrlWrap" class="hidden"><label>URL</label><input id="v63Url" type="url" placeholder="https://..."></div><button class="primary" type="button" onclick="window.v63AddResource()">➕ Ajouter</button><div id="v63ResourceStatus"></div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="section-title" style="margin:0">📚 Ma bibliothèque</h2><button class="secondary" type="button" onclick="window.v63LoadResources()">↻ Actualiser</button></div><div id="v63ResourceList" class="v63-resource-grid"></div></div>`;top.insertAdjacentElement("afterend",sec)}function show(){build();["programSection","journalSection","evolutionSection","v61Dashboard"].forEach(id=>document.getElementById(id)?.classList.add("hidden"));document.getElementById(ID)?.classList.remove("hidden");load()}window.v63ShowResources=show;window.v63ToggleResourceInput=function(){const t=document.getElementById("v63Type")?.value;document.getElementById("v63FileWrap")?.classList.toggle("hidden",t==="youtube"||t==="link");document.getElementById("v63UrlWrap")?.classList.toggle("hidden",!(t==="youtube"||t==="link"))};async function getUrl(r){if(r.url)return r.url;if(!r.storage_path)return "";try{const x=await client().storage.from("personal-resources").createSignedUrl(r.storage_path,3600);return x.data?.signedUrl||""}catch(e){return ""}}async function load(){if(busy)return;busy=true;build();try{const c=client();if(!c)throw Error("Supabase indisponible");const {data:{user}}=await c.auth.getUser();if(!user)throw Error("Connecte-toi pour utiliser les ressources.");const r=await c.from("personal_resources").select("*").eq("user_id",user.id).order("created_at",{ascending:false});if(r.error)throw r.error;resources=r.data||[];await render()}catch(e){document.getElementById("v63ResourceList").innerHTML='<div class="v63-resource-empty">Impossible de charger les ressources : '+esc(e.message||e)+"</div>"}finally{busy=false}}window.v63LoadResources=load;async function render(){const l=document.getElementById("v63ResourceList");if(!resources.length){l.innerHTML='<div class="v63-resource-empty">Aucune ressource pour le moment.</div>';return}l.innerHTML=resources.map(r=>`<article class="v63-resource-card" data-id="${esc(r.id)}"><h3>${esc(r.title)}</h3><div class="v63-resource-meta">${esc(r.category)} · ${esc(r.media_type)}</div><div>${esc(r.description||"")}</div><div class="v63-resource-actions"><button class="secondary" data-open="${esc(r.id)}">▶ Ouvrir</button><button class="danger" data-del="${esc(r.id)}">🗑 Supprimer</button></div><div data-preview="${esc(r.id)}"></div></article>`).join("");for(const r of resources){const card=l.querySelector(`[data-id="${CSS.escape(r.id)}"]`),pre=card?.querySelector(`[data-preview="${CSS.escape(r.id)}"]`),u=await getUrl(r),id=yt(r.url||"");if(id)pre.innerHTML=`<iframe class="v63-resource-preview" src="https://www.youtube.com/embed/${encodeURIComponent(id)}" allowfullscreen></iframe>`;else if(u&&r.media_type==="audio")pre.innerHTML=`<audio class="v63-resource-preview" controls src="${esc(u)}"></audio>`;else if(u&&r.media_type==="video")pre.innerHTML=`<video class="v63-resource-preview" controls src="${esc(u)}"></video>`}l.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.open),u=r&&await getUrl(r);if(u)window.open(u,"_blank","noopener")});l.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.del);if(!r||!confirm("Supprimer cette ressource ?"))return;const c=client();if(r.storage_path)await c.storage.from("personal-resources").remove([r.storage_path]);const x=await c.from("personal_resources").delete().eq("id",r.id);if(x.error)alert(x.error.message);else load()})}window.v63AddResource=async function(){const st=document.getElementById("v63ResourceStatus");try{const c=client();const {data:{user}}=await c.auth.getUser();const title=document.getElementById("v63Title").value.trim(),description=document.getElementById("v63Description").value.trim(),category=document.getElementById("v63Category").value,type=document.getElementById("v63Type").value;if(!title)throw Error("Le titre est obligatoire.");let url=null,storage_path=null;if(type==="youtube"||type==="link"){url=document.getElementById("v63Url").value.trim();if(!url)throw Error("L’URL est obligatoire.");new URL(url)}else{const f=document.getElementById("v63File").files[0];if(!f)throw Error("Choisis un fichier audio ou vidéo.");if(f.size>200*1024*1024)throw Error("Fichier trop volumineux (maximum 200 Mo).");storage_path=user.id+"/"+crypto.randomUUID()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");const u=await c.storage.from("personal-resources").upload(storage_path,f,{upsert:false,contentType:f.type||undefined});if(u.error)throw u.error}const x=await c.from("personal_resources").insert({user_id:user.id,title,description,category,media_type:type,url,storage_path});if(x.error)throw x.error;st.className="success";st.textContent="Ressource ajoutée.";load()}catch(e){st.className="error";st.textContent=e.message||String(e)}};function init(){build();v63ToggleResourceInput()}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init()})();</script>
+<script id="v63-resources-runtime">(function(){const ID="v63Resources";let resources=[],busy=false;const RESOURCE_MEDIA_TYPES=[{value:"audio",label:"Audio"},{value:"video",label:"Vidéo"},{value:"youtube",label:"YouTube"},{value:"link",label:"Lien web"}];const RESOURCE_CATEGORIES=["Méditation","Formation","Coaching","Développement personnel","YouTube","Autre"];const client=()=>typeof getSupabaseClient==="function"?getSupabaseClient():null;const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));function yt(u){try{const x=new URL(u);if(x.hostname.includes("youtu.be"))return x.pathname.slice(1).split("/")[0];if(x.hostname.includes("youtube.com"))return x.searchParams.get("v")||(x.pathname.startsWith("/shorts/")?x.pathname.split("/")[2]:null)||(x.pathname.startsWith("/embed/")?x.pathname.split("/")[2]:null)}catch(e){}return null}function build(){if(document.getElementById(ID))return;const top=document.getElementById("app")?.querySelector(".topbar"),nav=top?.querySelector(".nav-buttons");if(!top)return;if(nav&&!document.getElementById("resourcesNavButton")){const b=document.createElement("button");b.id="resourcesNavButton";b.type="button";b.className="secondary";b.textContent="🎧 Médias & Ressources";b.onclick=show;nav.appendChild(b)}const sec=document.createElement("div");sec.id=ID;sec.className="hidden";sec.innerHTML=`<div class="card"><h2 class="section-title">🎧 Mes ressources</h2><p>Ton espace personnel pour tes méditations, formations, coachings, vidéos et contenus YouTube.</p><div class="card" style="margin-top:15px;padding:18px"><h3>➕ Ajouter une ressource</h3><label>Titre</label><input id="v63Title" type="text"><label>Description</label><textarea id="v63Description" style="min-height:80px"></textarea><label>Catégorie</label><select id="v63Category">${RESOURCE_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select><label>Type</label><select id="v63Type" onchange="window.v63ToggleResourceInput()">${RESOURCE_MEDIA_TYPES.map(t=>`<option value="${t.value}">${t.label}</option>`).join("")}</select><div id="v63FileWrap"><label>Fichier audio / vidéo</label><input id="v63File" type="file" accept="audio/*,video/*"></div><div id="v63UrlWrap" class="hidden"><label>URL</label><input id="v63Url" type="url" placeholder="https://..."></div><button class="primary" type="button" onclick="window.v63AddResource()">➕ Ajouter</button><div id="v63ResourceStatus"></div></div></div><div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2 class="section-title" style="margin:0">📚 Ma bibliothèque</h2><button class="secondary" type="button" onclick="window.v63LoadResources()">↻ Actualiser</button></div><div class="v63-library-filters" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 16px;">
+<label>Type de média<select id="v63FilterType"><option value="">Tous</option>${RESOURCE_MEDIA_TYPES.map(t=>`<option value="${t.value}">${t.label}</option>`).join("")}</select></label>
+<label>Catégorie<select id="v63FilterCategory"><option value="">Toutes</option>${RESOURCE_CATEGORIES.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select></label>
+<label>Trier par<select id="v63Sort"><option value="newest">Plus récent</option><option value="oldest">Plus ancien</option><option value="titleAsc">Titre A → Z</option><option value="titleDesc">Titre Z → A</option></select></label>
+</div><div id="v63ResourceList" class="v63-resource-grid"></div></div>`;top.insertAdjacentElement("afterend",sec)}function show(){build();["programSection","journalSection","evolutionSection","v61Dashboard"].forEach(id=>document.getElementById(id)?.classList.add("hidden"));document.getElementById(ID)?.classList.remove("hidden");load()}window.v63ShowResources=show;window.v63ToggleResourceInput=function(){const t=document.getElementById("v63Type")?.value;document.getElementById("v63FileWrap")?.classList.toggle("hidden",t==="youtube"||t==="link");document.getElementById("v63UrlWrap")?.classList.toggle("hidden",!(t==="youtube"||t==="link"))};async function getUrl(r){if(r.url)return r.url;if(!r.storage_path)return "";try{const x=await client().storage.from("personal-resources").createSignedUrl(r.storage_path,3600);return x.data?.signedUrl||""}catch(e){return ""}}async function load(){if(busy)return;busy=true;build();try{const c=client();if(!c)throw Error("Supabase indisponible");const {data:{user}}=await c.auth.getUser();if(!user)throw Error("Connecte-toi pour utiliser les ressources.");const r=await c.from("personal_resources").select("*").eq("user_id",user.id).order("created_at",{ascending:false});if(r.error)throw r.error;resources=r.data||[];setupFilters();await render()}catch(e){document.getElementById("v63ResourceList").innerHTML='<div class="v63-resource-empty">Impossible de charger les ressources : '+esc(e.message||e)+"</div>"}finally{busy=false}}window.v63LoadResources=load;function setupFilters(){const tf=document.getElementById("v63FilterType"),cf=document.getElementById("v63FilterCategory"),sf=document.getElementById("v63Sort");if(!tf||!cf||!sf)return;const types=[...new Set(resources.map(r=>String(r.media_type||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr"));const cats=RESOURCE_CATEGORIES.slice();tf.innerHTML='<option value="">Tous les types</option>'+types.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");cf.innerHTML='<option value="">Toutes les catégories</option>'+cats.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");tf.onchange=render;cf.onchange=render;sf.onchange=render}
+async function render(){const l=document.getElementById("v63ResourceList"),tf=document.getElementById("v63FilterType")?.value||"",cf=document.getElementById("v63FilterCategory")?.value||"",sf=document.getElementById("v63Sort")?.value||"newest";let list=resources.filter(r=>(!tf||String(r.media_type||"")===tf)&&(!cf||String(r.category||"")===cf));if(!list.length){l.innerHTML=resources.length?'<div class="v63-resource-empty">Aucune ressource ne correspond aux filtres.</div>':'<div class="v63-resource-empty">Aucune ressource pour le moment.</div>';return}list.sort((a,b)=>{if(sf==="titleAsc")return String(a.title||"").localeCompare(String(b.title||""),"fr",{sensitivity:"base"});if(sf==="titleDesc")return String(b.title||"").localeCompare(String(a.title||""),"fr",{sensitivity:"base"});const da=new Date(a.created_at||0).getTime(),db=new Date(b.created_at||0).getTime();return sf==="oldest"?da-db:db-da});if(!list.length){l.innerHTML='<div class="v63-resource-empty">Aucune ressource ne correspond aux filtres.</div>';return}l.innerHTML=list.map(r=>`<article class="v63-resource-card" data-id="${esc(r.id)}"><h3>${esc(r.title)}</h3><div class="v63-resource-meta">${esc(r.category)} · ${esc(r.media_type)}</div><div>${esc(r.description||"")}</div><div class="v63-resource-actions"><button class="secondary" data-open="${esc(r.id)}">▶ Ouvrir</button><button class="danger" data-del="${esc(r.id)}">🗑 Supprimer</button></div><div data-preview="${esc(r.id)}"></div></article>`).join("");for(const r of list){const card=l.querySelector(`[data-id="${CSS.escape(r.id)}"]`),pre=card?.querySelector(`[data-preview="${CSS.escape(r.id)}"]`),u=await getUrl(r),id=yt(r.url||"");if(id)pre.innerHTML=`<iframe class="v63-resource-preview" src="https://www.youtube.com/embed/${encodeURIComponent(id)}" allowfullscreen></iframe>`;else if(u&&r.media_type==="audio")pre.innerHTML=`<audio class="v63-resource-preview" controls src="${esc(u)}"></audio>`;else if(u&&r.media_type==="video")pre.innerHTML=`<video class="v63-resource-preview" controls src="${esc(u)}"></video>`}l.querySelectorAll("[data-open]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.open),u=r&&await getUrl(r);if(u)window.open(u,"_blank","noopener")});l.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{const r=resources.find(x=>x.id===b.dataset.del);if(!r||!confirm("Supprimer cette ressource ?"))return;const c=client();if(r.storage_path)await c.storage.from("personal-resources").remove([r.storage_path]);const x=await c.from("personal_resources").delete().eq("id",r.id);if(x.error)alert(x.error.message);else load()})}window.v63AddResource=async function(){const st=document.getElementById("v63ResourceStatus");try{const c=client();const {data:{user}}=await c.auth.getUser();const title=document.getElementById("v63Title").value.trim(),description=document.getElementById("v63Description").value.trim(),category=document.getElementById("v63Category").value,type=document.getElementById("v63Type").value;if(!title)throw Error("Le titre est obligatoire.");let url=null,storage_path=null;if(type==="youtube"||type==="link"){url=document.getElementById("v63Url").value.trim();if(!url)throw Error("L’URL est obligatoire.");new URL(url)}else{const f=document.getElementById("v63File").files[0];if(!f)throw Error("Choisis un fichier audio ou vidéo.");if(f.size>200*1024*1024)throw Error("Fichier trop volumineux (maximum 200 Mo).");storage_path=user.id+"/"+crypto.randomUUID()+"-"+f.name.replace(/[^a-zA-Z0-9._-]/g,"_");const u=await c.storage.from("personal-resources").upload(storage_path,f,{upsert:false,contentType:f.type||undefined});if(u.error)throw u.error}const x=await c.from("personal_resources").insert({user_id:user.id,title,description,category,media_type:type,url,storage_path});if(x.error)throw x.error;st.className="success";st.textContent="Ressource ajoutée.";load()}catch(e){st.className="error";st.textContent=e.message||String(e)}};function syncFilterCategories(){const s=document.getElementById("v63FilterCategory");if(!s)return;const current=s.value;const cats=RESOURCE_CATEGORIES.slice();s.innerHTML='<option value="">Toutes</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");if(cats.includes(current))s.value=current}function bindLibraryFilters(){["v63FilterType","v63FilterCategory","v63Sort"].forEach(id=>document.getElementById(id)?.addEventListener("change",render))}function init(){build();v63ToggleResourceInput();bindLibraryFilters()}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init()})();</script>
 
 <script id="v64-ux-runtime">
 (function(){
@@ -3806,15 +3923,10 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
   }
 
   function installNav(){
-    const nav=document.querySelector('.nav-buttons');
-    if(!nav || $('mediaNavButton')) return false;
-    const btn=document.createElement('button');
-    btn.id='mediaNavButton';
-    btn.type='button';
-    btn.textContent='🎧 Média';
-    nav.appendChild(btn);
-    btn.addEventListener('click', showMedia);
-    return true;
+    // V114 — le bouton Média est regroupé avec Ressources.
+    const old=$('mediaNavButton');
+    if(old) old.remove();
+    return false;
   }
 
   function hideMainSections(){
@@ -3832,6 +3944,8 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     $('mediaNavButton')?.classList.add('nav-active');
     loadMediaResources();
   }
+
+  
 
   function bindExistingNav(){
     document.querySelectorAll('.nav-buttons button').forEach(btn=>{
@@ -4027,7 +4141,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     const picker=document.createElement('div');
     picker.className='meditation-media-picker';
     picker.id='meditationMediaPicker';
-    picker.innerHTML=`<label for="meditationMediaSelect">🎧 Choisir l’audio de méditation</label><select id="meditationMediaSelect"><option value="">— Aucun audio sélectionné —</option></select><p class="meditation-media-help">Les MP3 classés « Méditation » dans 🎧 Média apparaissent ici.</p><div id="meditationMediaPlayer" class="meditation-media-player"></div>`;
+    picker.innerHTML=`<label for="meditationMediaSelect">🎧 Choisir l’audio de méditation</label><select id="meditationMediaSelect"><option value="">— Aucun audio sélectionné —</option></select><p class="meditation-media-help">Les MP3 classés « Méditation » dans tes ressources apparaissent ici.</p><div id="meditationMediaPlayer" class="meditation-media-player"></div>`;
     const sections=Array.from(host.querySelectorAll('.exercise-section'));
     const meditationSection=sections.find(section=>{
       const text=(section.innerText||section.textContent||'').toLowerCase();
@@ -6235,6 +6349,15 @@ populateDaySelector();
     });
   }
 
+  function refreshModulesEmptyMessage(){
+    const panel=document.getElementById('modulesMenuPanel');
+    if(!panel)return;
+    const msg=panel.querySelector('.modules-empty-message');
+    if(!msg)return;
+    const visible=[...panel.querySelectorAll('.optional-modules-nav button')].some(b=>!b.classList.contains('module-hidden'));
+    msg.style.display=visible?'none':'';
+  }
+
   function applySettings(){
     const s=readSettings();
     Object.entries(MODULES).forEach(([key,cfg])=>{
@@ -6248,6 +6371,7 @@ populateDaySelector();
       if(input)input.checked=!!s[key];
       emptySection(cfg);
     });
+    refreshModulesEmptyMessage();
   }
 
   window.openModuleSettings=function(){
@@ -6369,6 +6493,317 @@ populateDaySelector();
   document.addEventListener('DOMContentLoaded',()=>{showQuote();applySettingsFromStorage()});if(document.readyState!=='loading'){showQuote();applySettingsFromStorage()}
 })();
 </script>
+
+<style id="v104-navigation">
+/* V114 — navigation stable et compacte */
+.devenir-soi-header{position:relative}
+.devenir-soi-title-row{display:flex;align-items:center;justify-content:center;position:relative;min-height:54px}
+.devenir-soi-title-row h1{margin:0;font-family:'Edwardian Script ITC','Edwardian Script',cursive;font-weight:400;letter-spacing:0;font-size:clamp(2.8rem,5vw,4.2rem);line-height:1.05}
+.account-actions{position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:8px}
+.icon-action{width:40px!important;height:40px!important;min-width:40px!important;padding:0!important;border-radius:50%!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:19px!important;line-height:1!important}
+.logout-action{font-size:20px!important}
+.topbar{position:sticky!important;top:0!important;z-index:5000!important;background:var(--zen-bg,#f5f1e8)!important;padding:8px 0!important;border-bottom:1px solid var(--zen-line,#ded7ca)!important}
+.nav-buttons{display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;gap:6px!important;width:100%!important;overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:thin!important}
+.nav-buttons>button,.nav-buttons>.modules-menu{flex:1 1 0!important;min-width:0!important}
+.nav-buttons>button{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;padding:9px clamp(6px,1vw,14px)!important}
+.modules-menu{position:relative!important;display:flex!important;min-width:120px!important}
+.modules-menu-button{width:100%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.modules-menu-panel{display:none;position:absolute;top:calc(100% + 7px);right:0;width:280px;max-width:calc(100vw - 24px);padding:8px;border:1px solid var(--zen-line,#ded7ca);border-radius:12px;background:var(--zen-surface,#fffdf8);box-shadow:0 10px 30px rgba(0,0,0,.14);z-index:6000}
+.modules-menu.open .modules-menu-panel{display:block}
+.modules-menu-panel .optional-modules-nav{display:flex!important;flex-direction:column!important;gap:5px!important}
+.modules-menu-panel .optional-modules-nav button{width:100%!important;text-align:left!important;white-space:normal!important;flex:none!important}
+.modules-menu-panel .module-hidden{display:none!important}
+@media(max-width:900px){.nav-buttons{gap:4px!important}.nav-buttons>button,.modules-menu{flex:0 0 auto!important}.nav-buttons>button{font-size:13px!important}.nav-buttons>button{min-width:110px!important}.modules-menu{min-width:130px!important}}
+@media(max-width:700px){.devenir-soi-title-row{min-height:48px}.devenir-soi-title-row h1{font-size:clamp(1.7rem,8vw,2.3rem)!important}.account-actions{right:0;gap:5px}.icon-action{width:36px!important;height:36px!important;min-width:36px!important}.nav-buttons>button{min-width:105px!important}.modules-menu{min-width:125px!important}}
+</style>
+<script id="v104-navigation-runtime">
+(function(){
+  function initNav(){
+    const menu=document.getElementById('modulesMenu');
+    const btn=document.getElementById('modulesMenuButton');
+    const panel=document.getElementById('modulesMenuPanel');
+    if(panel && !panel.querySelector('.modules-empty-message')){ const msg=document.createElement('div'); msg.className='modules-empty-message'; msg.textContent='Aucun module optionnel activé. Active-les dans ⚙️ Paramètres.'; msg.style.cssText='padding:10px 8px;color:#777;font-size:13px;line-height:1.35;'; panel.prepend(msg); }
+    if(menu&&btn&&!btn.dataset.bound){
+      btn.dataset.bound='1';
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        const open=menu.classList.toggle('open');
+        btn.setAttribute('aria-expanded',String(open));
+      });
+      document.addEventListener('click',function(e){
+        if(!menu.contains(e.target)){menu.classList.remove('open');btn.setAttribute('aria-expanded','false');}
+      });
+      panel?.addEventListener('click',function(e){
+        if(e.target.closest('button:not(#modulesMenuButton)')){
+          setTimeout(function(){menu.classList.remove('open');btn.setAttribute('aria-expanded','false');},0);
+        }
+      });
+    }
+    if(panel){ const msg=panel.querySelector('.modules-empty-message'); const visible=[...panel.querySelectorAll('.optional-modules-nav button')].some(b=>!b.classList.contains('module-hidden')); if(msg) msg.style.display=visible?'none':''; }
+    const oldSettings=document.querySelector('.topbar #settingsNavButton');
+    if(oldSettings) oldSettings.remove();
+    document.querySelectorAll('.topbar .logout-action, .topbar button[onclick="logout()"]').forEach(el=>el.remove());
+    const nav=document.querySelector('.nav-buttons');
+    if(!nav) return;
+    const media=document.getElementById('mediaNavButton');
+    if(media) media.remove();
+    const dash=document.getElementById('dashboardNavButton'); if(dash) dash.textContent='📊 Tableau de bord';
+    const today=document.getElementById('todayNavButton'); if(today) today.textContent='🏠 Aujourd’hui';
+    // Déplacer une éventuelle ancienne ressource dans le menu, sans toucher aux 6 fonctions principales.
+    const resources=document.getElementById('resourcesNavButton');
+    if(resources && panel){
+      resources.textContent='🎧 Médias & Ressources';
+      const list=panel.querySelector('#optionalModulesNav');
+      if(list && resources.parentElement!==list) list.appendChild(resources);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initNav); else initNav();
+  window.addEventListener('load',function(){setTimeout(initNav,0);});
+})();
+</script>
+
+<style id="v110-navigation-final">
+/* V114 — navigation : textes complets + bouton Médias & Ressources ajusté + menu Modules visible */
+.topbar{overflow:visible!important;position:sticky!important;z-index:9000!important;}
+.nav-buttons{display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:7px!important;width:100%!important;overflow:visible!important;}
+.nav-buttons>button,.nav-buttons>.modules-menu{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none!important;box-sizing:border-box!important;}
+.nav-buttons>button,.modules-menu-button{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;word-break:normal!important;flex:none!important;padding:9px 13px!important;font-size:14px!important;line-height:1.25!important;}
+.modules-menu{position:relative!important;display:block!important;overflow:visible!important;min-width:max-content!important;}
+.modules-menu-button{width:auto!important;min-width:max-content!important;}
+.modules-menu-panel{display:none!important;position:absolute!important;top:calc(100% + 7px)!important;right:0!important;left:auto!important;width:300px!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;padding:10px!important;background:#fffdf8!important;border:1px solid #d8d0c2!important;border-radius:12px!important;box-shadow:0 12px 32px rgba(0,0,0,.20)!important;z-index:99999!important;}
+.modules-menu.open .modules-menu-panel{display:block!important;}
+.modules-menu-panel .optional-modules-nav{display:flex!important;flex-direction:column!important;gap:6px!important;width:100%!important;}
+.modules-menu-panel .optional-modules-nav button{display:block!important;width:100%!important;box-sizing:border-box!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:left!important;padding:10px 12px!important;line-height:1.3!important;margin:0!important;}
+.modules-menu-panel .optional-modules-nav button.module-hidden{display:none!important;}
+.modules-empty-message{display:block;}
+@media(max-width:700px){
+  .nav-buttons{gap:6px!important;}
+  .nav-buttons>button,.modules-menu-button{font-size:13px!important;padding:8px 10px!important;}
+  .modules-menu-panel{position:fixed!important;top:calc(var(--modules-menu-top, 0px) + 48px)!important;right:12px!important;left:12px!important;width:auto!important;max-width:none!important;}
+}
+</style>
+<script id="v110-navigation-final-runtime">
+(function(){
+  function setup(){
+    const menu=document.getElementById('modulesMenu'),btn=document.getElementById('modulesMenuButton'),panel=document.getElementById('modulesMenuPanel');
+    if(!menu||!btn||!panel||menu.dataset.v110) return;
+    menu.dataset.v110='1';
+    btn.addEventListener('click',function(e){
+      e.preventDefault();e.stopPropagation();
+      const open=!menu.classList.contains('open');
+      menu.classList.toggle('open',open);btn.setAttribute('aria-expanded',String(open));
+      if(open&&window.matchMedia('(max-width:700px)').matches){
+        const r=btn.getBoundingClientRect();panel.style.setProperty('--modules-menu-top',r.bottom+'px');panel.style.top=(r.bottom+7)+'px';
+      }
+    });
+    document.addEventListener('click',function(e){if(!menu.contains(e.target)){menu.classList.remove('open');btn.setAttribute('aria-expanded','false');}});
+    window.addEventListener('resize',function(){if(menu.classList.contains('open')&&window.matchMedia('(max-width:700px)').matches){const r=btn.getBoundingClientRect();panel.style.top=(r.bottom+7)+'px';}});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+})();
+</script>
+
+<style id="v110-modules-definitive">
+/* V114 — menu Modules : ouverture directe et indépendante de la navigation */
+.topbar{overflow:visible!important;position:relative!important;z-index:100000!important;}
+.nav-buttons{overflow:visible!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;}
+.nav-buttons>button{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;}
+.modules-menu{position:relative!important;display:block!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;overflow:visible!important;z-index:100001!important;}
+.modules-menu-button{width:auto!important;min-width:max-content!important;max-width:none!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;}
+.modules-menu-panel{display:none!important;position:absolute!important;top:calc(100% + 8px)!important;right:0!important;left:auto!important;width:310px!important;max-width:calc(100vw - 24px)!important;z-index:100002!important;background:#fff!important;padding:10px!important;border:1px solid #cfc8bc!important;border-radius:12px!important;box-shadow:0 14px 36px rgba(0,0,0,.25)!important;}
+.modules-menu.open .modules-menu-panel{display:block!important;}
+.modules-menu-panel .optional-modules-nav{display:flex!important;flex-direction:column!important;gap:7px!important;margin:0!important;}
+.modules-menu-panel .optional-modules-nav button{display:block!important;width:100%!important;min-width:0!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:left!important;}
+.modules-menu-panel .modules-empty-message{display:block;}
+@media(max-width:700px){.modules-menu-panel{position:fixed!important;top:58px!important;right:12px!important;left:12px!important;width:auto!important;max-width:none!important;z-index:100002!important;}}
+</style>
+<script id="v110-modules-definitive">
+(function(){
+  window.toggleModulesMenu=function(e){
+    if(e){e.preventDefault();e.stopPropagation();}
+    var menu=document.getElementById('modulesMenu');
+    var btn=document.getElementById('modulesMenuButton');
+    if(!menu||!btn)return false;
+    var open=menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded',open?'true':'false');
+    return false;
+  };
+  document.addEventListener('click',function(e){
+    var menu=document.getElementById('modulesMenu');
+    if(menu&&!menu.contains(e.target)){menu.classList.remove('open');var b=document.getElementById('modulesMenuButton');if(b)b.setAttribute('aria-expanded','false');}
+  },true);
+})();
+</script>
+<script id="v112-remove-media-nav">
+(function(){
+  function removeMediaNav(){
+    document.querySelectorAll('#mediaNavButton').forEach(function(b){b.remove();});
+  }
+  new MutationObserver(removeMediaNav).observe(document.body,{childList:true,subtree:true});
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',removeMediaNav);
+  else removeMediaNav();
+  window.addEventListener('load',removeMediaNav);
+})();
+</script>
+
+<style id="v114-media-resources-button">
+/* V114 — intitulé unique et largeur adaptée */
+#resourcesNavButton{flex:0 0 auto!important;width:auto!important;min-width:185px!important;max-width:none!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;padding:9px 14px!important;font-size:14px!important;line-height:1.25!important;box-sizing:border-box!important;}
+@media(max-width:700px){#resourcesNavButton{min-width:175px!important;font-size:13px!important;padding:8px 11px!important;}}
+</style>
+<style id="v115-resources-spacing">
+/* V115 — espace régulier au-dessus de Médias & Ressources dans le menu */
+.modules-menu-panel #resourcesNavButton{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  margin-top:7px!important;
+}
+</style>
+<script id="v121-program-resources-isolation">
+(function(){
+  function install(){
+    if(typeof window.showSection!=="function" || window.showSection.__v121Wrapped) return;
+    const previous=window.showSection;
+    function wrapped(section){
+      const result=previous.apply(this,arguments);
+      if(section!=="resources") document.getElementById("v63Resources")?.classList.add("hidden");
+      return result;
+    }
+    wrapped.__v121Wrapped=true;
+    window.showSection=wrapped;
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",install); else install();
+  window.addEventListener("load",()=>setTimeout(install,1000));
+})();
+</script>
+
+<style id="v123-modules-buttons">
+/* V125 — boutons des modules : largeur adaptée au texte et texte centré */
+.modules-menu-panel .optional-modules-nav{
+  align-items:flex-start!important;
+}
+.modules-menu-panel .optional-modules-nav button{
+  width:max-content!important;
+  min-width:0!important;
+  max-width:100%!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+  padding:10px 14px!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:700px){
+  .modules-menu-panel .optional-modules-nav button{
+    max-width:100%!important;
+    white-space:normal!important;
+    text-align:center!important;
+  }
+}
+</style>
+
+<style id="v125-modules-buttons-fix">
+/* V125 — tous les boutons des modules ont exactement la même taille */
+#modulesMenuPanel #optionalModulesNav button {
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  height: 42px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  padding: 8px 12px !important;
+  margin: 0 !important;
+}
+#modulesMenuPanel #optionalModulesNav {
+  align-items: center !important;
+}
+@media (max-width: 700px) {
+  #modulesMenuPanel #optionalModulesNav button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+  }
+}
+</style>
+
+<style id="v127-modules-uniform-final">
+/* V127 — Tous les boutons de Mes modules, y compris Médias & Ressources,
+   ont exactement la même taille et sont centrés dans le panneau. */
+#modulesMenuPanel #optionalModulesNav button,
+#modulesMenuPanel #resourcesNavButton {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+@media (max-width: 600px) {
+  #modulesMenuPanel #optionalModulesNav button,
+  #modulesMenuPanel #resourcesNavButton {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}
+</style>
+
+<style id="v128-modules-media-alignment">
+/* V128 — Médias & Ressources est placé dans le même conteneur flex que les modules. */
+#modulesMenuPanel #optionalModulesNav {
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  gap:6px !important;
+  width:100% !important;
+}
+#modulesMenuPanel #optionalModulesNav button,
+#modulesMenuPanel #optionalModulesNav #resourcesNavButton {
+  flex:0 0 220px !important;
+  width:220px !important;
+  min-width:220px !important;
+  max-width:220px !important;
+  height:42px !important;
+  min-height:42px !important;
+  max-height:42px !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+}
+#modulesMenuPanel #optionalModulesNav #resourcesNavButton {
+  margin-top:1px !important;
+}
+@media (max-width:700px) {
+  #modulesMenuPanel #optionalModulesNav button,
+  #modulesMenuPanel #optionalModulesNav #resourcesNavButton {
+    flex-basis:auto !important;
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+}
+</style>
 </body>
 </html>
 
@@ -6382,4 +6817,126 @@ populateDaySelector();
 
 
 
+
+
+
+<style id="v107-today-navigation-fix">
+/* V114 — Aujourd'hui doit rester accessible depuis toutes les sections, notamment Programme. */
+
+/* V125 — boutons Mes modules de largeur identique */
+#modulesMenuPanel .module-btn, #optionalModulesNav .module-btn {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  box-sizing: border-box;
+  text-align: center !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+@media (max-width: 600px) {
+  #modulesMenuPanel .module-btn, #optionalModulesNav .module-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+}
+</style>
+<script id="v107-today-navigation-fix">
+(function(){
+  function forceToday(){
+    const ids=['programSection','journalSection','evolutionSection','v61Dashboard','v63Resources','mediaSection'];
+    ids.forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+    const today=document.getElementById('v64Dashboard');
+    if(today) today.classList.remove('hidden','v80-dashboard-hidden','v80-today-hidden');
+    document.querySelectorAll('.nav-buttons button').forEach(b=>b.classList.remove('nav-active'));
+    document.getElementById('todayNavButton')?.classList.add('nav-active');
+    if(typeof dashboard==='function') dashboard();
+    if(typeof loadEntries==='function') loadEntries();
+  }
+  function install(){
+    const btn=document.getElementById('todayNavButton');
+    if(!btn || btn.dataset.v107Bound) return;
+    btn.dataset.v107Bound='1';
+    btn.onclick=forceToday;
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install);
+  else install();
+  window.addEventListener('load',()=>setTimeout(install,100));
+  setInterval(install,500);
+  window.v107ForceToday=forceToday;
+})();
+</script>
+<style id="v126-modules-uniform-size">
+/* V127 — Médias & Ressources exactement de la même taille que les boutons des modules */
+#modulesMenuPanel #optionalModulesNav button,
+#modulesMenuPanel #resourcesNavButton {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  height: 42px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+#modulesMenuPanel #resourcesNavButton {
+  padding: 8px 12px !important;
+  margin-top: 7px !important;
+}
+@media (max-width: 700px) {
+  #modulesMenuPanel #optionalModulesNav button,
+  #modulesMenuPanel #resourcesNavButton {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+  }
+}
+</style>
+<script>
+/* V127 */
+(function(){
+  document.querySelectorAll('[id]').forEach(function(el){
+    if(el.textContent && /V125/.test(el.textContent) && el.id !== 'v125-modules-buttons-fix') {
+      /* intentionally no-op: preserve existing visible versioning */
+    }
+  });
+})();
+</script>
+<style id="v129-modules-panel-tight">
+/* V129 — Cadre de Mes modules resserré autour des boutons. */
+#modulesMenuPanel {
+  width: 246px !important;
+  max-width: calc(100vw - 24px) !important;
+  box-sizing: border-box !important;
+  padding: 8px !important;
+}
+#modulesMenuPanel #optionalModulesNav {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+#modulesMenuPanel #optionalModulesNav button,
+#modulesMenuPanel #resourcesNavButton {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+@media (max-width:700px) {
+  #modulesMenuPanel {
+    width: auto !important;
+    padding: 8px !important;
+  }
+  #modulesMenuPanel #optionalModulesNav button,
+  #modulesMenuPanel #resourcesNavButton {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}
+</style>
 
