@@ -852,11 +852,20 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 .devenir-soi-header{text-align:center;margin:0 auto 22px;max-width:900px}.devenir-soi-header h1{margin:0 0 10px;font-size:clamp(2rem,4vw,3rem)}.daily-quote{font-style:italic;opacity:.82;line-height:1.55;font-size:1.05rem}.daily-quote .quote-author{display:block;font-style:normal;font-size:.9rem;margin-top:5px;opacity:.75}.settings-panel{z-index:9999}.settings-dialog{max-height:90vh;overflow:auto}.settings-section{margin:16px 0;padding:16px;border:1px solid rgba(127,127,127,.18);border-radius:12px}.settings-section h3{margin:0 0 12px}.settings-item{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(127,127,127,.12)}.settings-item:last-child{border-bottom:0}.settings-danger{border-color:rgba(180,40,40,.35)}.danger-outline{border:1px solid #b33;background:transparent;color:inherit}.profile-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.profile-edit-grid>div{min-width:0}@media(max-width:700px){.profile-edit-grid{grid-template-columns:1fr}}
 </style>
 
+
+<style id="v100-optional-module-focus">
+  .optional-modules-nav button.module-active,
+  .optional-modules-nav button:focus-visible {
+    outline: 3px solid rgba(34,34,34,.22);
+    outline-offset: 2px;
+  }
+</style>
+
 </head>
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V99 — profil + paramètres + préparation modules</div>
+  <div class="app-version-v18">V100</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1330,7 +1339,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         <div class="settings-section">
           <h3>ℹ️ À propos</h3>
           <p><strong>Reconstruction — 91 jours</strong><br>Une démarche quotidienne de connaissance de soi, de maîtrise de soi et de transformation.</p>
-          <p class="small">Version : V99 — profil + paramètres + préparation modules + modules optionnels</p>
+          <p class="small">Version : V100</p>
         </div>
 
         <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px"><button class="secondary" type="button" onclick="closeModuleSettings()">Fermer</button></div>
@@ -6169,82 +6178,109 @@ populateDaySelector();
 
 })();
 </script>
-<script id="optional-modules-settings-v1-js">
+<script id="optional-modules-settings-v2-js">
 (function(){
   const STORAGE_KEY = 'reconstruction91_optional_modules_v1';
   const MODULES = {
-    meditation: { button:'moduleMeditationBtn', setting:'settingMeditation', section:'optionalModuleMeditation' },
-    breathing: { button:'moduleBreathingBtn', setting:'settingBreathing', section:'optionalModuleBreathing' },
-    sleep: { button:'moduleSleepBtn', setting:'settingSleep', section:'optionalModuleSleep' },
-    personal: { button:'modulePersonalBtn', setting:'settingPersonal', section:'optionalModulePersonal' },
-    motivation: { button:'moduleMotivationBtn', setting:'settingMotivation', section:'optionalModuleMotivation' }
+    meditation: { button:'moduleMeditationBtn', setting:'settingMeditation', section:'optionalModuleMeditation', title:'🧘 Méditation' },
+    breathing: { button:'moduleBreathingBtn', setting:'settingBreathing', section:'optionalModuleBreathing', title:'🌿 Respiration / relaxation' },
+    sleep: { button:'moduleSleepBtn', setting:'settingSleep', section:'optionalModuleSleep', title:'😴 Sommeil' },
+    personal: { button:'modulePersonalBtn', setting:'settingPersonal', section:'optionalModulePersonal', title:'🧠 Développement personnel' },
+    motivation: { button:'moduleMotivationBtn', setting:'settingMotivation', section:'optionalModuleMotivation', title:'💪 Motivation' }
   };
 
   function readSettings(){
     const defaults = { meditation:false, breathing:false, sleep:false, personal:false, motivation:false };
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return Object.assign(defaults, saved);
-    } catch(e) { return defaults; }
+    try { return Object.assign(defaults, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')); }
+    catch(e) { return defaults; }
   }
 
   function saveSettings(settings){
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch(e) {}
   }
 
+  function clearModuleSection(cfg){
+    const section=document.getElementById(cfg.section);
+    if(!section) return;
+    // Pour l'instant, chaque module reste volontairement vide,
+    // avec uniquement son titre. Aucun contenu d'un autre module ne doit y être injecté.
+    section.innerHTML='<h2 class="section-title">'+cfg.title+'</h2>';
+    section.classList.add('hidden');
+  }
+
   function applySettings(){
-    const settings = readSettings();
-    Object.entries(MODULES).forEach(([key, cfg]) => {
-      const enabled = !!settings[key];
-      const button = document.getElementById(cfg.button);
-      const input = document.getElementById(cfg.setting);
-      const section = document.getElementById(cfg.section);
-      if (button) button.classList.toggle('module-hidden', !enabled);
-      if (input) input.checked = enabled;
-      if (section && !enabled) section.classList.add('hidden');
+    const settings=readSettings();
+    Object.entries(MODULES).forEach(([key,cfg])=>{
+      const enabled=!!settings[key];
+      const button=document.getElementById(cfg.button);
+      const input=document.getElementById(cfg.setting);
+      if(button){
+        button.classList.toggle('module-hidden',!enabled);
+        button.classList.remove('module-active');
+        button.removeAttribute('aria-current');
+      }
+      if(input) input.checked=enabled;
+      clearModuleSection(cfg);
     });
   }
 
-  window.openModuleSettings = function(){
+  window.openModuleSettings=function(){
     applySettings();
-    const modal = document.getElementById('moduleSettingsModal');
-    if (modal) modal.classList.remove('hidden');
+    document.getElementById('moduleSettingsModal')?.classList.remove('hidden');
   };
 
-  window.closeModuleSettings = function(){
-    const modal = document.getElementById('moduleSettingsModal');
-    if (modal) modal.classList.add('hidden');
+  window.closeModuleSettings=function(){
+    document.getElementById('moduleSettingsModal')?.classList.add('hidden');
   };
 
-  window.toggleOptionalModule = function(key, enabled){
-    if (!MODULES[key]) return;
-    const settings = readSettings();
-    settings[key] = !!enabled;
+  window.toggleOptionalModule=function(key,enabled){
+    const cfg=MODULES[key];
+    if(!cfg) return;
+    const settings=readSettings();
+    settings[key]=!!enabled;
     saveSettings(settings);
     applySettings();
-    if (!enabled) {
-      const section = document.getElementById(MODULES[key].section);
-      if (section) section.classList.add('hidden');
+  };
+
+  window.showOptionalModule=function(key){
+    const cfg=MODULES[key];
+    if(!cfg) return;
+    const settings=readSettings();
+    if(!settings[key]) return;
+
+    // Masquer les autres sections et remettre leur contenu à l'état vide.
+    Object.entries(MODULES).forEach(([name,other])=>{
+      const section=document.getElementById(other.section);
+      const button=document.getElementById(other.button);
+      if(section){
+        section.innerHTML='<h2 class="section-title">'+other.title+'</h2>';
+        section.classList.toggle('hidden',name!==key);
+      }
+      if(button){
+        const active=name===key;
+        button.classList.toggle('module-active',active);
+        if(active) button.setAttribute('aria-current','page');
+        else button.removeAttribute('aria-current');
+      }
+    });
+
+    const target=document.getElementById(cfg.section);
+    const button=document.getElementById(cfg.button);
+
+    // Focus clavier/souris explicite sur le bouton sélectionné.
+    if(button){
+      button.focus({preventScroll:true});
+    }
+    if(target){
+      target.scrollIntoView({behavior:'smooth',block:'start'});
     }
   };
 
-  window.showOptionalModule = function(key){
-    if (!MODULES[key]) return;
-    const settings = readSettings();
-    if (!settings[key]) return;
-    Object.entries(MODULES).forEach(([name, cfg]) => {
-      const section = document.getElementById(cfg.section);
-      if (section) section.classList.toggle('hidden', name !== key);
-    });
-    const target = document.getElementById(MODULES[key].section);
-    if (target) target.scrollIntoView({behavior:'smooth', block:'start'});
-  };
-
-  document.addEventListener('keydown', function(event){
-    if (event.key === 'Escape') window.closeModuleSettings();
+  document.addEventListener('keydown',function(event){
+    if(event.key==='Escape') window.closeModuleSettings();
   });
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applySettings);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',applySettings);
   else applySettings();
 })();
 </script>
