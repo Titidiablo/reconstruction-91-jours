@@ -853,16 +853,24 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 </style>
 
 
-<style id="v101-optional-module-focus">
+<style id="v102-optional-module-active-style">
+  /* Même état visuel que les boutons principaux sélectionnés. */
   .optional-modules-nav button.module-active {
-    outline: 3px solid rgba(34,34,34,.32) !important;
-    outline-offset: 2px !important;
-    box-shadow: 0 0 0 2px rgba(34,34,34,.10) !important;
+    background:var(--zen-sage)!important;
+    color:white!important;
+    border:2px solid var(--zen-sage-dark)!important;
+    box-shadow:0 4px 12px rgba(95,112,79,.22)!important;
+    font-weight:bold!important;
+    transform:translateY(-1px);
+  }
+  .optional-modules-nav button.module-active::before {
+    content:'✓ '!important;
+    font-weight:bold!important;
   }
   .optional-modules-nav button:focus,
   .optional-modules-nav button:focus-visible {
-    outline: 3px solid rgba(34,34,34,.32) !important;
-    outline-offset: 2px !important;
+    outline:3px solid rgba(34,34,34,.32)!important;
+    outline-offset:2px!important;
   }
 </style>
 
@@ -1344,7 +1352,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         <div class="settings-section">
           <h3>ℹ️ À propos</h3>
           <p><strong>Reconstruction — 91 jours</strong><br>Une démarche quotidienne de connaissance de soi, de maîtrise de soi et de transformation.</p>
-          <p class="small">Version : V101</p>
+          <p class="small">Version : V102</p>
         </div>
 
         <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px"><button class="secondary" type="button" onclick="closeModuleSettings()">Fermer</button></div>
