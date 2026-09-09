@@ -773,10 +773,9 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
     // n'est pas une étape de navigation : il encombre le contenu du Programme.
     document.querySelectorAll('.v64-stepper').forEach(el => el.remove());
 
-    // Il ne doit rester qu'un seul bouton de sauvegarde : celui du bandeau V64.
-    document.querySelectorAll('button[onclick="saveEntry()"], button[onclick*=\"saveEntry()\"]').forEach(btn => {
-      if (!btn.closest('.v64-save-main')) btn.remove();
-    });
+    // V130 — ne jamais supprimer le bouton de sauvegarde avant que le bandeau V64 soit installé.
+    // Le bandeau est construit par ensureSaveMain() plus bas.
+    // Une fois installé, le bouton d'origine est remplacé proprement par le bandeau.
 
     // Le bouton de sauvegarde reste dans le flux de la page, juste avant la navigation.
     const program = document.getElementById('programSection');
@@ -1012,7 +1011,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
 
 <body>
   <button id="floatingSaveButton" type="button" onclick="saveEntry()">💾 Sauvegarder</button>
-  <div class="app-version-v18">V129</div>
+  <div class="app-version-v18">V130</div>
 
   <!-- ========================================================= -->
   <!-- EN-TÊTE -->
@@ -1464,7 +1463,7 @@ body{max-width:1180px;padding:18px;background:#f3f1ec}
         <div class="settings-section">
           <h3>ℹ️ À propos</h3>
           <p><strong>Reconstruction — 91 jours</strong><br>Une démarche quotidienne de connaissance de soi, de maîtrise de soi et de transformation.</p>
-          <p class="small">Version : V127</p>
+          <p class="small">Version : V130</p>
         </div>
 
         <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px"><button class="secondary" type="button" onclick="closeModuleSettings()">Fermer</button></div>
@@ -6804,6 +6803,30 @@ populateDaySelector();
   }
 }
 </style>
+<script id="v130-save-button-restore">
+(function(){
+  function ensure(){
+    const program=document.getElementById('programSection');
+    if(!program) return;
+    const wrap=program.querySelector('#v64SaveMain');
+    if(wrap) return;
+    const btn=program.querySelector('button[onclick="saveEntry()"]');
+    if(!btn) return;
+    const host=btn.parentElement;
+    const box=document.createElement('div');
+    box.id='v64SaveMain';
+    box.className='v64-save-main';
+    box.innerHTML='<div><strong>💾 Sauvegarder ma journée</strong><div class="v64-save-hint">Tes réponses et tes scores sont enregistrés dans ton espace personnel.</div></div><button type="button" class="primary">💾 Sauvegarder maintenant</button>';
+    const save=box.querySelector('button');
+    save.addEventListener('click',()=>window.saveEntry());
+    btn.remove();
+    host.appendChild(box);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(ensure,300));
+  else setTimeout(ensure,300);
+  window.addEventListener('load',()=>setTimeout(ensure,300));
+})();
+</script>
 </body>
 </html>
 
